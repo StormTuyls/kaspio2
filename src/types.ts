@@ -28,9 +28,41 @@ export type Transaction = {
   createdAt: string;
 };
 
+export type AuditAction = "created" | "updated" | "deleted";
+export type AuditEntityType = "pot" | "member" | "transaction" | "settings";
+
+export type AuditEntry = {
+  id: string;
+  actorId: string | null;
+  actorName: string;
+  action: AuditAction;
+  entityType: AuditEntityType;
+  entityName: string;
+  details?: string;
+  createdAt: string;
+};
+
+export type DigestFrequency = "never" | "daily" | "weekly";
+
+export type NotificationSettings = {
+  emailOnTransaction: boolean;
+  emailOnPotCreated: boolean;
+  emailOnMemberAdded: boolean;
+  digestFrequency: DigestFrequency;
+};
+
+export const defaultNotificationSettings: NotificationSettings = {
+  emailOnTransaction: true,
+  emailOnPotCreated: false,
+  emailOnMemberAdded: true,
+  digestFrequency: "never",
+};
+
 export type AppState = {
   members: Member[];
   pots: Pot[];
   transactions: Transaction[];
   currentUserId: string | null;
+  auditLog: AuditEntry[];
+  notifications: NotificationSettings;
 };

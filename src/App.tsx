@@ -7,6 +7,8 @@ import type { UserAccount } from "./auth";
 import { Overview } from "./views/Overview";
 import { PotDetail } from "./views/PotDetail";
 import { MembersView } from "./views/MembersView";
+import { AuditView } from "./views/AuditView";
+import { SettingsView } from "./views/SettingsView";
 import { Landing } from "./views/Landing";
 import { AuthView } from "./views/AuthView";
 import { Modal } from "./components/Modal";
@@ -16,7 +18,7 @@ import { UserSwitcher } from "./components/UserSwitcher";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { Mark } from "./components/Logo";
 
-type Tab = "potjes" | "leden";
+type Tab = "potjes" | "leden" | "activiteit" | "instellingen";
 type PublicView = "landing" | "login" | "signup";
 
 function App() {
@@ -62,6 +64,7 @@ function AuthedApp({
   const potsForUser = visiblePots(store.state.pots, currentUser);
   const selectedPot = potsForUser.find((p) => p.id === selectedPotId) ?? null;
   const isAdmin = currentUser?.role === "admin";
+  const adminCount = store.state.members.filter((m) => m.role === "admin").length;
 
   if (!currentUser) {
     return (
@@ -79,6 +82,8 @@ function AuthedApp({
           isAdmin={!!isAdmin}
           membersCount={store.state.members.length}
           potsCount={store.state.pots.length}
+          adminCount={adminCount}
+          auditCount={store.state.auditLog.length}
           organizationName={account.organizationName}
           onTab={(t) => {
             setTab(t);
@@ -122,6 +127,14 @@ function AuthedApp({
                 onAdd={(values) => store.addMember(values)}
                 onUpdate={(id, values) => store.updateMember(id, values)}
                 onDelete={(id) => store.deleteMember(id)}
+              />
+            ) : tab === "activiteit" && isAdmin ? (
+              <AuditView entries={store.state.auditLog} onClear={() => store.clearAuditLog()} />
+            ) : tab === "instellingen" && isAdmin ? (
+              <SettingsView
+                account={account}
+                notifications={store.state.notifications}
+                onChange={(patch) => store.updateNotifications(patch)}
               />
             ) : (
               <Overview
@@ -169,6 +182,8 @@ function Sidebar({
   isAdmin,
   membersCount,
   potsCount,
+  adminCount,
+  auditCount,
   organizationName,
   onTab,
 }: {
@@ -176,11 +191,13 @@ function Sidebar({
   isAdmin: boolean;
   membersCount: number;
   potsCount: number;
+  adminCount: number;
+  auditCount: number;
   organizationName: string;
   onTab: (t: Tab) => void;
 }) {
   return (
-    <aside className="hidden w-60 flex-shrink-0 flex-col border-r border-navy-900 bg-navy-900 px-5 py-6 text-navy-100 lg:flex dark:border-navy-800">
+    <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-navy-900 bg-navy-900 px-5 py-6 text-navy-100 lg:flex dark:border-navy-800">
       <div className="mb-8 flex items-center gap-2.5">
         <Mark size={36} variant="light" />
         <div>
@@ -200,21 +217,49 @@ function Sidebar({
           badge={potsCount > 0 ? String(potsCount) : undefined}
         />
         {isAdmin && (
-          <NavItem
-            active={tab === "leden"}
-            onClick={() => onTab("leden")}
-            icon={
-              <path d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM12 14c-4.4 0-8 2.7-8 6v1h16v-1c0-3.3-3.6-6-8-6z" />
-            }
-            label="Leden"
-            badge={String(membersCount)}
-          />
+          <>
+            <NavItem
+              active={tab === "leden"}
+              onClick={() => onTab("leden")}
+              icon={
+                <path d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM12 14c-4.4 0-8 2.7-8 6v1h16v-1c0-3.3-3.6-6-8-6z" />
+              }
+              label="Leden"
+              badge={String(membersCount)}
+            />
+            <NavItem
+              active={tab === "activiteit"}
+              onClick={() => onTab("activiteit")}
+              icon={
+                <path d="M12 8v4l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+              }
+              label="Activiteit"
+              badge={auditCount > 0 ? String(Math.min(auditCount, 99)) : undefined}
+            />
+            <NavItem
+              active={tab === "instellingen"}
+              onClick={() => onTab("instellingen")}
+              icon={
+                <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              }
+              label="Instellingen"
+            />
+          </>
         )}
       </nav>
 
       <div className="mt-auto rounded-2xl border border-navy-700 bg-navy-800/60 p-4 text-xs text-navy-200">
-        <p className="mb-1 font-semibold text-white">💡 Tip</p>
-        <p>Schakel rechtsboven van rol om te zien wat een potjesbeheerder ziet.</p>
+        {adminCount > 1 ? (
+          <>
+            <p className="mb-1 font-semibold text-white">{adminCount} admins</p>
+            <p>Meerdere mensen kunnen volledige toegang hebben tot de organisatie.</p>
+          </>
+        ) : (
+          <>
+            <p className="mb-1 font-semibold text-white">💡 Tip</p>
+            <p>Schakel rechtsboven van rol om te zien wat een potjesbeheerder ziet.</p>
+          </>
+        )}
       </div>
     </aside>
   );
@@ -242,7 +287,16 @@ function NavItem({
           : "text-navy-200 hover:bg-white/5 hover:text-white"
       }`}
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      >
         {icon}
       </svg>
       <span className="flex-1 text-left font-semibold">{label}</span>

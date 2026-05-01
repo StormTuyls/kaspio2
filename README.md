@@ -1,73 +1,88 @@
-# React + TypeScript + Vite
+# Potly
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Beheer al je inkomende geldstromen vanuit één bankrekening, met duidelijke virtuele potjes en
+volledige transparantie voor elk teamlid.
 
-Currently, two official plugins are available:
+## Status
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Bèta-prototype:
 
-## React Compiler
+- Frontend draait standalone op **localStorage** — gegevens blijven in je browser
+- Postgres + Express backend ligt klaar onder `server/` met `docker-compose.yml`, maar de
+  frontend is er nog **niet op gemigreerd**
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Frontend lokaal draaien
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+nvm use 20         # Vite vereist Node 20+
+npm install
+npm run dev
+# open http://localhost:5173
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Backend (optioneel, ready-to-wire-up)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Dit start een Postgres-database en een Express API met het volledige datamodel:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+# 1. Start de database
+docker compose up -d
+
+# 2. Configureer + start de API
+cd server
+cp .env.example .env
+npm install
+npm run dev
+# API draait op http://localhost:3001
+# Health check: curl http://localhost:3001/api/health
 ```
+
+### Wat de backend al doet
+
+- `POST /api/auth/signup`, `POST /api/auth/login`, `GET /api/auth/me` — bcrypt + JWT
+- `GET/POST /api/members`, `/api/pots`, `/api/transactions`
+- `GET /api/audit` — gespiegelde audit log, automatisch gevuld bij mutaties
+- `GET/PATCH /api/settings/notifications`
+
+Wachtwoorden worden gehasht met bcrypt (cost 10), niet meer met SHA-256 zoals in de
+localStorage-prototype-versie.
+
+### Datamodel
+
+Zie [`server/schema.sql`](server/schema.sql). Tabellen:
+
+- `accounts` — login-credentials + organisatie
+- `members` — admins en potjesbeheerders binnen een account
+- `pots` — virtuele potjes met optioneel doelbedrag
+- `transactions` — in/uit per potje
+- `audit_log` — wie deed wat wanneer
+- `notification_settings` — e-mail/digest voorkeuren per account
+
+### Frontend migreren naar de backend
+
+Niet (nog) gedaan om de scope behapbaar te houden. Migratiepad:
+
+1. Vervang [`src/auth.ts`](src/auth.ts) met een API-client die JWT in localStorage zet
+2. Vervang [`src/storage.ts`](src/storage.ts) met een fetch-gebaseerde hook
+3. Voeg loading/error-states toe in views
+4. Configureer `VITE_API_URL` of een Vite proxy naar `http://localhost:3001`
+
+## Tech stack
+
+- **Frontend**: Vite + React 19 + TypeScript + Tailwind v4
+- **Backend**: Express 4 + node-postgres + bcryptjs + jsonwebtoken + zod
+- **Database**: Postgres 16 (in Docker)
+
+## Features
+
+| Feature                    | Frontend (localStorage) | Backend (Postgres) |
+| -------------------------- | ----------------------- | ------------------ |
+| Signup / login             | ✅ (SHA-256)             | ✅ (bcrypt + JWT)  |
+| Potjes + transacties       | ✅                       | ✅                 |
+| Rolgebaseerd: admin/owner  | ✅                       | ✅ (data, geen middleware) |
+| Audit log                  | ✅                       | ✅                 |
+| Notificatie-instellingen   | ✅ (UI demo)             | ✅                 |
+| CSV-export                 | ✅                       | —                  |
+| Saldo-grafiek              | ✅                       | —                  |
+| Dark mode                  | ✅                       | —                  |
+| Multi-admin                | ✅                       | ✅                 |

@@ -1,13 +1,27 @@
 import { useEffect, useState } from "react";
-import type { AppState, Member, Pot, Role, Transaction } from "./types";
+import type {
+  AppState,
+  AuditAction,
+  AuditEntityType,
+  AuditEntry,
+  Member,
+  NotificationSettings,
+  Pot,
+  Role,
+  Transaction,
+} from "./types";
+import { defaultNotificationSettings } from "./types";
 
 const STORAGE_KEY_PREFIX = "potjesbeheer:data:";
+const MAX_AUDIT_ENTRIES = 500;
 
 const emptyState: AppState = {
   members: [],
   pots: [],
   transactions: [],
   currentUserId: null,
+  auditLog: [],
+  notifications: defaultNotificationSettings,
 };
 
 function storageKey(accountId: string) {
@@ -25,6 +39,8 @@ function loadState(accountId: string): AppState {
       pots: Array.isArray(parsed.pots) ? parsed.pots : [],
       transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
       currentUserId: parsed.currentUserId ?? null,
+      auditLog: Array.isArray(parsed.auditLog) ? parsed.auditLog : [],
+      notifications: { ...defaultNotificationSettings, ...(parsed.notifications ?? {}) },
     };
   } catch {
     return emptyState;
@@ -33,6 +49,30 @@ function loadState(accountId: string): AppState {
 
 function saveState(accountId: string, state: AppState) {
   window.localStorage.setItem(storageKey(accountId), JSON.stringify(state));
+}
+
+function makeAudit(
+  s: AppState,
+  action: AuditAction,
+  entityType: AuditEntityType,
+  entityName: string,
+  details?: string,
+): AuditEntry {
+  const actor = s.members.find((m) => m.id === s.currentUserId);
+  return {
+    id: crypto.randomUUID(),
+    actorId: actor?.id ?? null,
+    actorName: actor?.name ?? "Systeem",
+    action,
+    entityType,
+    entityName,
+    details,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function withAudit(s: AppState, entry: AuditEntry): AuditEntry[] {
+  return [entry, ...s.auditLog].slice(0, MAX_AUDIT_ENTRIES);
 }
 
 export function useAppState(accountId: string, bootstrapAdminName?: string) {
@@ -45,7 +85,11 @@ export function useAppState(accountId: string, bootstrapAdminName?: string) {
         role: "admin",
         createdAt: new Date().toISOString(),
       };
-      const initial: AppState = { ...loaded, members: [admin], currentUserId: admin.id };
+      const initial: AppState = {
+        ...loaded,
+        members: [admin],
+        currentUserId: admin.id,
+      };
       saveState(accountId, initial);
       return initial;
     }
@@ -70,27 +114,49 @@ export function useAppState(accountId: string, bootstrapAdminName?: string) {
       setState((s) => {
         const next = { ...s, members: [...s.members, member] };
         if (!s.currentUserId) next.currentUserId = member.id;
-        return next;
+        const entry = makeAudit(s, "created", "member", member.name, `Rol: ${member.role}`);
+        return { ...next, auditLog: withAudit(s, entry) };
       });
       return member;
     },
     updateMember(id: string, patch: Partial<Pick<Member, "name" | "role">>) {
-      setState((s) => ({
-        ...s,
-        members: s.members.map((m) => (m.id === id ? { ...m, ...patch } : m)),
-      }));
+      setState((s) => {
+        const before = s.members.find((m) => m.id === id);
+        const members = s.members.map((m) => (m.id === id ? { ...m, ...patch } : m));
+        const after = members.find((m) => m.id === id);
+        const changes: string[] = [];
+        if (before && after && before.name !== after.name) {
+          changes.push(`naam: ${before.name} → ${after.name}`);
+        }
+        if (before && after && before.role !== after.role) {
+          changes.push(`rol: ${before.role} → ${after.role}`);
+        }
+        const entry = makeAudit(
+          s,
+          "updated",
+          "member",
+          after?.name ?? before?.name ?? "—",
+          changes.join(", ") || undefined,
+        );
+        return { ...s, members, auditLog: withAudit(s, entry) };
+      });
     },
     deleteMember(id: string) {
       setState((s) => {
         const ownsAnyPot = s.pots.some((p) => p.ownerId === id);
         if (ownsAnyPot) {
-          alert("Dit lid is verantwoordelijke van een potje. Wijs het potje eerst toe aan iemand anders.");
+          alert(
+            "Dit lid is verantwoordelijke van een potje. Wijs het potje eerst toe aan iemand anders.",
+          );
           return s;
         }
+        const target = s.members.find((m) => m.id === id);
+        const entry = makeAudit(s, "deleted", "member", target?.name ?? "—");
         return {
           ...s,
           members: s.members.filter((m) => m.id !== id),
           currentUserId: s.currentUserId === id ? null : s.currentUserId,
+          auditLog: withAudit(s, entry),
         };
       });
     },
@@ -100,21 +166,57 @@ export function useAppState(accountId: string, bootstrapAdminName?: string) {
         id: crypto.randomUUID(),
         createdAt: new Date().toISOString(),
       };
-      setState((s) => ({ ...s, pots: [...s.pots, pot] }));
+      setState((s) => {
+        const owner = s.members.find((m) => m.id === pot.ownerId);
+        const entry = makeAudit(
+          s,
+          "created",
+          "pot",
+          pot.name,
+          owner ? `Verantwoordelijke: ${owner.name}` : undefined,
+        );
+        return { ...s, pots: [...s.pots, pot], auditLog: withAudit(s, entry) };
+      });
       return pot;
     },
     updatePot(id: string, patch: Partial<Pick<Pot, "name" | "ownerId" | "targetAmount">>) {
-      setState((s) => ({
-        ...s,
-        pots: s.pots.map((p) => (p.id === id ? { ...p, ...patch } : p)),
-      }));
+      setState((s) => {
+        const before = s.pots.find((p) => p.id === id);
+        const pots = s.pots.map((p) => (p.id === id ? { ...p, ...patch } : p));
+        const after = pots.find((p) => p.id === id);
+        const changes: string[] = [];
+        if (before && after && before.name !== after.name) {
+          changes.push(`naam: ${before.name} → ${after.name}`);
+        }
+        if (before && after && before.ownerId !== after.ownerId) {
+          const oldOwner = s.members.find((m) => m.id === before.ownerId)?.name ?? "—";
+          const newOwner = s.members.find((m) => m.id === after.ownerId)?.name ?? "—";
+          changes.push(`verantwoordelijke: ${oldOwner} → ${newOwner}`);
+        }
+        if (before && after && before.targetAmount !== after.targetAmount) {
+          changes.push(`doelbedrag aangepast`);
+        }
+        const entry = makeAudit(
+          s,
+          "updated",
+          "pot",
+          after?.name ?? before?.name ?? "—",
+          changes.join(", ") || undefined,
+        );
+        return { ...s, pots, auditLog: withAudit(s, entry) };
+      });
     },
     deletePot(id: string) {
-      setState((s) => ({
-        ...s,
-        pots: s.pots.filter((p) => p.id !== id),
-        transactions: s.transactions.filter((t) => t.potId !== id),
-      }));
+      setState((s) => {
+        const pot = s.pots.find((p) => p.id === id);
+        const entry = makeAudit(s, "deleted", "pot", pot?.name ?? "—");
+        return {
+          ...s,
+          pots: s.pots.filter((p) => p.id !== id),
+          transactions: s.transactions.filter((t) => t.potId !== id),
+          auditLog: withAudit(s, entry),
+        };
+      });
     },
     addTransaction(input: Omit<Transaction, "id" | "createdAt">) {
       const tx: Transaction = {
@@ -122,14 +224,48 @@ export function useAppState(accountId: string, bootstrapAdminName?: string) {
         id: crypto.randomUUID(),
         createdAt: new Date().toISOString(),
       };
-      setState((s) => ({ ...s, transactions: [...s.transactions, tx] }));
+      setState((s) => {
+        const pot = s.pots.find((p) => p.id === tx.potId);
+        const sign = tx.direction === "in" ? "+" : "−";
+        const entry = makeAudit(
+          s,
+          "created",
+          "transaction",
+          pot?.name ?? "—",
+          `${sign}€${tx.amount.toFixed(2)} · ${tx.counterparty}`,
+        );
+        return { ...s, transactions: [...s.transactions, tx], auditLog: withAudit(s, entry) };
+      });
       return tx;
     },
     deleteTransaction(id: string) {
-      setState((s) => ({
-        ...s,
-        transactions: s.transactions.filter((t) => t.id !== id),
-      }));
+      setState((s) => {
+        const tx = s.transactions.find((t) => t.id === id);
+        const pot = s.pots.find((p) => p.id === tx?.potId);
+        const sign = tx?.direction === "in" ? "+" : "−";
+        const entry = makeAudit(
+          s,
+          "deleted",
+          "transaction",
+          pot?.name ?? "—",
+          tx ? `${sign}€${tx.amount.toFixed(2)} · ${tx.counterparty}` : undefined,
+        );
+        return {
+          ...s,
+          transactions: s.transactions.filter((t) => t.id !== id),
+          auditLog: withAudit(s, entry),
+        };
+      });
+    },
+    updateNotifications(patch: Partial<NotificationSettings>) {
+      setState((s) => {
+        const next = { ...s.notifications, ...patch };
+        const entry = makeAudit(s, "updated", "settings", "Notificaties");
+        return { ...s, notifications: next, auditLog: withAudit(s, entry) };
+      });
+    },
+    clearAuditLog() {
+      setState((s) => ({ ...s, auditLog: [] }));
     },
   };
 }
@@ -155,4 +291,11 @@ export function formatEuro(value: number) {
 
 export function formatDate(iso: string) {
   return new Intl.DateTimeFormat("nl-BE", { dateStyle: "medium" }).format(new Date(iso));
+}
+
+export function formatDateTime(iso: string) {
+  return new Intl.DateTimeFormat("nl-BE", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(iso));
 }
