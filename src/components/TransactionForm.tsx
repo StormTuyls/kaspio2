@@ -1,0 +1,127 @@
+import { useState } from "react";
+import type { FormEvent } from "react";
+import type { TransactionDirection } from "../types";
+
+type Props = {
+  onSubmit: (values: {
+    direction: TransactionDirection;
+    amount: number;
+    occurredOn: string;
+    counterparty: string;
+    memo?: string;
+  }) => void;
+  onCancel: () => void;
+};
+
+export function TransactionForm({ onSubmit, onCancel }: Props) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [direction, setDirection] = useState<TransactionDirection>("in");
+  const [amount, setAmount] = useState("");
+  const [occurredOn, setOccurredOn] = useState(today);
+  const [counterparty, setCounterparty] = useState("");
+  const [memo, setMemo] = useState("");
+
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    const value = Number(amount);
+    if (!Number.isFinite(value) || value <= 0) return;
+    if (!counterparty.trim()) return;
+    onSubmit({
+      direction,
+      amount: value,
+      occurredOn,
+      counterparty: counterparty.trim(),
+      memo: memo.trim() || undefined,
+    });
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => setDirection("in")}
+          className={`rounded-lg border-2 px-3 py-2 text-sm font-semibold transition ${
+            direction === "in"
+              ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+              : "border-gray-200 text-gray-500 hover:border-gray-300"
+          }`}
+        >
+          ↓ Inkomend
+        </button>
+        <button
+          type="button"
+          onClick={() => setDirection("out")}
+          className={`rounded-lg border-2 px-3 py-2 text-sm font-semibold transition ${
+            direction === "out"
+              ? "border-rose-500 bg-rose-50 text-rose-700"
+              : "border-gray-200 text-gray-500 hover:border-gray-300"
+          }`}
+        >
+          ↑ Uitgaand
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium text-gray-700">Bedrag *</span>
+          <input
+            autoFocus
+            type="number"
+            step="0.01"
+            min="0"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0,00"
+            className="input"
+            required
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium text-gray-700">Datum *</span>
+          <input
+            type="date"
+            value={occurredOn}
+            onChange={(e) => setOccurredOn(e.target.value)}
+            className="input"
+            required
+          />
+        </label>
+      </div>
+
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-gray-700">
+          {direction === "in" ? "Van wie?" : "Aan wie?"} *
+        </span>
+        <input
+          type="text"
+          value={counterparty}
+          onChange={(e) => setCounterparty(e.target.value)}
+          placeholder="Bijv. Café De Vlaschaard"
+          className="input"
+          required
+        />
+      </label>
+
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-gray-700">Memo</span>
+        <textarea
+          value={memo}
+          onChange={(e) => setMemo(e.target.value)}
+          placeholder="Optionele toelichting"
+          rows={2}
+          className="input resize-none"
+        />
+      </label>
+
+      <div className="flex justify-end gap-2 pt-2">
+        <button type="button" onClick={onCancel} className="btn-secondary">
+          Annuleren
+        </button>
+        <button type="submit" className="btn-primary">
+          Toevoegen
+        </button>
+      </div>
+    </form>
+  );
+}
