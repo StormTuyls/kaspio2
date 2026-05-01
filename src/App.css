@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
@@ -13,7 +15,7 @@
   --color-navy-700: #283449;
   --color-navy-800: #1f2a3d;
   --color-navy-900: #1e2a3a;
-  --color-navy-950: #0e1620;
+  --color-navy-950: #0a1018;
 
   --color-mint-50: #ecfdf5;
   --color-mint-100: #d1fae5;
@@ -45,15 +47,24 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #f7f9fc;
+  color: #1f2937;
+}
+
+html.dark,
+html.dark body {
+  background-color: #0a1018;
+  color: #e2e7ee;
+  color-scheme: dark;
 }
 
 @layer components {
   .input {
-    @apply w-full rounded-xl border border-navy-100 bg-white px-3.5 py-2.5 text-sm text-navy-900 shadow-sm transition placeholder:text-navy-300 focus:border-azure-400 focus:outline-none focus:ring-4 focus:ring-azure-100;
+    @apply w-full rounded-xl border border-navy-100 bg-white px-3.5 py-2.5 text-sm text-navy-900 shadow-sm transition placeholder:text-navy-300 focus:border-azure-400 focus:outline-none focus:ring-4 focus:ring-azure-100 dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50 dark:placeholder:text-navy-500 dark:focus:border-azure-400 dark:focus:ring-azure-500/20;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-xl bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-navy-800 active:bg-navy-950 disabled:opacity-50;
+    @apply inline-flex items-center justify-center rounded-xl bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-navy-800 active:bg-navy-950 disabled:opacity-50 dark:bg-white dark:text-navy-900 dark:hover:bg-navy-100;
   }
 
   .btn-accent {
@@ -61,14 +72,18 @@ body {
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-xl border border-navy-100 bg-white px-4 py-2.5 text-sm font-semibold text-navy-700 shadow-sm transition hover:bg-navy-50;
+    @apply inline-flex items-center justify-center rounded-xl border border-navy-100 bg-white px-4 py-2.5 text-sm font-semibold text-navy-700 shadow-sm transition hover:bg-navy-50 dark:border-navy-700 dark:bg-navy-800 dark:text-navy-100 dark:hover:bg-navy-700;
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50;
+    @apply inline-flex items-center justify-center rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50 dark:border-rose-900/40 dark:bg-navy-800 dark:text-rose-400 dark:hover:bg-rose-900/30;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-xl px-3 py-1.5 text-sm font-semibold text-navy-500 transition hover:bg-navy-50 hover:text-navy-900 dark:text-navy-300 dark:hover:bg-navy-800 dark:hover:text-white;
   }
 
   .card {
-    @apply rounded-2xl border border-navy-100 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_18px_-4px_rgba(15,23,42,0.06)];
+    @apply rounded-2xl border border-navy-100 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_18px_-4px_rgba(15,23,42,0.06)] dark:border-navy-700/60 dark:bg-navy-900 dark:shadow-[0_1px_2px_rgba(0,0,0,0.4),0_4px_18px_-4px_rgba(0,0,0,0.5)];
   }
 }

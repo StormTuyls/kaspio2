@@ -87,7 +87,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-navy-700">
+      <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
         {label}
         {required && <span className="text-rose-500"> *</span>}
       </span>

@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { calcBalance, formatDate, formatEuro } from "../storage";
-import type { Member, Pot, Transaction } from "../types";
+import type { Member, Pot, Transaction, TransactionDirection } from "../types";
 import { Modal } from "../components/Modal";
 import { PotForm } from "../components/PotForm";
 import { BalanceChart } from "../components/BalanceChart";
 import { Avatar } from "./Overview";
+import { exportPotCsv } from "../csv";
 
 type Props = {
   pot: Pot;
@@ -18,6 +19,8 @@ type Props = {
   onDeletePot: () => void;
 };
 
+type DirectionFilter = "all" | TransactionDirection;
+
 export function PotDetail({
   pot,
   transactions,
@@ -30,11 +33,18 @@ export function PotDetail({
   onDeletePot,
 }: Props) {
   const [editing, setEditing] = useState(false);
+  const [search, setSearch] = useState("");
+  const [direction, setDirection] = useState<DirectionFilter>("all");
   const isAdmin = currentUser.role === "admin";
+
   const balance = calcBalance(transactions, pot.id);
-  const potTx = transactions
-    .filter((t) => t.potId === pot.id)
-    .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn));
+  const potTx = useMemo(
+    () =>
+      transactions
+        .filter((t) => t.potId === pot.id)
+        .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn)),
+    [transactions, pot.id],
+  );
 
   const totalIn = potTx.filter((t) => t.direction === "in").reduce((s, t) => s + t.amount, 0);
   const totalOut = potTx.filter((t) => t.direction === "out").reduce((s, t) => s + t.amount, 0);
@@ -44,11 +54,24 @@ export function PotDetail({
       ? Math.min(100, Math.max(0, (balance / pot.targetAmount) * 100))
       : null;
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return potTx.filter((t) => {
+      if (direction !== "all" && t.direction !== direction) return false;
+      if (q) {
+        const inName = t.counterparty.toLowerCase().includes(q);
+        const inMemo = (t.memo ?? "").toLowerCase().includes(q);
+        if (!inName && !inMemo) return false;
+      }
+      return true;
+    });
+  }, [potTx, search, direction]);
+
   return (
     <div className="space-y-6">
       <button
         onClick={onBack}
-        className="flex items-center gap-1 text-sm font-medium text-navy-500 hover:text-navy-900"
+        className="flex items-center gap-1 text-sm font-medium text-navy-500 hover:text-navy-900 dark:text-navy-300 dark:hover:text-white"
       >
         ← Terug naar overzicht
       </button>
@@ -56,14 +79,22 @@ export function PotDetail({
       <div className="card p-6">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="mb-1 text-2xl font-bold text-navy-900">{pot.name}</h1>
-            <div className="flex items-center gap-2 text-sm text-navy-500">
+            <h1 className="mb-1 text-2xl font-bold text-navy-900 dark:text-white">{pot.name}</h1>
+            <div className="flex items-center gap-2 text-sm text-navy-500 dark:text-navy-300">
               <Avatar name={owner?.name ?? "—"} size="sm" />
               <span>{owner?.name ?? "Geen verantwoordelijke"}</span>
             </div>
           </div>
           {isAdmin && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => exportPotCsv(pot, potTx)}
+                disabled={potTx.length === 0}
+                className="btn-secondary text-sm"
+                title="Download als CSV"
+              >
+                ⬇ CSV
+              </button>
               <button onClick={() => setEditing(true)} className="btn-secondary text-sm">
                 Bewerken
               </button>
@@ -83,26 +114,40 @@ export function PotDetail({
 
         <div className="grid gap-3 sm:grid-cols-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-navy-400">Saldo</p>
-            <p className="text-3xl font-extrabold text-navy-900">{formatEuro(balance)}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+              Saldo
+            </p>
+            <p className="text-3xl font-extrabold text-navy-900 dark:text-white">
+              {formatEuro(balance)}
+            </p>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-navy-400">Inkomend</p>
-            <p className="text-xl font-bold text-mint-600">{formatEuro(totalIn)}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+              Inkomend
+            </p>
+            <p className="text-xl font-bold text-mint-600 dark:text-mint-400">
+              {formatEuro(totalIn)}
+            </p>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-navy-400">Uitgaand</p>
-            <p className="text-xl font-bold text-rose-600">{formatEuro(totalOut)}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+              Uitgaand
+            </p>
+            <p className="text-xl font-bold text-rose-600 dark:text-rose-400">
+              {formatEuro(totalOut)}
+            </p>
           </div>
         </div>
 
         {progress !== null && (
           <div className="mt-5">
-            <div className="mb-1.5 flex justify-between text-xs text-navy-500">
+            <div className="mb-1.5 flex justify-between text-xs text-navy-500 dark:text-navy-300">
               <span>Doel: {formatEuro(pot.targetAmount!)}</span>
-              <span className="font-semibold text-mint-600">{progress.toFixed(0)}%</span>
+              <span className="font-semibold text-mint-600 dark:text-mint-400">
+                {progress.toFixed(0)}%
+              </span>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-navy-100">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-navy-100 dark:bg-navy-700">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-mint-500 to-mint-400 transition-all"
                 style={{ width: `${progress}%` }}
@@ -116,7 +161,7 @@ export function PotDetail({
 
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-navy-900">Transacties</h2>
+          <h2 className="text-lg font-semibold text-navy-900 dark:text-navy-50">Transacties</h2>
           <button onClick={onAddTransaction} className="btn-accent text-sm">
             + Transactie
           </button>
@@ -124,52 +169,101 @@ export function PotDetail({
 
         {potTx.length === 0 ? (
           <div className="card border-dashed py-12 text-center">
-            <p className="mb-1 text-base font-semibold text-navy-900">Nog geen transacties</p>
-            <p className="text-sm text-navy-500">Voeg de eerste in- of uitgaande transactie toe.</p>
+            <p className="mb-1 text-base font-semibold text-navy-900 dark:text-navy-50">
+              Nog geen transacties
+            </p>
+            <p className="text-sm text-navy-500 dark:text-navy-300">
+              Voeg de eerste in- of uitgaande transactie toe.
+            </p>
           </div>
         ) : (
           <div className="card overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-canvas text-xs font-semibold uppercase tracking-wider text-navy-400">
-                <tr>
-                  <th className="px-4 py-3 text-left">Datum</th>
-                  <th className="px-4 py-3 text-left">Tegenpartij</th>
-                  <th className="px-4 py-3 text-left">Memo</th>
-                  <th className="px-4 py-3 text-right">Bedrag</th>
-                  <th className="px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-navy-100">
-                {potTx.map((tx) => (
-                  <tr key={tx.id} className="transition hover:bg-canvas">
-                    <td className="whitespace-nowrap px-4 py-3 text-navy-500">
-                      {formatDate(tx.occurredOn)}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-navy-900">{tx.counterparty}</td>
-                    <td className="px-4 py-3 text-navy-500">{tx.memo ?? "—"}</td>
-                    <td
-                      className={`whitespace-nowrap px-4 py-3 text-right font-semibold ${
-                        tx.direction === "in" ? "text-mint-600" : "text-rose-600"
-                      }`}
-                    >
-                      {tx.direction === "in" ? "+" : "−"}
-                      {formatEuro(tx.amount)}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => {
-                          if (confirm("Transactie verwijderen?")) onDeleteTransaction(tx.id);
-                        }}
-                        className="text-xs text-navy-300 hover:text-rose-600"
-                        aria-label="Verwijderen"
-                      >
-                        ✕
-                      </button>
-                    </td>
-                  </tr>
+            <div className="flex flex-wrap items-center gap-3 border-b border-navy-100 px-4 py-3 dark:border-navy-700/60">
+              <div className="relative flex-1">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-navy-300 dark:text-navy-500">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="m21 21-4.35-4.35" />
+                  </svg>
+                </span>
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Zoek op tegenpartij of memo…"
+                  className="input pl-9"
+                />
+              </div>
+              <div className="flex gap-1 rounded-xl border border-navy-100 bg-white p-1 text-xs font-semibold dark:border-navy-700 dark:bg-navy-800">
+                {(["all", "in", "out"] as const).map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setDirection(d)}
+                    className={`rounded-lg px-3 py-1.5 transition ${
+                      direction === d
+                        ? "bg-navy-900 text-white dark:bg-white dark:text-navy-900"
+                        : "text-navy-500 hover:text-navy-900 dark:text-navy-300 dark:hover:text-white"
+                    }`}
+                  >
+                    {d === "all" ? "Alle" : d === "in" ? "Inkomend" : "Uitgaand"}
+                  </button>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
+
+            {filtered.length === 0 ? (
+              <div className="px-4 py-10 text-center text-sm text-navy-400 dark:text-navy-300">
+                Geen transacties die overeenkomen met je filter.
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-canvas text-xs font-semibold uppercase tracking-wider text-navy-400 dark:bg-navy-800/50 dark:text-navy-300">
+                  <tr>
+                    <th className="px-4 py-3 text-left">Datum</th>
+                    <th className="px-4 py-3 text-left">Tegenpartij</th>
+                    <th className="px-4 py-3 text-left">Memo</th>
+                    <th className="px-4 py-3 text-right">Bedrag</th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-navy-100 dark:divide-navy-700/60">
+                  {filtered.map((tx) => (
+                    <tr key={tx.id} className="transition hover:bg-canvas dark:hover:bg-navy-800/40">
+                      <td className="whitespace-nowrap px-4 py-3 text-navy-500 dark:text-navy-300">
+                        {formatDate(tx.occurredOn)}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-navy-900 dark:text-navy-50">
+                        {tx.counterparty}
+                      </td>
+                      <td className="px-4 py-3 text-navy-500 dark:text-navy-400">
+                        {tx.memo ?? "—"}
+                      </td>
+                      <td
+                        className={`whitespace-nowrap px-4 py-3 text-right font-semibold ${
+                          tx.direction === "in"
+                            ? "text-mint-600 dark:text-mint-400"
+                            : "text-rose-600 dark:text-rose-400"
+                        }`}
+                      >
+                        {tx.direction === "in" ? "+" : "−"}
+                        {formatEuro(tx.amount)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => {
+                            if (confirm("Transactie verwijderen?")) onDeleteTransaction(tx.id);
+                          }}
+                          className="text-xs text-navy-300 hover:text-rose-600 dark:text-navy-500 dark:hover:text-rose-400"
+                          aria-label="Verwijderen"
+                        >
+                          ✕
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         )}
       </div>

@@ -1,9 +1,13 @@
+import { Mark } from "../components/Logo";
+import { useForceLight } from "../theme";
+
 type Props = {
   onLogin: () => void;
   onSignup: () => void;
 };
 
 export function Landing({ onLogin, onSignup }: Props) {
+  useForceLight();
   return (
     <div className="min-h-screen bg-canvas text-ink">
       <Header onLogin={onLogin} onSignup={onSignup} />
@@ -22,14 +26,8 @@ export function Landing({ onLogin, onSignup }: Props) {
 
 function Logo({ className = "" }: { className?: string }) {
   return (
-    <span className={`flex items-center gap-2 ${className}`}>
-      <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-navy-900">
-        <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-mint-500 ring-2 ring-white" />
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinejoin="round">
-          <path d="M5 8h14l-1 11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 8z" />
-          <path d="M9 8V6a3 3 0 0 1 6 0v2" />
-        </svg>
-      </span>
+    <span className={`flex items-center gap-2.5 ${className}`}>
+      <Mark size={36} />
       <span className="text-lg font-bold tracking-tight text-navy-900">Potly</span>
     </span>
   );

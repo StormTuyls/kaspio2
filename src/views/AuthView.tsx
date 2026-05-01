@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { login, signup } from "../auth";
 import type { UserAccount } from "../auth";
+import { Mark } from "../components/Logo";
 
 type Mode = "login" | "signup";
 
@@ -15,29 +16,31 @@ export function AuthView({ initialMode, onAuth, onBack }: Props) {
   const [mode, setMode] = useState<Mode>(initialMode);
 
   return (
-    <div className="min-h-screen bg-canvas">
+    <div className="min-h-screen bg-canvas dark:bg-navy-950">
       <div className="grid min-h-screen lg:grid-cols-2">
         <SidePanel />
         <div className="flex flex-col px-6 py-8 lg:px-14">
           <button
             onClick={onBack}
-            className="mb-8 flex items-center gap-2 self-start text-sm font-medium text-navy-500 hover:text-navy-900"
+            className="mb-8 flex items-center gap-2 self-start text-sm font-medium text-navy-500 hover:text-navy-900 dark:text-navy-300 dark:hover:text-white"
           >
             ← Terug
           </button>
 
           <div className="mx-auto w-full max-w-md flex-1">
-            <div className="mb-6 flex items-center gap-2 lg:hidden">
-              <Mark />
-              <span className="text-lg font-bold text-navy-900">Potly</span>
+            <div className="mb-6 flex items-center gap-2.5 lg:hidden">
+              <Mark size={36} />
+              <span className="text-lg font-bold text-navy-900 dark:text-white">Potly</span>
             </div>
 
             <div className="card p-7">
-              <div className="mb-6 grid grid-cols-2 rounded-xl bg-canvas p-1">
+              <div className="mb-6 grid grid-cols-2 rounded-xl bg-canvas p-1 dark:bg-navy-800">
                 <button
                   onClick={() => setMode("login")}
                   className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
-                    mode === "login" ? "bg-white text-navy-900 shadow-sm" : "text-navy-500"
+                    mode === "login"
+                      ? "bg-white text-navy-900 shadow-sm dark:bg-navy-700 dark:text-white"
+                      : "text-navy-500 dark:text-navy-300"
                   }`}
                 >
                   Inloggen
@@ -45,7 +48,9 @@ export function AuthView({ initialMode, onAuth, onBack }: Props) {
                 <button
                   onClick={() => setMode("signup")}
                   className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
-                    mode === "signup" ? "bg-white text-navy-900 shadow-sm" : "text-navy-500"
+                    mode === "signup"
+                      ? "bg-white text-navy-900 shadow-sm dark:bg-navy-700 dark:text-white"
+                      : "text-navy-500 dark:text-navy-300"
                   }`}
                 >
                   Aanmelden
@@ -65,24 +70,12 @@ export function AuthView({ initialMode, onAuth, onBack }: Props) {
   );
 }
 
-function Mark() {
-  return (
-    <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-navy-900">
-      <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-mint-500 ring-2 ring-white" />
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-        <path d="M5 8h14l-1 11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 8z" />
-        <path d="M9 8V6a3 3 0 0 1 6 0v2" />
-      </svg>
-    </span>
-  );
-}
-
 function SidePanel() {
   return (
     <div className="relative hidden overflow-hidden bg-navy-900 p-12 text-white lg:flex lg:flex-col">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_40%_at_30%_20%,rgba(47,191,113,0.25),transparent_60%),radial-gradient(50%_40%_at_80%_80%,rgba(77,163,255,0.25),transparent_60%)]" />
-      <div className="relative flex items-center gap-2">
-        <Mark />
+      <div className="relative flex items-center gap-2.5">
+        <Mark size={36} variant="light" />
         <span className="text-lg font-bold">Potly</span>
       </div>
       <div className="relative mt-auto">
@@ -132,7 +125,7 @@ function LoginForm({ onAuth }: { onAuth: (a: UserAccount) => void }) {
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <h2 className="text-xl font-bold text-navy-900">Welkom terug</h2>
+      <h2 className="text-xl font-bold text-navy-900 dark:text-white">Welkom terug</h2>
       <Field label="E-mailadres">
         <input
           type="email"
@@ -189,7 +182,7 @@ function SignupForm({ onAuth }: { onAuth: (a: UserAccount) => void }) {
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <h2 className="text-xl font-bold text-navy-900">Maak je organisatie aan</h2>
+      <h2 className="text-xl font-bold text-navy-900 dark:text-white">Maak je organisatie aan</h2>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Jouw naam">
           <input
@@ -259,9 +252,9 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-navy-700">{label}</span>
+      <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">{label}</span>
       {children}
-      {hint && <span className="mt-1 block text-xs text-navy-400">{hint}</span>}
+      {hint && <span className="mt-1 block text-xs text-navy-400 dark:text-navy-300">{hint}</span>}
     </label>
   );
 }

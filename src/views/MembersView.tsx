@@ -20,11 +20,11 @@ export function MembersView({ members, currentUserId, onAdd, onUpdate, onDelete 
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wider text-navy-400">
+          <p className="text-sm font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
             Organisatie
           </p>
-          <h1 className="text-2xl font-bold text-navy-900">Leden</h1>
-          <p className="mt-1 text-sm text-navy-500">
+          <h1 className="text-2xl font-bold text-navy-900 dark:text-white">Leden</h1>
+          <p className="mt-1 text-sm text-navy-500 dark:text-navy-300">
             Admins en potjesbeheerders binnen je organisatie.
           </p>
         </div>
@@ -34,24 +34,26 @@ export function MembersView({ members, currentUserId, onAdd, onUpdate, onDelete 
       </div>
 
       <div className="card overflow-hidden">
-        <ul className="divide-y divide-navy-100">
+        <ul className="divide-y divide-navy-100 dark:divide-navy-700/60">
           {members.map((m) => (
             <li
               key={m.id}
-              className="flex items-center justify-between gap-3 px-5 py-4 transition hover:bg-canvas"
+              className="flex items-center justify-between gap-3 px-5 py-4 transition hover:bg-canvas dark:hover:bg-navy-800/40"
             >
               <div className="flex min-w-0 items-center gap-3">
                 <Avatar name={m.name} />
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="truncate font-semibold text-navy-900">{m.name}</span>
+                    <span className="truncate font-semibold text-navy-900 dark:text-navy-50">
+                      {m.name}
+                    </span>
                     {m.id === currentUserId && (
-                      <span className="rounded-full bg-mint-50 px-2 py-0.5 text-xs font-semibold text-mint-700">
+                      <span className="rounded-full bg-mint-50 px-2 py-0.5 text-xs font-semibold text-mint-700 dark:bg-mint-900/30 dark:text-mint-300">
                         jij
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-navy-400">
+                  <div className="text-xs text-navy-400 dark:text-navy-300">
                     {m.role === "admin" ? "Admin" : "Potjesbeheerder"}
                   </div>
                 </div>

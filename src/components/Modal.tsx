@@ -26,14 +26,14 @@ export function Modal({ open, title, onClose, children }: Props) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl bg-white shadow-2xl"
+        className="w-full max-w-md rounded-2xl bg-white shadow-2xl dark:bg-navy-900 dark:ring-1 dark:ring-navy-700/60"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-navy-100 px-5 py-4">
-          <h2 className="text-lg font-bold text-navy-900">{title}</h2>
+        <div className="flex items-center justify-between border-b border-navy-100 px-5 py-4 dark:border-navy-700/60">
+          <h2 className="text-lg font-bold text-navy-900 dark:text-white">{title}</h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-navy-400 transition hover:bg-navy-50 hover:text-navy-700"
+            className="rounded-lg p-1.5 text-navy-400 transition hover:bg-navy-50 hover:text-navy-700 dark:hover:bg-navy-800 dark:hover:text-white"
             aria-label="Sluiten"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

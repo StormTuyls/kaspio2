@@ -51,10 +51,12 @@ export function BalanceChart({ transactions }: Props) {
     <div className="card p-5">
       <div className="mb-3 flex items-baseline justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-navy-900">Saldo over tijd</h3>
-          <p className="text-xs text-navy-400">Cumulatief verloop</p>
+          <h3 className="text-sm font-semibold text-navy-900 dark:text-navy-50">Saldo over tijd</h3>
+          <p className="text-xs text-navy-400 dark:text-navy-300">Cumulatief verloop</p>
         </div>
-        <span className="text-base font-bold text-navy-900">{formatEuro(last.balance)}</span>
+        <span className="text-base font-bold text-navy-900 dark:text-navy-50">
+          {formatEuro(last.balance)}
+        </span>
       </div>
       <svg viewBox={`0 0 ${width} ${height}`} className="h-44 w-full">
         <defs>
@@ -68,7 +70,8 @@ export function BalanceChart({ transactions }: Props) {
           x2={width - padX}
           y1={zeroY}
           y2={zeroY}
-          stroke="#e2e7ee"
+          className="stroke-navy-100 dark:stroke-navy-700"
+          stroke="currentColor"
           strokeDasharray="4 4"
         />
         <path d={areaPath} fill="url(#balance-fill)" />
@@ -81,24 +84,32 @@ export function BalanceChart({ transactions }: Props) {
           strokeLinecap="round"
         />
         {points.map((p, i) => (
-          <circle key={i} cx={toX(i)} cy={toY(p.balance)} r={3.5} fill="#fff" stroke="#2fbf71" strokeWidth="2" />
+          <circle
+            key={i}
+            cx={toX(i)}
+            cy={toY(p.balance)}
+            r={3.5}
+            className="fill-white dark:fill-navy-900"
+            stroke="#2fbf71"
+            strokeWidth="2"
+          />
         ))}
-        <text x={padX} y={height - 4} className="fill-navy-300 text-[10px]">
+        <text x={padX} y={height - 4} className="fill-navy-300 text-[10px] dark:fill-navy-400">
           {points[0].date}
         </text>
         <text
           x={width - padX}
           y={height - 4}
           textAnchor="end"
-          className="fill-navy-300 text-[10px]"
+          className="fill-navy-300 text-[10px] dark:fill-navy-400"
         >
           {last.date}
         </text>
-        <text x={4} y={padY + 8} className="fill-navy-300 text-[10px]">
+        <text x={4} y={padY + 8} className="fill-navy-300 text-[10px] dark:fill-navy-400">
           {formatEuro(maxY)}
         </text>
         {minY < 0 && (
-          <text x={4} y={height - padY} className="fill-navy-300 text-[10px]">
+          <text x={4} y={height - padY} className="fill-navy-300 text-[10px] dark:fill-navy-400">
             {formatEuro(minY)}
           </text>
         )}

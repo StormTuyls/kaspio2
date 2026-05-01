@@ -13,6 +13,8 @@ import { Modal } from "./components/Modal";
 import { PotForm } from "./components/PotForm";
 import { TransactionForm } from "./components/TransactionForm";
 import { UserSwitcher } from "./components/UserSwitcher";
+import { ThemeToggle } from "./components/ThemeToggle";
+import { Mark } from "./components/Logo";
 
 type Tab = "potjes" | "leden";
 type PublicView = "landing" | "login" | "signup";
@@ -39,12 +41,7 @@ function App() {
     );
   }
 
-  return (
-    <AuthedApp
-      account={session.account}
-      onLogout={() => session.signOut()}
-    />
-  );
+  return <AuthedApp account={session.account} onLogout={() => session.signOut()} />;
 }
 
 function AuthedApp({
@@ -68,14 +65,14 @@ function AuthedApp({
 
   if (!currentUser) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-canvas text-navy-500">
+      <div className="flex min-h-screen items-center justify-center bg-canvas text-navy-500 dark:bg-navy-950 dark:text-navy-300">
         Account aan het laden…
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-canvas">
+    <div className="min-h-screen bg-canvas dark:bg-navy-950">
       <div className="flex min-h-screen">
         <Sidebar
           tab={tab}
@@ -183,14 +180,9 @@ function Sidebar({
   onTab: (t: Tab) => void;
 }) {
   return (
-    <aside className="hidden w-60 flex-shrink-0 flex-col border-r border-navy-100 bg-navy-900 px-5 py-6 text-navy-100 lg:flex">
-      <div className="mb-8 flex items-center gap-2">
-        <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-mint-500/15 ring-1 ring-mint-500/40">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2fbf71" strokeWidth="2">
-            <path d="M5 8h14l-1 11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 8z" />
-            <path d="M9 8V6a3 3 0 0 1 6 0v2" />
-          </svg>
-        </span>
+    <aside className="hidden w-60 flex-shrink-0 flex-col border-r border-navy-900 bg-navy-900 px-5 py-6 text-navy-100 lg:flex dark:border-navy-800">
+      <div className="mb-8 flex items-center gap-2.5">
+        <Mark size={36} variant="light" />
         <div>
           <div className="text-sm font-bold text-white">Potly</div>
           <div className="truncate text-xs text-navy-300">{organizationName}</div>
@@ -202,9 +194,9 @@ function Sidebar({
           active={tab === "potjes"}
           onClick={() => onTab("potjes")}
           icon={
-            <path d="M5 8h14l-1 11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 8zM9 8V6a3 3 0 0 1 6 0v2" />
+            <path d="M3 12l9-9 9 9M5 10v10a1 1 0 0 0 1 1h4v-7h4v7h4a1 1 0 0 0 1-1V10" />
           }
-          label="Potjes"
+          label="Dashboard"
           badge={potsCount > 0 ? String(potsCount) : undefined}
         />
         {isAdmin && (
@@ -220,7 +212,7 @@ function Sidebar({
         )}
       </nav>
 
-      <div className="mt-auto rounded-2xl border border-navy-700 bg-navy-800 p-4 text-xs text-navy-200">
+      <div className="mt-auto rounded-2xl border border-navy-700 bg-navy-800/60 p-4 text-xs text-navy-200">
         <p className="mb-1 font-semibold text-white">💡 Tip</p>
         <p>Schakel rechtsboven van rol om te zien wat een potjesbeheerder ziet.</p>
       </div>
@@ -277,38 +269,35 @@ function Topbar({
   onLogout: () => void;
 }) {
   return (
-    <header className="border-b border-navy-100 bg-white">
+    <header className="border-b border-navy-100 bg-white dark:border-navy-800 dark:bg-navy-900">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-8">
-        <div className="lg:hidden flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-navy-900">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <path d="M5 8h14l-1 11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 8z" />
-              <path d="M9 8V6a3 3 0 0 1 6 0v2" />
-            </svg>
-          </span>
+        <div className="flex items-center gap-2 lg:hidden">
+          <Mark size={32} />
           <div>
-            <div className="text-sm font-bold text-navy-900">Potly</div>
-            <div className="text-[10px] text-navy-400">{account.organizationName}</div>
+            <div className="text-sm font-bold text-navy-900 dark:text-white">Potly</div>
+            <div className="text-[10px] text-navy-400 dark:text-navy-300">
+              {account.organizationName}
+            </div>
           </div>
         </div>
         <div className="hidden lg:block" />
 
         <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggle />
           <UserSwitcher
             members={members}
             currentUserId={currentUserId}
             onChange={onSwitchUser}
           />
-          <div className="hidden items-center gap-3 border-l border-navy-100 pl-3 sm:flex">
+          <div className="hidden items-center gap-3 border-l border-navy-100 pl-3 dark:border-navy-700 sm:flex">
             <div className="text-right">
-              <div className="text-sm font-semibold text-navy-900">{account.fullName}</div>
-              <div className="text-xs text-navy-400">{account.email}</div>
+              <div className="text-sm font-semibold text-navy-900 dark:text-navy-50">
+                {account.fullName}
+              </div>
+              <div className="text-xs text-navy-400 dark:text-navy-300">{account.email}</div>
             </div>
           </div>
-          <button
-            onClick={onLogout}
-            className="rounded-xl px-3 py-1.5 text-sm font-semibold text-navy-500 transition hover:bg-navy-50 hover:text-navy-900"
-          >
+          <button onClick={onLogout} className="btn-ghost">
             Uitloggen
           </button>
         </div>
