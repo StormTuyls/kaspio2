@@ -41,10 +41,10 @@ export function TransactionForm({ onSubmit, onCancel }: Props) {
         <button
           type="button"
           onClick={() => setDirection("in")}
-          className={`rounded-lg border-2 px-3 py-2 text-sm font-semibold transition ${
+          className={`rounded-xl border-2 px-3 py-2.5 text-sm font-semibold transition ${
             direction === "in"
-              ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-              : "border-gray-200 text-gray-500 hover:border-gray-300"
+              ? "border-mint-500 bg-mint-50 text-mint-700"
+              : "border-navy-100 text-navy-500 hover:border-navy-200"
           }`}
         >
           ↓ Inkomend
@@ -52,10 +52,10 @@ export function TransactionForm({ onSubmit, onCancel }: Props) {
         <button
           type="button"
           onClick={() => setDirection("out")}
-          className={`rounded-lg border-2 px-3 py-2 text-sm font-semibold transition ${
+          className={`rounded-xl border-2 px-3 py-2.5 text-sm font-semibold transition ${
             direction === "out"
               ? "border-rose-500 bg-rose-50 text-rose-700"
-              : "border-gray-200 text-gray-500 hover:border-gray-300"
+              : "border-navy-100 text-navy-500 hover:border-navy-200"
           }`}
         >
           ↑ Uitgaand
@@ -64,7 +64,7 @@ export function TransactionForm({ onSubmit, onCancel }: Props) {
 
       <div className="grid grid-cols-2 gap-3">
         <label className="block">
-          <span className="mb-1 block text-sm font-medium text-gray-700">Bedrag *</span>
+          <span className="mb-1.5 block text-sm font-medium text-navy-700">Bedrag *</span>
           <input
             autoFocus
             type="number"
@@ -78,7 +78,7 @@ export function TransactionForm({ onSubmit, onCancel }: Props) {
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-sm font-medium text-gray-700">Datum *</span>
+          <span className="mb-1.5 block text-sm font-medium text-navy-700">Datum *</span>
           <input
             type="date"
             value={occurredOn}
@@ -90,7 +90,7 @@ export function TransactionForm({ onSubmit, onCancel }: Props) {
       </div>
 
       <label className="block">
-        <span className="mb-1 block text-sm font-medium text-gray-700">
+        <span className="mb-1.5 block text-sm font-medium text-navy-700">
           {direction === "in" ? "Van wie?" : "Aan wie?"} *
         </span>
         <input
@@ -104,7 +104,7 @@ export function TransactionForm({ onSubmit, onCancel }: Props) {
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-sm font-medium text-gray-700">Memo</span>
+        <span className="mb-1.5 block text-sm font-medium text-navy-700">Memo</span>
         <textarea
           value={memo}
           onChange={(e) => setMemo(e.target.value)}
@@ -118,7 +118,7 @@ export function TransactionForm({ onSubmit, onCancel }: Props) {
         <button type="button" onClick={onCancel} className="btn-secondary">
           Annuleren
         </button>
-        <button type="submit" className="btn-primary">
+        <button type="submit" className="btn-accent">
           Toevoegen
         </button>
       </div>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Member } from "../types";
 import { Modal } from "../components/Modal";
 import { MemberForm } from "../components/MemberForm";
+import { Avatar } from "./Overview";
 
 type Props = {
   members: Member[];
@@ -16,58 +17,66 @@ export function MembersView({ members, currentUserId, onAdd, onUpdate, onDelete 
   const [editing, setEditing] = useState<Member | null>(null);
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex items-end justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Leden</h2>
-          <p className="text-sm text-gray-500">Admins en potjesbeheerders in je organisatie.</p>
+          <p className="text-sm font-semibold uppercase tracking-wider text-navy-400">
+            Organisatie
+          </p>
+          <h1 className="text-2xl font-bold text-navy-900">Leden</h1>
+          <p className="mt-1 text-sm text-navy-500">
+            Admins en potjesbeheerders binnen je organisatie.
+          </p>
         </div>
-        <button onClick={() => setAdding(true)} className="btn-primary">
+        <button onClick={() => setAdding(true)} className="btn-accent">
           + Lid toevoegen
         </button>
       </div>
 
-      <ul className="divide-y divide-gray-100">
-        {members.map((m) => (
-          <li key={m.id} className="flex items-center justify-between py-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-sm font-semibold text-indigo-700">
-                {m.name.slice(0, 1).toUpperCase()}
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900">{m.name}</span>
-                  {m.id === currentUserId && (
-                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                      jij
-                    </span>
-                  )}
+      <div className="card overflow-hidden">
+        <ul className="divide-y divide-navy-100">
+          {members.map((m) => (
+            <li
+              key={m.id}
+              className="flex items-center justify-between gap-3 px-5 py-4 transition hover:bg-canvas"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <Avatar name={m.name} />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-semibold text-navy-900">{m.name}</span>
+                    {m.id === currentUserId && (
+                      <span className="rounded-full bg-mint-50 px-2 py-0.5 text-xs font-semibold text-mint-700">
+                        jij
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-navy-400">
+                    {m.role === "admin" ? "Admin" : "Potjesbeheerder"}
+                  </div>
                 </div>
-                <div className="text-xs text-gray-500">
-                  {m.role === "admin" ? "Admin" : "Potjesbeheerder"}
-                </div>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => setEditing(m)} className="btn-secondary text-sm">
-                Bewerken
-              </button>
-              <button
-                onClick={() => {
-                  if (m.id === currentUserId) {
-                    alert("Je kan jezelf niet verwijderen.");
-                    return;
-                  }
-                  if (confirm(`Lid "${m.name}" verwijderen?`)) onDelete(m.id);
-                }}
-                className="btn-danger text-sm"
-              >
-                Verwijderen
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+              <div className="flex gap-2">
+                <button onClick={() => setEditing(m)} className="btn-secondary text-sm">
+                  Bewerken
+                </button>
+                <button
+                  onClick={() => {
+                    if (m.id === currentUserId) {
+                      alert("Je kan jezelf niet verwijderen.");
+                      return;
+                    }
+                    if (confirm(`Lid "${m.name}" verwijderen?`)) onDelete(m.id);
+                  }}
+                  className="btn-danger text-sm"
+                >
+                  Verwijderen
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <Modal open={adding} title="Nieuw lid" onClose={() => setAdding(false)}>
         <MemberForm

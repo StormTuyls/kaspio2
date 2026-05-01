@@ -21,7 +21,7 @@ export function MemberForm({ initial, onSubmit, onCancel }: Props) {
   return (
     <form onSubmit={submit} className="space-y-4">
       <label className="block">
-        <span className="mb-1 block text-sm font-medium text-gray-700">Naam *</span>
+        <span className="mb-1.5 block text-sm font-medium text-navy-700">Naam *</span>
         <input
           autoFocus
           type="text"
@@ -34,31 +34,31 @@ export function MemberForm({ initial, onSubmit, onCancel }: Props) {
       </label>
 
       <div>
-        <span className="mb-2 block text-sm font-medium text-gray-700">Rol *</span>
+        <span className="mb-2 block text-sm font-medium text-navy-700">Rol *</span>
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => setRole("pot_owner")}
-            className={`rounded-lg border-2 p-3 text-left transition ${
+            className={`rounded-xl border-2 p-3 text-left transition ${
               role === "pot_owner"
-                ? "border-indigo-500 bg-indigo-50"
-                : "border-gray-200 hover:border-gray-300"
+                ? "border-mint-500 bg-mint-50"
+                : "border-navy-100 hover:border-navy-200"
             }`}
           >
-            <div className="text-sm font-semibold text-gray-900">Potjesbeheerder</div>
-            <div className="text-xs text-gray-500">Ziet enkel eigen potje(s)</div>
+            <div className="text-sm font-semibold text-navy-900">Potjesbeheerder</div>
+            <div className="text-xs text-navy-500">Ziet enkel eigen potje(s)</div>
           </button>
           <button
             type="button"
             onClick={() => setRole("admin")}
-            className={`rounded-lg border-2 p-3 text-left transition ${
+            className={`rounded-xl border-2 p-3 text-left transition ${
               role === "admin"
-                ? "border-indigo-500 bg-indigo-50"
-                : "border-gray-200 hover:border-gray-300"
+                ? "border-mint-500 bg-mint-50"
+                : "border-navy-100 hover:border-navy-200"
             }`}
           >
-            <div className="text-sm font-semibold text-gray-900">Admin</div>
-            <div className="text-xs text-gray-500">Ziet alles, beheert leden</div>
+            <div className="text-sm font-semibold text-navy-900">Admin</div>
+            <div className="text-xs text-navy-500">Ziet alles, beheert leden</div>
           </button>
         </div>
       </div>
@@ -67,7 +67,7 @@ export function MemberForm({ initial, onSubmit, onCancel }: Props) {
         <button type="button" onClick={onCancel} className="btn-secondary">
           Annuleren
         </button>
-        <button type="submit" className="btn-primary">
+        <button type="submit" className="btn-accent">
           {initial ? "Opslaan" : "Lid toevoegen"}
         </button>
       </div>

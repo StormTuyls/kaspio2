@@ -17,9 +17,9 @@ export function BalanceChart({ transactions }: Props) {
   });
 
   const width = 600;
-  const height = 180;
-  const padX = 40;
-  const padY = 20;
+  const height = 200;
+  const padX = 44;
+  const padY = 22;
 
   const xs = points.map((_, i) => i);
   const ys = points.map((p) => p.balance);
@@ -48,41 +48,57 @@ export function BalanceChart({ transactions }: Props) {
   const last = points[points.length - 1];
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="card p-5">
       <div className="mb-3 flex items-baseline justify-between">
-        <h3 className="text-sm font-semibold text-gray-900">Saldo over tijd</h3>
-        <span className="text-sm text-gray-500">{formatEuro(last.balance)}</span>
+        <div>
+          <h3 className="text-sm font-semibold text-navy-900">Saldo over tijd</h3>
+          <p className="text-xs text-navy-400">Cumulatief verloop</p>
+        </div>
+        <span className="text-base font-bold text-navy-900">{formatEuro(last.balance)}</span>
       </div>
       <svg viewBox={`0 0 ${width} ${height}`} className="h-44 w-full">
+        <defs>
+          <linearGradient id="balance-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#2fbf71" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#2fbf71" stopOpacity="0" />
+          </linearGradient>
+        </defs>
         <line
           x1={padX}
           x2={width - padX}
           y1={zeroY}
           y2={zeroY}
-          stroke="#e5e7eb"
+          stroke="#e2e7ee"
           strokeDasharray="4 4"
         />
-        <path d={areaPath} fill="rgb(16 185 129 / 0.12)" />
-        <path d={path} fill="none" stroke="#10b981" strokeWidth="2" strokeLinejoin="round" />
+        <path d={areaPath} fill="url(#balance-fill)" />
+        <path
+          d={path}
+          fill="none"
+          stroke="#2fbf71"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
         {points.map((p, i) => (
-          <circle key={i} cx={toX(i)} cy={toY(p.balance)} r={3} fill="#10b981" />
+          <circle key={i} cx={toX(i)} cy={toY(p.balance)} r={3.5} fill="#fff" stroke="#2fbf71" strokeWidth="2" />
         ))}
-        <text x={padX} y={height - 4} className="fill-gray-400 text-[10px]">
+        <text x={padX} y={height - 4} className="fill-navy-300 text-[10px]">
           {points[0].date}
         </text>
         <text
           x={width - padX}
           y={height - 4}
           textAnchor="end"
-          className="fill-gray-400 text-[10px]"
+          className="fill-navy-300 text-[10px]"
         >
           {last.date}
         </text>
-        <text x={4} y={padY + 8} className="fill-gray-400 text-[10px]">
+        <text x={4} y={padY + 8} className="fill-navy-300 text-[10px]">
           {formatEuro(maxY)}
         </text>
         {minY < 0 && (
-          <text x={4} y={height - padY} className="fill-gray-400 text-[10px]">
+          <text x={4} y={height - padY} className="fill-navy-300 text-[10px]">
             {formatEuro(minY)}
           </text>
         )}

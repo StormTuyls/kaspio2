@@ -68,7 +68,7 @@ export function PotForm({ initial, members, onSubmit, onCancel }: Props) {
         <button type="button" onClick={onCancel} className="btn-secondary">
           Annuleren
         </button>
-        <button type="submit" className="btn-primary" disabled={!ownerId}>
+        <button type="submit" className="btn-accent" disabled={!ownerId}>
           {initial ? "Opslaan" : "Potje aanmaken"}
         </button>
       </div>
@@ -87,9 +87,9 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-gray-700">
+      <span className="mb-1.5 block text-sm font-medium text-navy-700">
         {label}
-        {required && <span className="text-red-500"> *</span>}
+        {required && <span className="text-rose-500"> *</span>}
       </span>
       {children}
     </label>
