@@ -178,7 +178,7 @@ export function PotDetail({
           </div>
         ) : (
           <div className="card overflow-hidden">
-            <div className="flex flex-wrap items-center gap-3 border-b border-navy-100 px-4 py-3 dark:border-navy-700/60">
+            <div className="flex flex-col gap-2 border-b border-navy-100 px-4 py-3 sm:flex-row sm:items-center sm:gap-3 dark:border-navy-700/60">
               <div className="relative flex-1">
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-navy-300 dark:text-navy-500">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -194,7 +194,7 @@ export function PotDetail({
                   className="input pl-9"
                 />
               </div>
-              <div className="flex gap-1 rounded-xl border border-navy-100 bg-white p-1 text-xs font-semibold dark:border-navy-700 dark:bg-navy-800">
+              <div className="grid grid-cols-3 gap-1 rounded-xl border border-navy-100 bg-white p-1 text-xs font-semibold sm:flex dark:border-navy-700 dark:bg-navy-800">
                 {(["all", "in", "out"] as const).map((d) => (
                   <button
                     key={d}
@@ -216,53 +216,95 @@ export function PotDetail({
                 Geen transacties die overeenkomen met je filter.
               </div>
             ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-canvas text-xs font-semibold uppercase tracking-wider text-navy-400 dark:bg-navy-800/50 dark:text-navy-300">
-                  <tr>
-                    <th className="px-4 py-3 text-left">Datum</th>
-                    <th className="px-4 py-3 text-left">Tegenpartij</th>
-                    <th className="px-4 py-3 text-left">Memo</th>
-                    <th className="px-4 py-3 text-right">Bedrag</th>
-                    <th className="px-4 py-3" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-navy-100 dark:divide-navy-700/60">
+              <>
+                <ul className="divide-y divide-navy-100 sm:hidden dark:divide-navy-700/60">
                   {filtered.map((tx) => (
-                    <tr key={tx.id} className="transition hover:bg-canvas dark:hover:bg-navy-800/40">
-                      <td className="whitespace-nowrap px-4 py-3 text-navy-500 dark:text-navy-300">
-                        {formatDate(tx.occurredOn)}
-                      </td>
-                      <td className="px-4 py-3 font-medium text-navy-900 dark:text-navy-50">
-                        {tx.counterparty}
-                      </td>
-                      <td className="px-4 py-3 text-navy-500 dark:text-navy-400">
-                        {tx.memo ?? "—"}
-                      </td>
-                      <td
-                        className={`whitespace-nowrap px-4 py-3 text-right font-semibold ${
-                          tx.direction === "in"
-                            ? "text-mint-600 dark:text-mint-400"
-                            : "text-rose-600 dark:text-rose-400"
-                        }`}
-                      >
-                        {tx.direction === "in" ? "+" : "−"}
-                        {formatEuro(tx.amount)}
-                      </td>
-                      <td className="px-4 py-3 text-right">
+                    <li key={tx.id} className="px-4 py-3.5">
+                      <div className="mb-1 flex items-baseline justify-between gap-3">
+                        <span className="truncate font-semibold text-navy-900 dark:text-navy-50">
+                          {tx.counterparty}
+                        </span>
+                        <span
+                          className={`whitespace-nowrap text-base font-bold ${
+                            tx.direction === "in"
+                              ? "text-mint-600 dark:text-mint-400"
+                              : "text-rose-600 dark:text-rose-400"
+                          }`}
+                        >
+                          {tx.direction === "in" ? "+" : "−"}
+                          {formatEuro(tx.amount)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3 text-xs text-navy-500 dark:text-navy-300">
+                        <span>{formatDate(tx.occurredOn)}</span>
                         <button
                           onClick={() => {
                             if (confirm("Transactie verwijderen?")) onDeleteTransaction(tx.id);
                           }}
-                          className="text-xs text-navy-300 hover:text-rose-600 dark:text-navy-500 dark:hover:text-rose-400"
+                          className="rounded-md px-2 py-1 text-navy-300 hover:bg-rose-50 hover:text-rose-600 dark:text-navy-500 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
                           aria-label="Verwijderen"
                         >
                           ✕
                         </button>
-                      </td>
-                    </tr>
+                      </div>
+                      {tx.memo && (
+                        <p className="mt-1 text-sm text-navy-500 dark:text-navy-400">{tx.memo}</p>
+                      )}
+                    </li>
                   ))}
-                </tbody>
-              </table>
+                </ul>
+
+                <table className="hidden w-full text-sm sm:table">
+                  <thead className="bg-canvas text-xs font-semibold uppercase tracking-wider text-navy-400 dark:bg-navy-800/50 dark:text-navy-300">
+                    <tr>
+                      <th className="px-4 py-3 text-left">Datum</th>
+                      <th className="px-4 py-3 text-left">Tegenpartij</th>
+                      <th className="px-4 py-3 text-left">Memo</th>
+                      <th className="px-4 py-3 text-right">Bedrag</th>
+                      <th className="px-4 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-navy-100 dark:divide-navy-700/60">
+                    {filtered.map((tx) => (
+                      <tr
+                        key={tx.id}
+                        className="transition hover:bg-canvas dark:hover:bg-navy-800/40"
+                      >
+                        <td className="whitespace-nowrap px-4 py-3 text-navy-500 dark:text-navy-300">
+                          {formatDate(tx.occurredOn)}
+                        </td>
+                        <td className="px-4 py-3 font-medium text-navy-900 dark:text-navy-50">
+                          {tx.counterparty}
+                        </td>
+                        <td className="px-4 py-3 text-navy-500 dark:text-navy-400">
+                          {tx.memo ?? "—"}
+                        </td>
+                        <td
+                          className={`whitespace-nowrap px-4 py-3 text-right font-semibold ${
+                            tx.direction === "in"
+                              ? "text-mint-600 dark:text-mint-400"
+                              : "text-rose-600 dark:text-rose-400"
+                          }`}
+                        >
+                          {tx.direction === "in" ? "+" : "−"}
+                          {formatEuro(tx.amount)}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => {
+                              if (confirm("Transactie verwijderen?")) onDeleteTransaction(tx.id);
+                            }}
+                            className="text-xs text-navy-300 hover:text-rose-600 dark:text-navy-500 dark:hover:text-rose-400"
+                            aria-label="Verwijderen"
+                          >
+                            ✕
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
             )}
           </div>
         )}

@@ -38,7 +38,7 @@ export function MembersView({ members, currentUserId, onAdd, onUpdate, onDelete 
           {members.map((m) => (
             <li
               key={m.id}
-              className="flex items-center justify-between gap-3 px-5 py-4 transition hover:bg-canvas dark:hover:bg-navy-800/40"
+              className="flex flex-col gap-3 px-5 py-4 transition hover:bg-canvas sm:flex-row sm:items-center sm:justify-between dark:hover:bg-navy-800/40"
             >
               <div className="flex min-w-0 items-center gap-3">
                 <Avatar name={m.name} />
@@ -58,8 +58,11 @@ export function MembersView({ members, currentUserId, onAdd, onUpdate, onDelete 
                   </div>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => setEditing(m)} className="btn-secondary text-sm">
+              <div className="flex gap-2 sm:flex-shrink-0">
+                <button
+                  onClick={() => setEditing(m)}
+                  className="btn-secondary flex-1 text-sm sm:flex-initial"
+                >
                   Bewerken
                 </button>
                 <button
@@ -70,7 +73,7 @@ export function MembersView({ members, currentUserId, onAdd, onUpdate, onDelete 
                     }
                     if (confirm(`Lid "${m.name}" verwijderen?`)) onDelete(m.id);
                   }}
-                  className="btn-danger text-sm"
+                  className="btn-danger flex-1 text-sm sm:flex-initial"
                 >
                   Verwijderen
                 </button>

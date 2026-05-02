@@ -11,6 +11,8 @@ import type {
   Transaction,
 } from "./types";
 import { defaultNotificationSettings } from "./types";
+import type { Branding } from "./branding";
+import { defaultBranding } from "./branding";
 
 const STORAGE_KEY_PREFIX = "potjesbeheer:data:";
 const MAX_AUDIT_ENTRIES = 500;
@@ -22,6 +24,7 @@ const emptyState: AppState = {
   currentUserId: null,
   auditLog: [],
   notifications: defaultNotificationSettings,
+  branding: defaultBranding,
 };
 
 function storageKey(accountId: string) {
@@ -41,6 +44,7 @@ function loadState(accountId: string): AppState {
       currentUserId: parsed.currentUserId ?? null,
       auditLog: Array.isArray(parsed.auditLog) ? parsed.auditLog : [],
       notifications: { ...defaultNotificationSettings, ...(parsed.notifications ?? {}) },
+      branding: { ...defaultBranding, ...(parsed.branding ?? {}) },
     };
   } catch {
     return emptyState;
@@ -262,6 +266,19 @@ export function useAppState(accountId: string, bootstrapAdminName?: string) {
         const next = { ...s.notifications, ...patch };
         const entry = makeAudit(s, "updated", "settings", "Notificaties");
         return { ...s, notifications: next, auditLog: withAudit(s, entry) };
+      });
+    },
+    updateBranding(patch: Partial<Branding>) {
+      setState((s) => {
+        const next = { ...s.branding, ...patch };
+        const entry = makeAudit(s, "updated", "settings", "Branding");
+        return { ...s, branding: next, auditLog: withAudit(s, entry) };
+      });
+    },
+    resetBranding() {
+      setState((s) => {
+        const entry = makeAudit(s, "updated", "settings", "Branding gereset");
+        return { ...s, branding: defaultBranding, auditLog: withAudit(s, entry) };
       });
     },
     clearAuditLog() {

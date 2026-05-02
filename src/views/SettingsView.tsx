@@ -1,13 +1,25 @@
 import type { DigestFrequency, NotificationSettings } from "../types";
 import type { UserAccount } from "../auth";
+import type { Branding } from "../branding";
+import { BrandingSection } from "../components/BrandingSection";
 
 type Props = {
   account: UserAccount;
   notifications: NotificationSettings;
+  branding: Branding;
   onChange: (patch: Partial<NotificationSettings>) => void;
+  onBrandingChange: (patch: Partial<Branding>) => void;
+  onBrandingReset: () => void;
 };
 
-export function SettingsView({ account, notifications, onChange }: Props) {
+export function SettingsView({
+  account,
+  notifications,
+  branding,
+  onChange,
+  onBrandingChange,
+  onBrandingReset,
+}: Props) {
   return (
     <div className="space-y-6">
       <div>
@@ -19,6 +31,13 @@ export function SettingsView({ account, notifications, onChange }: Props) {
           Beheer je organisatie en hoe je op de hoogte gehouden wordt.
         </p>
       </div>
+
+      <BrandingSection
+        branding={branding}
+        defaultBrandName="Potly"
+        onChange={onBrandingChange}
+        onReset={onBrandingReset}
+      />
 
       <div className="card p-6">
         <h2 className="mb-1 text-base font-semibold text-navy-900 dark:text-navy-50">

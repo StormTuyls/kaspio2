@@ -58,6 +58,8 @@ export const defaultNotificationSettings: NotificationSettings = {
   digestFrequency: "never",
 };
 
+import type { Branding } from "./branding";
+
 export type AppState = {
   members: Member[];
   pots: Pot[];
@@ -65,4 +67,5 @@ export type AppState = {
   currentUserId: string | null;
   auditLog: AuditEntry[];
   notifications: NotificationSettings;
+  branding: Branding;
 };

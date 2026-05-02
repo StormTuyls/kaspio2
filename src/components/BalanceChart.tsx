@@ -58,13 +58,7 @@ export function BalanceChart({ transactions }: Props) {
           {formatEuro(last.balance)}
         </span>
       </div>
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-44 w-full">
-        <defs>
-          <linearGradient id="balance-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2fbf71" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="#2fbf71" stopOpacity="0" />
-          </linearGradient>
-        </defs>
+      <svg viewBox={`0 0 ${width} ${height}`} className="h-44 w-full text-mint-500">
         <line
           x1={padX}
           x2={width - padX}
@@ -74,11 +68,11 @@ export function BalanceChart({ transactions }: Props) {
           stroke="currentColor"
           strokeDasharray="4 4"
         />
-        <path d={areaPath} fill="url(#balance-fill)" />
+        <path d={areaPath} className="fill-mint-500/15" />
         <path
           d={path}
           fill="none"
-          stroke="#2fbf71"
+          stroke="currentColor"
           strokeWidth="2.5"
           strokeLinejoin="round"
           strokeLinecap="round"
@@ -90,7 +84,7 @@ export function BalanceChart({ transactions }: Props) {
             cy={toY(p.balance)}
             r={3.5}
             className="fill-white dark:fill-navy-900"
-            stroke="#2fbf71"
+            stroke="currentColor"
             strokeWidth="2"
           />
         ))}
