@@ -1,4 +1,4 @@
-# Potly
+# Kaspio
 
 Beheer al je inkomende geldstromen vanuit één bankrekening, met duidelijke virtuele potjes en
 volledige transparantie voor elk teamlid.

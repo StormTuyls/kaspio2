@@ -9,8 +9,24 @@ export type UserAccount = {
   createdAt: string;
 };
 
-const ACCOUNTS_KEY = "potjesbeheer:accounts";
-const SESSION_KEY = "potjesbeheer:session";
+const ACCOUNTS_KEY = "kaspio:accounts";
+const SESSION_KEY = "kaspio:session";
+
+if (typeof window !== "undefined") {
+  try {
+    for (const [oldKey, newKey] of [
+      ["potjesbeheer:accounts", ACCOUNTS_KEY],
+      ["potjesbeheer:session", SESSION_KEY],
+    ] as const) {
+      const legacy = localStorage.getItem(oldKey);
+      if (legacy != null && localStorage.getItem(newKey) == null) {
+        localStorage.setItem(newKey, legacy);
+      }
+    }
+  } catch {
+    // ignore migration failures
+  }
+}
 
 async function hashPassword(password: string): Promise<string> {
   const enc = new TextEncoder().encode(password);

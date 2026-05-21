@@ -77,7 +77,7 @@ export function BrandingSection({ branding, defaultBrandName, onChange, onReset 
             className="input"
           />
           <span className="mt-1 block text-xs text-navy-400 dark:text-navy-300">
-            Vervangt "Potly" in de zijbalk en topbar. Leeg = standaard.
+            Vervangt "Kaspio" in de zijbalk en topbar. Leeg = standaard.
           </span>
         </label>
 

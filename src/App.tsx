@@ -76,7 +76,7 @@ function AuthedApp({
     );
   }
 
-  const brandName = store.state.branding.brandName ?? "Potly";
+  const brandName = store.state.branding.brandName ?? "Kaspio";
   const brandStyle = paletteToCssVars(store.state.branding.accent) as CSSProperties;
 
   return (

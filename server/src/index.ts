@@ -22,5 +22,5 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
 
 const port = Number(process.env.PORT ?? 3001);
 app.listen(port, () => {
-  console.log(`Potly API draait op http://localhost:${port}`);
+  console.log(`Kaspio API draait op http://localhost:${port}`);
 });

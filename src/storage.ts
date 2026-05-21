@@ -14,8 +14,25 @@ import { defaultNotificationSettings } from "./types";
 import type { Branding } from "./branding";
 import { defaultBranding } from "./branding";
 
-const STORAGE_KEY_PREFIX = "potjesbeheer:data:";
+const STORAGE_KEY_PREFIX = "kaspio:data:";
+const LEGACY_STORAGE_KEY_PREFIX = "potjesbeheer:data:";
 const MAX_AUDIT_ENTRIES = 500;
+
+if (typeof window !== "undefined") {
+  try {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (key?.startsWith(LEGACY_STORAGE_KEY_PREFIX)) {
+        const newKey = STORAGE_KEY_PREFIX + key.slice(LEGACY_STORAGE_KEY_PREFIX.length);
+        if (!window.localStorage.getItem(newKey)) {
+          window.localStorage.setItem(newKey, window.localStorage.getItem(key) ?? "");
+        }
+      }
+    }
+  } catch {
+    // ignore migration failures
+  }
+}
 
 const emptyState: AppState = {
   members: [],

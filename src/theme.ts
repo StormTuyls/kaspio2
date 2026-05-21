@@ -2,7 +2,18 @@ import { useEffect, useState } from "react";
 
 export type Theme = "light" | "dark" | "system";
 
-const STORAGE_KEY = "potly:theme";
+const STORAGE_KEY = "kaspio:theme";
+
+if (typeof window !== "undefined") {
+  try {
+    const legacy = window.localStorage.getItem("potly:theme");
+    if (legacy != null && window.localStorage.getItem(STORAGE_KEY) == null) {
+      window.localStorage.setItem(STORAGE_KEY, legacy);
+    }
+  } catch {
+    // ignore migration failures
+  }
+}
 
 function systemPrefersDark() {
   if (typeof window === "undefined") return false;

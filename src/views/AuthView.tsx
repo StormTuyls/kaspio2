@@ -30,7 +30,7 @@ export function AuthView({ initialMode, onAuth, onBack }: Props) {
           <div className="mx-auto w-full max-w-md flex-1">
             <div className="mb-6 flex items-center gap-2.5 lg:hidden">
               <Mark size={36} />
-              <span className="text-lg font-bold text-navy-900 dark:text-white">Potly</span>
+              <span className="text-lg font-bold text-navy-900 dark:text-white">Kaspio</span>
             </div>
 
             <div className="card p-7">
@@ -76,7 +76,7 @@ function SidePanel() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_40%_at_30%_20%,rgba(47,191,113,0.25),transparent_60%),radial-gradient(50%_40%_at_80%_80%,rgba(77,163,255,0.25),transparent_60%)]" />
       <div className="relative flex items-center gap-2.5">
         <Mark size={36} variant="light" />
-        <span className="text-lg font-bold">Potly</span>
+        <span className="text-lg font-bold">Kaspio</span>
       </div>
       <div className="relative mt-auto">
         <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-mint-300">

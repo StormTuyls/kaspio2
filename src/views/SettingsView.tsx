@@ -34,7 +34,7 @@ export function SettingsView({
 
       <BrandingSection
         branding={branding}
-        defaultBrandName="Potly"
+        defaultBrandName="Kaspio"
         onChange={onBrandingChange}
         onReset={onBrandingReset}
       />

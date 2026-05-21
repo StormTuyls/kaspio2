@@ -19,7 +19,7 @@ export function Mark({
       viewBox="0 0 36 36"
       fill="none"
       role="img"
-      aria-label="Potly"
+      aria-label="Kaspio"
     >
       <rect x="0" y="0" width="36" height="36" rx="10" fill={bg} />
       <rect x="6" y="6" width="11" height="11" rx="3" fill={surface} fillOpacity="0.18" />
@@ -52,7 +52,7 @@ export function Wordmark({
             variant === "light" ? "text-white" : "text-navy-900 dark:text-navy-50"
           }`}
         >
-          Potly
+          Kaspio
         </span>
         {subtitle && (
           <span
