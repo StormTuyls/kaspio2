@@ -1,20 +1,85 @@
 <!doctype html>
-<html lang="en">
+<html lang="nl">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#1E2A3A" />
+    <meta name="theme-color" content="#1D9E75" />
+
+    <title>Kaspio , Jouw inkomsten. Jouw potjes. Jouw overzicht.</title>
+    <meta
+      name="description"
+      content="Verdeel inkomsten op één bankrekening over virtuele potjes ,  per persoon, per team of per doel. Voor sportclubs, jeugdbewegingen, artiestenbureaus en VZW's. Geen extra rekeningen, geen boekhoudsoftware."
+    />
+    <meta name="author" content="Kaspio" />
+    <meta
+      name="keywords"
+      content="potjesbeheer, virtuele potjes, vzw budget, scouts kamppenning, sportclub kas, artiestenbureau, budget app, financieel beheer"
+    />
+    <link rel="canonical" href="https://kaspio.be/" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Open Graph (LinkedIn, Facebook, WhatsApp) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="nl_BE" />
+    <meta property="og:site_name" content="Kaspio" />
+    <meta
+      property="og:title"
+      content="Kaspio ,  Jouw inkomsten. Jouw potjes. Jouw overzicht."
+    />
+    <meta
+      property="og:description"
+      content="Verdeel inkomsten op één bankrekening over virtuele potjes ,  per persoon, per team of per doel. Geen extra rekeningen, geen boekhoudsoftware."
+    />
+    <meta property="og:url" content="https://kaspio.be/" />
+    <meta property="og:image" content="https://kaspio.be/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Kaspio ,  virtueel potjesbeheer voor teams en organisaties"
+    />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Kaspio ,  Jouw inkomsten. Jouw potjes. Jouw overzicht."
+    />
+    <meta
+      name="twitter:description"
+      content="Verdeel inkomsten op één bankrekening over virtuele potjes. Voor teams, clubs en organisaties die het overzicht willen behouden."
+    />
+    <meta name="twitter:image" content="https://kaspio.be/og-image.png" />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <title>Kaspio</title>
+
+    <!-- Plausible Analytics ,  GDPR-vriendelijk, geen cookies, geen banner nodig.
+         Activeren: maak een account op plausible.io, voeg "kaspio.be" toe als site,
+         daarna werkt deze tag automatisch. €9/maand of self-host gratis via plausible/community-edition.
+         Verwijder dit blok als je liever GA4, Umami of geen analytics wil. -->
+    <script
+      defer
+      data-domain="kaspio.be"
+      src="https://plausible.io/js/script.js"
+    ></script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <p style="padding: 2rem; text-align: center; font-family: sans-serif">
+        Kaspio heeft JavaScript nodig om te laden. Activeer het in je browser en
+        probeer opnieuw.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

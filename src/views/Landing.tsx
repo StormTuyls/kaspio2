@@ -1,14 +1,13 @@
-import { useState } from "react";
+import { useId, useState, type FormEvent } from "react";
 import { Mark } from "../components/Logo";
 import { useForceLight } from "../theme";
 
-// Vervang door je Mailchimp embed action URL:
-//   Audience → Signup forms → Embedded forms → "Classic" of "Naked"
-//   <form action="https://XXX.list-manage.com/subscribe/post?u=...&id=...">
+// Mailchimp embed config — uit Mailchimp Audience → Signup forms → Embedded forms.
+// `MAILCHIMP_ACTION_URL` is de `<form action="...">` waarde; `MAILCHIMP_HONEYPOT_FIELD`
+// is de naam van het verborgen anti-bot inputveld (begint met "b_<u>_<id>").
 const MAILCHIMP_ACTION_URL =
-  "https://example.list-manage.com/subscribe/post?u=REPLACE_ME&id=REPLACE_ME";
-
-const MAILCHIMP_CONFIGURED = !MAILCHIMP_ACTION_URL.includes("REPLACE_ME");
+  "https://gmail.us8.list-manage.com/subscribe/post?u=3aaa35ef312af099307596166&id=8c851a5255&f_id=0059cae2f0";
+const MAILCHIMP_HONEYPOT_FIELD = "b_3aaa35ef312af099307596166_8c851a5255";
 
 function scrollToWaitlist() {
   const el = document.getElementById("waitlist");
@@ -16,6 +15,159 @@ function scrollToWaitlist() {
   el.scrollIntoView({ behavior: "smooth", block: "center" });
   const input = el.querySelector<HTMLInputElement>('input[type="email"]');
   setTimeout(() => input?.focus(), 400);
+}
+
+type WaitlistVariant = "light" | "dark";
+
+function submitMailchimp(email: string): Promise<{ result: "success" | "error"; msg: string }> {
+  return new Promise((resolve, reject) => {
+    const cbName = `mc_cb_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
+    const jsonpUrl =
+      MAILCHIMP_ACTION_URL.replace("/post?", "/post-json?") +
+      `&EMAIL=${encodeURIComponent(email)}` +
+      `&${encodeURIComponent(MAILCHIMP_HONEYPOT_FIELD)}=` +
+      `&c=${cbName}`;
+
+    const win = window as unknown as Record<string, unknown>;
+    const cleanup = () => {
+      delete win[cbName];
+      script.remove();
+    };
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("Tijd is verlopen. Probeer opnieuw."));
+    }, 8000);
+
+    win[cbName] = (data: { result: "success" | "error"; msg: string }) => {
+      window.clearTimeout(timeout);
+      cleanup();
+      resolve(data);
+    };
+
+    const script = document.createElement("script");
+    script.src = jsonpUrl;
+    script.onerror = () => {
+      window.clearTimeout(timeout);
+      cleanup();
+      reject(new Error("Netwerkfout. Probeer opnieuw."));
+    };
+    document.body.appendChild(script);
+  });
+}
+
+function WaitlistForm({ variant = "light" }: { variant?: WaitlistVariant }) {
+  const inputId = useId();
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [message, setMessage] = useState("");
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setStatus("submitting");
+    setMessage("");
+    try {
+      const res = await submitMailchimp(email.trim());
+      if (res.result === "success") {
+        setStatus("success");
+        setMessage("Je staat op de wachtlijst — check je inbox voor de bevestiging.");
+      } else {
+        setStatus("error");
+        // Mailchimp's msg can contain HTML; strip tags for safety
+        setMessage(res.msg.replace(/<[^>]*>/g, "") || "Iets ging mis. Probeer opnieuw.");
+      }
+    } catch (err) {
+      setStatus("error");
+      setMessage(err instanceof Error ? err.message : "Iets ging mis.");
+    }
+  }
+
+  const isDark = variant === "dark";
+
+  if (status === "success") {
+    return (
+      <div
+        className={`mx-auto flex max-w-md items-center gap-3 rounded-xl border px-4 py-4 text-left ${
+          isDark
+            ? "border-teal-300/40 bg-white/10 text-white"
+            : "border-teal-300 bg-teal-100 text-teal-700"
+        }`}
+        role="status"
+      >
+        <span
+          className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-lg font-bold ${
+            isDark ? "bg-amber-500 text-ink" : "bg-teal-500 text-white"
+          }`}
+          aria-hidden
+        >
+          ✓
+        </span>
+        <div className="text-sm leading-relaxed">
+          <div className={`font-semibold ${isDark ? "text-white" : "text-teal-700"}`}>
+            Bedankt!
+          </div>
+          <div className={isDark ? "text-white/80" : "text-teal-700/80"}>{message}</div>
+        </div>
+      </div>
+    );
+  }
+
+  const inputClass = isDark
+    ? "w-full rounded-l-xl border-2 border-r-0 border-white/20 bg-white/95 px-4 py-3 text-sm text-ink placeholder:text-ink-light focus:border-amber-500 focus:outline-none sm:rounded-l-xl"
+    : "w-full rounded-l-xl border-2 border-r-0 border-teal-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-ink-light focus:border-teal-500 focus:outline-none";
+
+  const btnClass = isDark
+    ? "rounded-r-xl border-2 border-amber-500 bg-amber-500 px-5 py-3 text-sm font-bold text-ink shadow transition hover:bg-amber-400 disabled:opacity-60"
+    : "rounded-r-xl border-2 border-teal-500 bg-teal-500 px-5 py-3 text-sm font-bold text-white shadow transition hover:bg-teal-700 disabled:opacity-60";
+
+  return (
+    <form onSubmit={onSubmit} className="mx-auto max-w-md text-left" noValidate>
+      <div className="flex">
+        <label htmlFor={inputId} className="sr-only">
+          E-mailadres
+        </label>
+        <input
+          id={inputId}
+          type="email"
+          required
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="naam@voorbeeld.be"
+          className={inputClass}
+          disabled={status === "submitting"}
+        />
+        {/* Mailchimp honeypot — must be empty for the request to be accepted */}
+        <div aria-hidden style={{ position: "absolute", left: "-5000px" }}>
+          <input
+            type="text"
+            name={MAILCHIMP_HONEYPOT_FIELD}
+            tabIndex={-1}
+            defaultValue=""
+            autoComplete="off"
+          />
+        </div>
+        <button type="submit" className={btnClass} disabled={status === "submitting"}>
+          {status === "submitting" ? "…" : "Wachtlijst"}
+        </button>
+      </div>
+      <p
+        className={`mt-2 text-xs ${
+          status === "error"
+            ? isDark
+              ? "text-amber-300"
+              : "text-rose-600"
+            : isDark
+              ? "text-white/55"
+              : "text-ink-muted"
+        }`}
+      >
+        {status === "error"
+          ? message
+          : "We sturen één mail zodra Kaspio open is — geen spam, opzeggen kan altijd."}
+      </p>
+    </form>
+  );
 }
 
 type Props = {
@@ -88,7 +240,7 @@ function Header({ onLogin }: Props) {
   );
 }
 
-function Hero({ onSignup }: { onSignup: () => void }) {
+function Hero(_: { onSignup: () => void }) {
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-teal-50 via-white to-white px-6 pb-20 pt-24 text-center">
       <div
@@ -119,18 +271,15 @@ function Hero({ onSignup }: { onSignup: () => void }) {
           per persoon, per team of per doel. Zonder extra rekeningen. Zonder
           boekhoudsoftware.
         </p>
-        <div className="mb-14 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <button
-            onClick={onSignup}
-            className="rounded-xl bg-teal-500 px-8 py-3.5 text-base font-bold text-white shadow-[0_4px_20px_rgba(29,158,117,0.3)] transition hover:-translate-y-0.5 hover:bg-teal-700 hover:shadow-[0_6px_24px_rgba(29,158,117,0.35)]"
-          >
-            Gratis beginnen — geen kaart nodig
-          </button>
+        <div id="waitlist" className="mb-6 scroll-mt-20">
+          <WaitlistForm variant="light" />
+        </div>
+        <div className="mb-14 flex justify-center">
           <a
             href="#hoe"
-            className="rounded-xl border-2 border-teal-300 bg-white px-8 py-3 text-base font-semibold text-teal-700 transition hover:border-teal-500 hover:bg-teal-50"
+            className="text-sm font-semibold text-teal-700 underline decoration-teal-200 underline-offset-4 transition hover:decoration-teal-500"
           >
-            Bekijk demo ▶
+            Bekijk eerst hoe het werkt ▶
           </a>
         </div>
 
@@ -192,7 +341,7 @@ function HeroMockup() {
                 Beheerd door: Thomas V. · 3 teamleden actief
               </div>
             </div>
-            <button className="rounded-md bg-teal-500 px-3.5 py-1.5 text-xs font-semibold text-white">
+            <button className="flex-shrink-0 whitespace-nowrap rounded-md bg-teal-500 px-3.5 py-1.5 text-xs font-semibold text-white">
               + Toevoegen
             </button>
           </div>
@@ -323,7 +472,7 @@ function Txn({
         <div className="truncate font-medium text-ink">{title}</div>
         <div className="text-[11px] text-ink-muted">{from}</div>
       </div>
-      <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-medium text-teal-700">
+      <span className="hidden rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-medium text-teal-700 sm:inline-block">
         {tag}
       </span>
       <span className={`text-sm font-semibold ${amountClass}`}>{amount}</span>
@@ -419,11 +568,11 @@ function Problem() {
           Alles komt op één rekening binnen, maar niemand weet van wie, voor
           wie, of hoeveel er nog over is.
         </p>
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-12 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
           {issues.map((it) => (
             <div
               key={it.title}
-              className="rounded-xl border border-white/10 bg-white/5 p-6"
+              className="rounded-xl border border-white/10 bg-white/5 p-4 sm:p-6"
             >
               <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5">
                 <svg
@@ -625,11 +774,11 @@ function Features() {
             niets wat je niet nodig hebt
           </h2>
         </div>
-        <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-14 grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
           {features.map((f) => (
             <div
               key={f.title}
-              className="rounded-xl border border-teal-100 bg-white p-7 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.06)] transition hover:-translate-y-1 hover:border-teal-300 hover:shadow-[0_2px_8px_rgba(15,110,86,0.08),0_8px_32px_rgba(15,110,86,0.06)]"
+              className="rounded-xl border border-teal-100 bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.06)] transition hover:-translate-y-1 hover:border-teal-300 hover:shadow-[0_2px_8px_rgba(15,110,86,0.08),0_8px_32px_rgba(15,110,86,0.06)] sm:p-7"
             >
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-teal-100">
                 <svg
@@ -703,11 +852,11 @@ function UseCases() {
             voor meerdere mensen of doelen, is Kaspio voor jou.
           </p>
         </div>
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+        <div className="mt-12 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-6">
           {cases.map((c) => (
             <div
               key={c.title}
-              className="rounded-xl border border-teal-100 bg-white p-7 text-center transition hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50/50"
+              className="rounded-xl border border-teal-100 bg-white p-4 text-center transition hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50/50 sm:p-7"
             >
               <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-teal-100 text-sm font-extrabold text-teal-700">
                 {c.initials}
@@ -722,7 +871,7 @@ function UseCases() {
   );
 }
 
-function Pricing({ onSignup }: { onSignup: () => void }) {
+function Pricing(_: { onSignup: () => void }) {
   const [yearly, setYearly] = useState(false);
 
   return (
@@ -782,9 +931,9 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
               { text: "Grafieken & rapportage", no: true },
               { text: "Meldingen", no: true },
             ]}
-            cta="Gratis starten"
+            cta="Op de wachtlijst"
             ctaStyle="outline"
-            onClick={onSignup}
+            onClick={scrollToWaitlist}
           />
           <Plan
             featured
@@ -806,9 +955,9 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
               { text: "Grafieken & rapportage" },
               { text: "E-mail meldingen" },
             ]}
-            cta="Probeer 14 dagen gratis"
+            cta="Op de wachtlijst"
             ctaStyle="fill"
-            onClick={onSignup}
+            onClick={scrollToWaitlist}
           />
           <Plan
             name="Team"
@@ -829,9 +978,9 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
               { text: "Whitelabel optie (op aanvraag)" },
               { text: "API-toegang (binnenkort)" },
             ]}
-            cta="Team starten"
+            cta="Op de wachtlijst"
             ctaStyle="amber"
-            onClick={onSignup}
+            onClick={scrollToWaitlist}
           />
         </div>
 
@@ -1067,7 +1216,7 @@ function Faq() {
   );
 }
 
-function FinalCta({ onSignup }: { onSignup: () => void }) {
+function FinalCta(_: { onSignup: () => void }) {
   return (
     <section className="px-6 py-20 text-center" style={{ backgroundColor: "#0F6E56" }}>
       <div className="mx-auto max-w-3xl">
@@ -1076,18 +1225,12 @@ function FinalCta({ onSignup }: { onSignup: () => void }) {
           <br />
           in jouw geldstromen?
         </h2>
-        <p className="mx-auto mb-9 max-w-xl text-lg text-teal-300">
-          Start vandaag gratis. Geen bankkaart, geen technische kennis nodig.
+        <p className="mx-auto mb-8 max-w-xl text-lg text-teal-300">
+          Schrijf je in op de wachtlijst — we laten weten zodra Kaspio open is.
         </p>
-        <button
-          onClick={onSignup}
-          className="rounded-xl bg-amber-500 px-10 py-4 text-base font-bold text-ink shadow-[0_4px_20px_rgba(239,159,39,0.4)] transition hover:-translate-y-0.5 hover:bg-amber-400 hover:shadow-[0_6px_28px_rgba(239,159,39,0.45)]"
-        >
-          Start gratis met Kaspio →
-        </button>
+        <WaitlistForm variant="dark" />
         <p className="mt-4 text-xs text-white/50">
-          ✓ Gratis voor altijd &nbsp; ✓ Geen kaart nodig &nbsp; ✓ Opzegbaar
-          wanneer je wil
+          ✓ Eén mail bij launch &nbsp; ✓ Geen spam &nbsp; ✓ Opzeggen kan altijd
         </p>
       </div>
     </section>
