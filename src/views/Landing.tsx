@@ -2,12 +2,10 @@ import { useId, useState, type FormEvent } from "react";
 import { Mark } from "../components/Logo";
 import { useForceLight } from "../theme";
 
-// Mailchimp embed config — uit Mailchimp Audience → Signup forms → Embedded forms.
-// `MAILCHIMP_ACTION_URL` is de `<form action="...">` waarde; `MAILCHIMP_HONEYPOT_FIELD`
-// is de naam van het verborgen anti-bot inputveld (begint met "b_<u>_<id>").
-const MAILCHIMP_ACTION_URL =
-  "https://gmail.us8.list-manage.com/subscribe/post?u=3aaa35ef312af099307596166&id=8c851a5255&f_id=0059cae2f0";
-const MAILCHIMP_HONEYPOT_FIELD = "b_3aaa35ef312af099307596166_8c851a5255";
+// MailerLite embed config — uit MailerLite Forms → Embedded forms → form action URL.
+// Pad: https://assets.mailerlite.com/jsonp/{ACCOUNT_ID}/forms/{FORM_ID}/subscribe
+const MAILERLITE_ACTION_URL =
+  "https://assets.mailerlite.com/jsonp/2372401/forms/188204222789977895/subscribe";
 
 function scrollToWaitlist() {
   const el = document.getElementById("waitlist");
@@ -19,40 +17,58 @@ function scrollToWaitlist() {
 
 type WaitlistVariant = "light" | "dark";
 
-function submitMailchimp(email: string): Promise<{ result: "success" | "error"; msg: string }> {
-  return new Promise((resolve, reject) => {
-    const cbName = `mc_cb_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
-    const jsonpUrl =
-      MAILCHIMP_ACTION_URL.replace("/post?", "/post-json?") +
-      `&EMAIL=${encodeURIComponent(email)}` +
-      `&${encodeURIComponent(MAILCHIMP_HONEYPOT_FIELD)}=` +
-      `&c=${cbName}`;
+type WaitlistResult =
+  | { result: "success"; msg: string }
+  | { result: "error"; msg: string };
 
-    const win = window as unknown as Record<string, unknown>;
-    const cleanup = () => {
-      delete win[cbName];
-      script.remove();
-    };
-    const timeout = window.setTimeout(() => {
-      cleanup();
-      reject(new Error("Tijd is verlopen. Probeer opnieuw."));
-    }, 8000);
+type MailerLiteResponse = {
+  success: boolean;
+  errors?: { fields?: Record<string, string[]> };
+};
 
-    win[cbName] = (data: { result: "success" | "error"; msg: string }) => {
-      window.clearTimeout(timeout);
-      cleanup();
-      resolve(data);
-    };
-
-    const script = document.createElement("script");
-    script.src = jsonpUrl;
-    script.onerror = () => {
-      window.clearTimeout(timeout);
-      cleanup();
-      reject(new Error("Netwerkfout. Probeer opnieuw."));
-    };
-    document.body.appendChild(script);
+async function submitWaitlist(email: string): Promise<WaitlistResult> {
+  const body = new URLSearchParams({
+    "fields[email]": email,
+    "ml-submit": "1",
+    anticsrf: "true",
   });
+
+  const res = await fetch(MAILERLITE_ACTION_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString(),
+  });
+
+  if (!res.ok) {
+    return { result: "error", msg: `Netwerkfout (${res.status}). Probeer opnieuw.` };
+  }
+
+  const data = (await res.json()) as MailerLiteResponse;
+
+  if (data.success) {
+    return {
+      result: "success",
+      msg: "Je staat op de wachtlijst — check je inbox voor de bevestiging.",
+    };
+  }
+
+  // Mailerlite errors zien er zo uit: { errors: { fields: { email: ["..."] } } }
+  const fieldErrors = data.errors?.fields ?? {};
+  const firstError = Object.values(fieldErrors).flat()[0];
+  const translatedError = translateMailerLiteError(firstError);
+  return {
+    result: "error",
+    msg: translatedError || "Iets ging mis. Probeer opnieuw.",
+  };
+}
+
+function translateMailerLiteError(err: string | undefined): string {
+  if (!err) return "";
+  // Engelse MailerLite errors → Nederlandse copy
+  if (err.includes("valid email")) return "Vul een geldig e-mailadres in.";
+  if (err.includes("required")) return "Vul je e-mailadres in.";
+  if (err.toLowerCase().includes("already")) return "Dit adres staat al op de wachtlijst.";
+  return err;
 }
 
 function WaitlistForm({ variant = "light" }: { variant?: WaitlistVariant }) {
@@ -67,15 +83,9 @@ function WaitlistForm({ variant = "light" }: { variant?: WaitlistVariant }) {
     setStatus("submitting");
     setMessage("");
     try {
-      const res = await submitMailchimp(email.trim());
-      if (res.result === "success") {
-        setStatus("success");
-        setMessage("Je staat op de wachtlijst — check je inbox voor de bevestiging.");
-      } else {
-        setStatus("error");
-        // Mailchimp's msg can contain HTML; strip tags for safety
-        setMessage(res.msg.replace(/<[^>]*>/g, "") || "Iets ging mis. Probeer opnieuw.");
-      }
+      const res = await submitWaitlist(email.trim());
+      setStatus(res.result);
+      setMessage(res.msg);
     } catch (err) {
       setStatus("error");
       setMessage(err instanceof Error ? err.message : "Iets ging mis.");
@@ -137,16 +147,6 @@ function WaitlistForm({ variant = "light" }: { variant?: WaitlistVariant }) {
           className={inputClass}
           disabled={status === "submitting"}
         />
-        {/* Mailchimp honeypot — must be empty for the request to be accepted */}
-        <div aria-hidden style={{ position: "absolute", left: "-5000px" }}>
-          <input
-            type="text"
-            name={MAILCHIMP_HONEYPOT_FIELD}
-            tabIndex={-1}
-            defaultValue=""
-            autoComplete="off"
-          />
-        </div>
         <button type="submit" className={btnClass} disabled={status === "submitting"}>
           {status === "submitting" ? "…" : "Wachtlijst"}
         </button>
