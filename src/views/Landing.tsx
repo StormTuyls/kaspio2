@@ -48,7 +48,7 @@ async function submitWaitlist(email: string): Promise<WaitlistResult> {
   if (data.success) {
     return {
       result: "success",
-      msg: "Je staat op de wachtlijst, check je inbox voor de bevestiging.",
+      msg: "Je staat op de wachtlijst. Ik stuur je binnen een paar uur een persoonlijke mail.",
     };
   }
 
