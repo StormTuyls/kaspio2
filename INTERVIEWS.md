@@ -1,5 +1,7 @@
 # Kaspio , Klantinterview-gids
 
+Idea by Storm Tuyls
+
 > **Doel:** 10 gesprekken voeren met mensen uit de doelgroep om te bevestigen
 > dat het probleem échť pijnlijk genoeg is om voor te betalen , **vóór** je een
 > euro uitgeeft aan development.
@@ -42,9 +44,10 @@ gemeenschappelijke contact is **3x meer geneigd om te antwoorden**.
 > Hoi [voornaam],
 >
 > Ik ben Kaspio aan het bouwen, een tool waarmee organisaties zoals [scouts /
+>
 > > de jouwe] inkomende geldstromen , kampgeld, sponsoring, ledenbijdragen ,
-> kunnen verdelen over **virtuele potjes** op één bankrekening, zonder
-> Excel-acrobatie of boekhoudsoftware.
+> > kunnen verdelen over **virtuele potjes** op één bankrekening, zonder
+> > Excel-acrobatie of boekhoudsoftware.
 >
 > Vóór ik een regel code schrijf, wil ik graag van 10 mensen uit het werkveld
 > begrijpen **hoe ze dit vandaag oplossen** en wat de grootste frustratie is.
