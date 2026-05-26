@@ -2,7 +2,7 @@ import { useId, useState, type FormEvent } from "react";
 import { Mark } from "../components/Logo";
 import { useForceLight } from "../theme";
 
-// MailerLite embed config — uit MailerLite Forms → Embedded forms → form action URL.
+// MailerLite embed config, uit MailerLite Forms → Embedded forms → form action URL.
 // Pad: https://assets.mailerlite.com/jsonp/{ACCOUNT_ID}/forms/{FORM_ID}/subscribe
 const MAILERLITE_ACTION_URL =
   "https://assets.mailerlite.com/jsonp/2372401/forms/188204222789977895/subscribe";
@@ -48,7 +48,7 @@ async function submitWaitlist(email: string): Promise<WaitlistResult> {
   if (data.success) {
     return {
       result: "success",
-      msg: "Je staat op de wachtlijst — check je inbox voor de bevestiging.",
+      msg: "Je staat op de wachtlijst, check je inbox voor de bevestiging.",
     };
   }
 
@@ -164,7 +164,7 @@ function WaitlistForm({ variant = "light" }: { variant?: WaitlistVariant }) {
       >
         {status === "error"
           ? message
-          : "We sturen één mail zodra Kaspio open is — geen spam, opzeggen kan altijd."}
+          : "We sturen één mail zodra Kaspio open is, geen spam, opzeggen kan altijd."}
       </p>
     </form>
   );
@@ -181,13 +181,13 @@ export function Landing({ onLogin, onSignup }: Props) {
     <div className="min-h-screen bg-white text-ink">
       <Header onLogin={onLogin} onSignup={onSignup} />
       <Hero onSignup={onSignup} />
-      <SocialProof />
+      <WaitlistStatus />
       <Problem />
       <HowItWorks />
       <Features />
       <UseCases />
       <Pricing onSignup={onSignup} />
-      <Testimonials />
+      <BuildInPublic />
       <Faq />
       <FinalCta onSignup={onSignup} />
       <Footer />
@@ -257,7 +257,7 @@ function Hero(_: { onSignup: () => void }) {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-500 opacity-75" />
             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-teal-500" />
           </span>
-          Nu in bèta — gratis starten
+          Nu in bèta, gratis starten
         </div>
         <h1 className="mx-auto mb-5 max-w-3xl text-4xl font-extrabold leading-tight tracking-tight text-ink sm:text-5xl lg:text-6xl">
           Eén rekening.
@@ -267,8 +267,7 @@ function Hero(_: { onSignup: () => void }) {
           Volledige controle.
         </h1>
         <p className="mx-auto mb-9 max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg">
-          Kaspio verdeelt inkomsten op jouw bankrekening in virtuele potjes —
-          per persoon, per team of per doel. Zonder extra rekeningen. Zonder
+          Kaspio verdeelt inkomsten op jouw bankrekening in virtuele potjes, per persoon, per team of per doel. Zonder extra rekeningen. Zonder
           boekhoudsoftware.
         </p>
         <div id="waitlist" className="mb-6 scroll-mt-20">
@@ -335,7 +334,7 @@ function HeroMockup() {
           <div className="mb-5 flex items-center justify-between">
             <div>
               <div className="text-base font-bold text-ink">
-                Alle potjes — mei 2026
+                Alle potjes · mei 2026
               </div>
               <div className="mt-0.5 text-xs text-ink-muted">
                 Beheerd door: Thomas V. · 3 teamleden actief
@@ -358,7 +357,7 @@ function HeroMockup() {
           <Txn
             initials="S"
             initialsBg="bg-[#ede9fe] text-[#6d28d9]"
-            title="Salarisbetaling — Tom"
+            title="Salarisbetaling Tom"
             from="Van: Werkgever NV"
             tag="Salarissen"
             amount="+€2.400"
@@ -376,7 +375,7 @@ function HeroMockup() {
           <Txn
             initials="M"
             initialsBg="bg-azure-100 text-azure-700"
-            title="Google Ads — mei"
+            title="Google Ads mei"
             from="Uit: Marketing"
             tag="Marketing"
             amount="−€320"
@@ -480,28 +479,27 @@ function Txn({
   );
 }
 
-function SocialProof() {
-  const orgs = [
-    "Artiestenbureau",
-    "FC Lokaal",
-    "Scouts Lier",
-    "Studio Kader",
-    "VZW Samen",
-  ];
+function WaitlistStatus() {
   return (
     <section className="border-y border-teal-100 bg-teal-50/40 py-7 text-center">
-      <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-ink-muted">
-        Vertrouwd door teams en organisaties
-      </p>
-      <div className="flex flex-wrap items-center justify-center gap-3 px-6 sm:gap-6">
-        {orgs.map((o) => (
-          <span
-            key={o}
-            className="rounded-lg border border-teal-100 bg-white px-3 py-1.5 text-sm font-bold text-ink-light"
-          >
-            {o}
+      <div className="mx-auto flex max-w-3xl flex-col items-center justify-center gap-4 px-6 sm:flex-row sm:gap-8">
+        <div className="flex items-center gap-2.5">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-500 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-teal-500" />
           </span>
-        ))}
+          <span className="text-sm font-semibold text-teal-700">
+            Bèta opent binnenkort
+          </span>
+        </div>
+        <span className="hidden h-4 w-px bg-teal-200 sm:block" aria-hidden />
+        <span className="text-sm text-ink-muted">
+          Eerste 20 plekken voor de gesloten beta
+        </span>
+        <span className="hidden h-4 w-px bg-teal-200 sm:block" aria-hidden />
+        <span className="text-sm text-ink-muted">
+          Wachtlijst is open
+        </span>
       </div>
     </section>
   );
@@ -511,7 +509,7 @@ function Problem() {
   const issues = [
     {
       title: "Geen overzicht per persoon",
-      desc: "Meerdere mensen of teams delen één rekening — niemand weet wat van hem/haar is.",
+      desc: "Meerdere mensen of teams delen één rekening, niemand weet wat van hem/haar is.",
       icon: (
         <>
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -612,7 +610,7 @@ function HowItWorks() {
     {
       n: 2,
       title: "Voeg transacties toe",
-      desc: "Koppel inkomsten en uitgaven aan het juiste potje — manueel of via automatische PSD2-import.",
+      desc: "Koppel inkomsten en uitgaven aan het juiste potje, manueel of via automatische PSD2-import.",
     },
     {
       n: 3,
@@ -662,7 +660,7 @@ function Features() {
   const features = [
     {
       title: "Virtuele potjes",
-      desc: "Maak onbeperkt potjes per persoon, team of doel — allemaal op dezelfde bankrekening.",
+      desc: "Maak onbeperkt potjes per persoon, team of doel, allemaal op dezelfde bankrekening.",
       icon: (
         <>
           <path d="M2 8l10-5 10 5-10 5z" />
@@ -714,7 +712,7 @@ function Features() {
     },
     {
       title: "Bankkoppeling (PSD2)",
-      desc: "Transacties automatisch importeren via open banking — beschikbaar in Pro en Team.",
+      desc: "Transacties automatisch importeren via open banking, beschikbaar in Pro en Team.",
       icon: (
         <>
           <line x1="3" y1="22" x2="21" y2="22" />
@@ -814,7 +812,7 @@ function UseCases() {
     {
       initials: "SC",
       title: "Sportclubs",
-      desc: "Ledenbijdragen, sponsoring en kantine — elk in eigen potje",
+      desc: "Ledenbijdragen, sponsoring en kantine, elk in eigen potje",
     },
     {
       initials: "JB",
@@ -829,7 +827,7 @@ function UseCases() {
     {
       initials: "CT",
       title: "Creatieve teams",
-      desc: "Film, muziek en events — budgetbeheer zonder boekhouder",
+      desc: "Film, muziek en events, budgetbeheer zonder boekhouder",
     },
     {
       initials: "KB",
@@ -848,7 +846,7 @@ function UseCases() {
             Kaspio werkt voor elk type organisatie
           </h2>
           <p className="mx-auto max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg">
-            Van jeugdbeweging tot managementbureau — als je inkomsten beheert
+            Van jeugdbeweging tot managementbureau, als je inkomsten beheert
             voor meerdere mensen of doelen, is Kaspio voor jou.
           </p>
         </div>
@@ -1062,7 +1060,7 @@ function Plan({
                 f.no ? "text-ink-light" : "text-teal-500"
               }`}
             >
-              {f.no ? "–" : "✓"}
+              {f.no ? "·" : "✓"}
             </span>
             <span>{f.text}</span>
           </li>
@@ -1078,66 +1076,57 @@ function Plan({
   );
 }
 
-function Testimonials() {
-  const items = [
+function BuildInPublic() {
+  const status = [
     {
-      stars: 5,
-      text: '"Eindelijk weet iedereen in ons artiestenbureau hoeveel er voor hem binnenkomt zonder mij elke week te moeten mailen. Kaspio heeft uren per maand bespaard."',
-      initials: "LV",
-      name: "Laura V.",
-      role: "Manager · Artiestenbureau Brussel",
+      label: "Nu",
+      title: "Probleem valideren",
+      desc: "In gesprek met scouts, sportclubs, artiestenbureaus en VZW's over hoe ze vandaag potjes beheren.",
     },
     {
-      stars: 5,
-      text: '"We gebruikten Google Sheets voor onze scoutsgroep. Met Kaspio ziet iedereen zijn eigen budget — kamppenning, werking, materiaal. Simpel en duidelijk."',
-      initials: "JD",
-      name: "Jonas D.",
-      role: "Groepsleider · Scouts Gent",
+      label: "Volgende",
+      title: "Gesloten beta",
+      desc: "Eerste 20 mensen van de wachtlijst krijgen toegang. Inkomsten en uitgaven loggen, potjes aanmaken, rolgebaseerd delen.",
     },
     {
-      stars: 4,
-      text: '"Als kleine VZW hadden we geen budget voor een boekhouder. Kaspio geeft ons het overzicht dat we nodig hebben zonder de complexiteit van echte boekhoudsoftware."',
-      initials: "AM",
-      name: "An M.",
-      role: "Voorzitter · VZW De Brug",
+      label: "Daarna",
+      title: "Publieke launch",
+      desc: "Voor iedereen open zodra de beta-feedback is verwerkt. PSD2-bankkoppeling en exports volgen.",
     },
   ];
   return (
     <section className="bg-white px-6 py-24">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-5xl">
         <div className="text-center">
           <p className="mb-3 text-xs font-bold uppercase tracking-wider text-teal-500">
-            Wat gebruikers zeggen
+            Build in public
           </p>
-          <h2 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-            Ze gebruiken het al
+          <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
+            Waar staan we nu?
           </h2>
+          <p className="mx-auto max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg">
+            Kaspio is jong en eerlijk daarover. Hier is precies wat we doen, wat
+            er komt en wanneer je iets kunt verwachten.
+          </p>
         </div>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {items.map((t) => (
+          {status.map((s) => (
             <div
-              key={t.name}
+              key={s.title}
               className="rounded-xl border border-teal-100 bg-white p-7 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.06)]"
             >
-              <div className="mb-3 tracking-widest text-amber-500">
-                {"★".repeat(t.stars)}
-                <span className="text-amber-100">{"★".repeat(5 - t.stars)}</span>
-              </div>
-              <p className="mb-5 text-base italic leading-relaxed text-ink">
-                {t.text}
-              </p>
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-100 text-sm font-bold text-teal-700">
-                  {t.initials}
-                </span>
-                <div>
-                  <div className="text-sm font-bold text-ink">{t.name}</div>
-                  <div className="text-xs text-ink-muted">{t.role}</div>
-                </div>
-              </div>
+              <span className="mb-3 inline-block rounded-full bg-teal-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-teal-700">
+                {s.label}
+              </span>
+              <h3 className="mb-2 text-lg font-bold text-ink">{s.title}</h3>
+              <p className="text-sm leading-relaxed text-ink-muted">{s.desc}</p>
             </div>
           ))}
         </div>
+        <p className="mt-10 text-center text-sm text-ink-muted">
+          Wil je meebouwen? Schrijf je in op de wachtlijst, ik nodig je graag uit
+          voor een gesprek van 20 minuten.
+        </p>
       </div>
     </section>
   );
@@ -1155,7 +1144,7 @@ function Faq() {
     },
     {
       q: "Kan ik zonder bankkoppeling werken?",
-      a: "Absoluut. In de gratis versie en Pro voer je transacties manueel in. De bankkoppeling is optioneel en beschikbaar als upgrade — handig als je veel transacties hebt en geen tijd wil verliezen met manuele invoer.",
+      a: "Absoluut. In de gratis versie en Pro voer je transacties manueel in. De bankkoppeling is optioneel en beschikbaar als upgrade, handig als je veel transacties hebt en geen tijd wil verliezen met manuele invoer.",
     },
     {
       q: "Werkt Kaspio voor mijn sportclub of jeugdbeweging?",
@@ -1226,7 +1215,7 @@ function FinalCta(_: { onSignup: () => void }) {
           in jouw geldstromen?
         </h2>
         <p className="mx-auto mb-8 max-w-xl text-lg text-teal-300">
-          Schrijf je in op de wachtlijst — we laten weten zodra Kaspio open is.
+          Schrijf je in op de wachtlijst, we laten weten zodra Kaspio open is.
         </p>
         <WaitlistForm variant="dark" />
         <p className="mt-4 text-xs text-white/50">
