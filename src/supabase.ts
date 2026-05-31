@@ -6,20 +6,23 @@ import { useEffect, useState } from "react";
 // ============================================================================
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+// Nieuwe naamgeving (sb_publishable_...) heeft voorrang.
+// Legacy VITE_SUPABASE_ANON_KEY blijft werken voor oudere setups.
+const SUPABASE_KEY = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
+  import.meta.env.VITE_SUPABASE_ANON_KEY) as string | undefined;
 
-export const SUPABASE_CONFIGURED = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+export const SUPABASE_CONFIGURED = Boolean(SUPABASE_URL && SUPABASE_KEY);
 
 if (!SUPABASE_CONFIGURED && import.meta.env.DEV) {
   console.warn(
-    "[Kaspio] VITE_SUPABASE_URL en/of VITE_SUPABASE_ANON_KEY ontbreken. " +
+    "[Kaspio] VITE_SUPABASE_URL en/of VITE_SUPABASE_PUBLISHABLE_KEY ontbreken. " +
       "Maak een .env.local aan (zie .env.example). Auth en data via Supabase werken niet tot dat klaar is.",
   );
 }
 
 export const supabase: SupabaseClient<Database> = createClient<Database>(
   SUPABASE_URL ?? "https://placeholder.supabase.co",
-  SUPABASE_ANON_KEY ?? "placeholder-anon-key",
+  SUPABASE_KEY ?? "placeholder-key",
   {
     auth: {
       autoRefreshToken: true,
