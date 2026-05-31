@@ -1,14 +1,20 @@
 import { useState } from "react";
 import type { FormEvent, ReactNode } from "react";
-import { login, signup } from "../auth";
-import type { UserAccount } from "../auth";
 import { Mark } from "../components/Logo";
+import {
+  SUPABASE_CONFIGURED,
+  signInWithMagicLink,
+  signInWithPassword,
+  signUpWithPassword,
+  supabase,
+} from "../supabase";
 
 type Mode = "login" | "signup";
+type LoginMethod = "password" | "magic";
 
 type Props = {
   initialMode: Mode;
-  onAuth: (account: UserAccount) => void;
+  onAuth: () => void;
   onBack: () => void;
 };
 
@@ -30,7 +36,9 @@ export function AuthView({ initialMode, onAuth, onBack }: Props) {
           <div className="mx-auto w-full max-w-md flex-1">
             <div className="mb-6 flex items-center gap-2.5 lg:hidden">
               <Mark size={36} />
-              <span className="text-lg font-bold text-navy-900 dark:text-white">Kaspio</span>
+              <span className="text-lg font-bold text-navy-900 dark:text-white">
+                Kaspio
+              </span>
             </div>
 
             <div className="card p-7">
@@ -57,15 +65,34 @@ export function AuthView({ initialMode, onAuth, onBack }: Props) {
                 </button>
               </div>
 
-              {mode === "login" ? <LoginForm onAuth={onAuth} /> : <SignupForm onAuth={onAuth} />}
+              {!SUPABASE_CONFIGURED && <ConfigWarning />}
+
+              {mode === "login" ? (
+                <LoginForm onAuth={onAuth} />
+              ) : (
+                <SignupForm onAuth={onAuth} />
+              )}
             </div>
 
             <p className="mt-6 text-center text-xs text-navy-400">
-              Tijdens de bèta worden je gegevens lokaal in je browser opgeslagen.
+              Bèta. We zijn voorzichtig met je gegevens.
             </p>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ConfigWarning() {
+  return (
+    <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+      <strong>Supabase niet geconfigureerd.</strong> Voeg{" "}
+      <code className="rounded bg-amber-100 px-1">VITE_SUPABASE_URL</code> en{" "}
+      <code className="rounded bg-amber-100 px-1">
+        VITE_SUPABASE_PUBLISHABLE_KEY
+      </code>{" "}
+      toe aan <code className="rounded bg-amber-100 px-1">.env.local</code>.
     </div>
   );
 }
@@ -80,52 +107,73 @@ function SidePanel() {
       </div>
       <div className="relative mt-auto">
         <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-mint-300">
-          Gemaakt voor teams
+          Build in public
         </p>
         <h2 className="mb-6 text-3xl font-bold leading-tight">
-          “Eindelijk weten we
+          Eén bankrekening,
           <br />
-          wat van wie is — zonder
+          meerdere virtuele potjes,
           <br />
-          spreadsheet-chaos.”
+          volledige transparantie.
         </h2>
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-mint-500/20 text-base font-semibold">
-            JV
-          </div>
-          <div>
-            <div className="text-sm font-semibold">Jelle Vandeweerd</div>
-            <div className="text-xs text-navy-200">Penningmeester, KSA Tielt</div>
-          </div>
-        </div>
+        <p className="text-sm text-navy-200">
+          Voor scouts, sportclubs, VZW's, artiestenbureaus en iedereen die met
+          gedeelde geldstromen werkt.
+        </p>
       </div>
     </div>
   );
 }
 
-function LoginForm({ onAuth }: { onAuth: (a: UserAccount) => void }) {
+// =============================================================================
+// LOGIN FORM
+// =============================================================================
+
+function LoginForm({ onAuth }: { onAuth: () => void }) {
+  const [method, setMethod] = useState<LoginMethod>("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [status, setStatus] = useState<"idle" | "busy" | "magic-sent">("idle");
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setBusy(true);
+    setStatus("busy");
     try {
-      const account = await login(email, password);
-      onAuth(account);
+      if (method === "magic") {
+        const { error: err } = await signInWithMagicLink(email);
+        if (err) throw err;
+        setStatus("magic-sent");
+      } else {
+        const { error: err } = await signInWithPassword(email, password);
+        if (err) throw err;
+        onAuth();
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Er ging iets mis.");
-    } finally {
-      setBusy(false);
+      setStatus("idle");
+      setError(translateError(err));
     }
+  }
+
+  if (status === "magic-sent") {
+    return (
+      <div className="rounded-lg border border-mint-200 bg-mint-50 px-4 py-5 text-sm text-mint-800">
+        <div className="mb-1 font-semibold">Check je mailbox.</div>
+        We stuurden een inlog-link naar <strong>{email}</strong>. Klik die en
+        je bent ingelogd.
+      </div>
+    );
   }
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <h2 className="text-xl font-bold text-navy-900 dark:text-white">Welkom terug</h2>
+      <h2 className="text-xl font-bold text-navy-900 dark:text-white">
+        Welkom terug
+      </h2>
+
+      <MethodToggle method={method} onChange={setMethod} />
+
       <Field label="E-mailadres">
         <input
           type="email"
@@ -136,53 +184,155 @@ function LoginForm({ onAuth }: { onAuth: (a: UserAccount) => void }) {
           className="input"
         />
       </Field>
-      <Field label="Wachtwoord">
-        <input
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="input"
-        />
-      </Field>
-      {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-          {error}
-        </div>
+
+      {method === "password" && (
+        <Field label="Wachtwoord">
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="input"
+          />
+        </Field>
       )}
-      <button type="submit" disabled={busy} className="btn-accent w-full">
-        {busy ? "Bezig…" : "Inloggen"}
+
+      {error && <ErrorBox>{error}</ErrorBox>}
+
+      <button
+        type="submit"
+        disabled={status === "busy" || !SUPABASE_CONFIGURED}
+        className="btn-accent w-full"
+      >
+        {status === "busy"
+          ? "Bezig…"
+          : method === "magic"
+            ? "Stuur inlog-link"
+            : "Inloggen"}
       </button>
     </form>
   );
 }
 
-function SignupForm({ onAuth }: { onAuth: (a: UserAccount) => void }) {
+function MethodToggle({
+  method,
+  onChange,
+}: {
+  method: LoginMethod;
+  onChange: (m: LoginMethod) => void;
+}) {
+  return (
+    <div className="flex gap-2 text-xs">
+      <button
+        type="button"
+        onClick={() => onChange("password")}
+        className={`rounded-md px-2.5 py-1 font-semibold transition ${
+          method === "password"
+            ? "bg-mint-100 text-mint-800"
+            : "text-navy-500 hover:bg-navy-50"
+        }`}
+      >
+        Wachtwoord
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("magic")}
+        className={`rounded-md px-2.5 py-1 font-semibold transition ${
+          method === "magic"
+            ? "bg-mint-100 text-mint-800"
+            : "text-navy-500 hover:bg-navy-50"
+        }`}
+      >
+        Magic link
+      </button>
+    </div>
+  );
+}
+
+// =============================================================================
+// SIGNUP FORM
+// =============================================================================
+
+function SignupForm({ onAuth }: { onAuth: () => void }) {
   const [fullName, setFullName] = useState("");
   const [organizationName, setOrganizationName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
+  const [status, setStatus] = useState<"idle" | "busy" | "confirm-needed">(
+    "idle",
+  );
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setBusy(true);
+    setStatus("busy");
     try {
-      const account = await signup({ fullName, organizationName, email, password });
-      onAuth(account);
+      // Step 1: validate + consume invite code atomically
+      const { data: inviteResult, error: inviteErr } = await supabase.rpc(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        "consume_invite" as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        { p_code: inviteCode.trim().toUpperCase(), p_email: email.trim() } as any,
+      );
+      if (inviteErr) throw inviteErr;
+      const inviteStatus = inviteResult as string;
+      if (inviteStatus !== "ok") {
+        setStatus("idle");
+        setError(translateInviteError(inviteStatus));
+        return;
+      }
+
+      // Step 2: create the Supabase Auth user
+      const { data, error: err } = await signUpWithPassword(
+        email,
+        password,
+        fullName,
+      );
+      if (err) throw err;
+
+      // Step 3: if session exists immediately (no email confirm required),
+      // create the organisation. RLS trigger auto-adds owner as admin.
+      if (data.session) {
+        const orgInsert = {
+          name: organizationName,
+          owner_id: data.session.user.id,
+        };
+        const { error: orgErr } = await supabase
+          .from("organisations")
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .insert(orgInsert as any);
+        if (orgErr) throw orgErr;
+        onAuth();
+      } else {
+        // Email confirmation required: org is created on first login (App.tsx handles)
+        sessionStorage.setItem("kaspio.pending_org_name", organizationName);
+        setStatus("confirm-needed");
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Er ging iets mis.");
-    } finally {
-      setBusy(false);
+      setStatus("idle");
+      setError(translateError(err));
     }
+  }
+
+  if (status === "confirm-needed") {
+    return (
+      <div className="rounded-lg border border-mint-200 bg-mint-50 px-4 py-5 text-sm text-mint-800">
+        <div className="mb-1 font-semibold">Bevestig je e-mailadres.</div>
+        We stuurden een bevestigingslink naar <strong>{email}</strong>. Klik
+        die en je bent ingelogd. Daarna maken we automatisch{" "}
+        <strong>{organizationName}</strong> aan.
+      </div>
+    );
   }
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <h2 className="text-xl font-bold text-navy-900 dark:text-white">Maak je organisatie aan</h2>
+      <h2 className="text-xl font-bold text-navy-900 dark:text-white">
+        Maak je organisatie aan
+      </h2>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Jouw naam">
           <input
@@ -190,7 +340,7 @@ function SignupForm({ onAuth }: { onAuth: (a: UserAccount) => void }) {
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             required
-            placeholder="Jan Janssens"
+            placeholder="Storm Tuyls"
             className="input"
           />
         </Field>
@@ -200,7 +350,7 @@ function SignupForm({ onAuth }: { onAuth: (a: UserAccount) => void }) {
             value={organizationName}
             onChange={(e) => setOrganizationName(e.target.value)}
             required
-            placeholder="Tournee Productions"
+            placeholder="Scouts Berchem"
             className="input"
           />
         </Field>
@@ -215,24 +365,40 @@ function SignupForm({ onAuth }: { onAuth: (a: UserAccount) => void }) {
           className="input"
         />
       </Field>
-      <Field label="Wachtwoord" hint="Minstens 6 tekens">
+      <Field label="Wachtwoord" hint="Minstens 8 tekens">
         <input
           type="password"
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          minLength={6}
+          minLength={8}
           className="input"
         />
       </Field>
-      {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-          {error}
-        </div>
-      )}
-      <button type="submit" disabled={busy} className="btn-accent w-full">
-        {busy ? "Bezig…" : "Account aanmaken"}
+      <Field
+        label="Invite code"
+        hint="Geen code? Schrijf je in op de wachtlijst."
+      >
+        <input
+          type="text"
+          value={inviteCode}
+          onChange={(e) => setInviteCode(e.target.value)}
+          required
+          placeholder="KASP-XXXXXX"
+          autoCapitalize="characters"
+          autoComplete="off"
+          spellCheck={false}
+          className="input font-mono uppercase tracking-wider"
+        />
+      </Field>
+      {error && <ErrorBox>{error}</ErrorBox>}
+      <button
+        type="submit"
+        disabled={status === "busy" || !SUPABASE_CONFIGURED}
+        className="btn-accent w-full"
+      >
+        {status === "busy" ? "Bezig…" : "Account aanmaken"}
       </button>
       <p className="text-center text-xs text-navy-400">
         Door verder te gaan ga je akkoord met onze (denkbeeldige) voorwaarden.
@@ -240,6 +406,10 @@ function SignupForm({ onAuth }: { onAuth: (a: UserAccount) => void }) {
     </form>
   );
 }
+
+// =============================================================================
+// HELPERS
+// =============================================================================
 
 function Field({
   label,
@@ -252,9 +422,54 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">{label}</span>
+      <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+        {label}
+      </span>
       {children}
-      {hint && <span className="mt-1 block text-xs text-navy-400 dark:text-navy-300">{hint}</span>}
+      {hint && (
+        <span className="mt-1 block text-xs text-navy-400 dark:text-navy-300">
+          {hint}
+        </span>
+      )}
     </label>
   );
+}
+
+function ErrorBox({ children }: { children: ReactNode }) {
+  return (
+    <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+      {children}
+    </div>
+  );
+}
+
+function translateInviteError(status: string): string {
+  switch (status) {
+    case "not_found":
+      return "Onbekende invite code. Check je mail of vraag een nieuwe aan.";
+    case "expired":
+      return "Deze invite code is verlopen.";
+    case "exhausted":
+      return "Deze invite code is al gebruikt.";
+    case "email_mismatch":
+      return "Deze invite code is gekoppeld aan een ander e-mailadres.";
+    default:
+      return `Invite code probleem: ${status}`;
+  }
+}
+
+function translateError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+  // Supabase Auth meest voorkomende errors → NL
+  if (raw.includes("Invalid login credentials"))
+    return "Onjuist e-mailadres of wachtwoord.";
+  if (raw.includes("Email not confirmed"))
+    return "Bevestig eerst je e-mailadres via de link in je inbox.";
+  if (raw.includes("User already registered"))
+    return "Dit e-mailadres heeft al een account. Probeer in te loggen.";
+  if (raw.includes("Password should be at least"))
+    return "Wachtwoord moet minstens 8 tekens zijn.";
+  if (raw.toLowerCase().includes("rate limit"))
+    return "Te veel pogingen. Wacht even en probeer opnieuw.";
+  return raw;
 }

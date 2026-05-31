@@ -1,10 +1,17 @@
 import type { DigestFrequency, NotificationSettings } from "../types";
-import type { UserAccount } from "../auth";
 import type { Branding } from "../branding";
 import { BrandingSection } from "../components/BrandingSection";
 
+type Account = {
+  id: string;
+  email: string;
+  fullName: string;
+  organizationName: string;
+  createdAt: string;
+};
+
 type Props = {
-  account: UserAccount;
+  account: Account;
   notifications: NotificationSettings;
   branding: Branding;
   onChange: (patch: Partial<NotificationSettings>) => void;

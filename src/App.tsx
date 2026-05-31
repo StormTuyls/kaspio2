@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
+import type { Session } from "@supabase/supabase-js";
 import "./App.css";
 import { useAppState, visiblePots } from "./storage";
-import { useSession } from "./auth";
-import type { UserAccount } from "./auth";
+import { signOut, supabase, useSession } from "./supabase";
 import { Overview } from "./views/Overview";
 import { PotDetail } from "./views/PotDetail";
 import { MembersView } from "./views/MembersView";
@@ -23,11 +23,30 @@ import type { Branding } from "./branding";
 type Tab = "potjes" | "leden" | "activiteit" | "instellingen";
 type PublicView = "landing" | "login" | "signup";
 
+// Lokale Account-shape (bridge tussen Supabase user en de oude localStorage-laag).
+// In sprint 2 vervangen we localStorage door Supabase queries — dan is dit type
+// niet meer nodig.
+type Account = {
+  id: string;
+  email: string;
+  fullName: string;
+  organizationName: string;
+  createdAt: string;
+};
+
 function App() {
-  const session = useSession();
+  const { session, loading } = useSession();
   const [publicView, setPublicView] = useState<PublicView>("landing");
 
-  if (!session.account) {
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-canvas text-navy-500 dark:bg-navy-950 dark:text-navy-300">
+        Laden…
+      </div>
+    );
+  }
+
+  if (!session) {
     if (publicView === "landing") {
       return (
         <Landing
@@ -39,22 +58,62 @@ function App() {
     return (
       <AuthView
         initialMode={publicView === "login" ? "login" : "signup"}
-        onAuth={() => session.refresh()}
+        onAuth={() => {
+          // useSession picks up the new session via onAuthStateChange.
+        }}
         onBack={() => setPublicView("landing")}
       />
     );
   }
 
-  return <AuthedApp account={session.account} onLogout={() => session.signOut()} />;
+  return <AuthedApp session={session} onLogout={() => signOut()} />;
+}
+
+// Bridges Supabase auth with the existing localStorage app state.
+// Creates a pending org if signup left one queued in sessionStorage
+// (happens when email-confirmation is enabled and signup-flow was interrupted).
+function useEnsureOrg(session: Session) {
+  useEffect(() => {
+    const pendingName = sessionStorage.getItem("kaspio.pending_org_name");
+    if (!pendingName) return;
+    sessionStorage.removeItem("kaspio.pending_org_name");
+    const orgInsert = { name: pendingName, owner_id: session.user.id };
+    supabase
+      .from("organisations")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .insert(orgInsert as any)
+      .then(({ error }) => {
+        if (error) {
+          // eslint-disable-next-line no-console
+          console.warn("[Kaspio] Kon pending org niet aanmaken:", error.message);
+        }
+      });
+  }, [session.user.id]);
 }
 
 function AuthedApp({
-  account,
+  session,
   onLogout,
 }: {
-  account: UserAccount;
+  session: Session;
   onLogout: () => void;
 }) {
+  useEnsureOrg(session);
+
+  // Bridge: existing localStorage layer expects {id, email, fullName, organizationName}.
+  // Pull from Supabase user metadata that was set during signup.
+  const meta = (session.user.user_metadata ?? {}) as {
+    full_name?: string;
+    organization_name?: string;
+  };
+  const account: Account = {
+    id: session.user.id,
+    email: session.user.email ?? "",
+    fullName: meta.full_name ?? session.user.email?.split("@")[0] ?? "Gebruiker",
+    organizationName: meta.organization_name ?? "Mijn organisatie",
+    createdAt: session.user.created_at,
+  };
+
   const store = useAppState(account.id, account.fullName);
   const [selectedPotId, setSelectedPotId] = useState<string | null>(null);
   const [showAddPot, setShowAddPot] = useState(false);
@@ -463,7 +522,7 @@ function Topbar({
   onSwitchUser,
   onLogout,
 }: {
-  account: UserAccount;
+  account: Account;
   members: ReturnType<typeof useAppState>["state"]["members"];
   currentUserId: string | null;
   brandName: string;
