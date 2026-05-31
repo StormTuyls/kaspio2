@@ -35,14 +35,50 @@ type Account = {
   createdAt: string;
 };
 
+type AuthErrorKind = "expired" | "invalid" | "other";
+
+function parseHashError(): { kind: AuthErrorKind; description: string } | null {
+  if (typeof window === "undefined") return null;
+  const hash = window.location.hash.replace(/^#/, "");
+  if (!hash.includes("error")) return null;
+  const params = new URLSearchParams(hash);
+  if (!params.get("error")) return null;
+  const code = params.get("error_code") ?? "";
+  const desc = params.get("error_description") ?? "";
+  let kind: AuthErrorKind = "other";
+  if (code === "otp_expired" || /expired/i.test(desc)) kind = "expired";
+  else if (/invalid/i.test(desc)) kind = "invalid";
+  // Maak de URL schoon zodat een refresh niet steeds dezelfde error toont
+  window.history.replaceState(null, "", window.location.pathname);
+  return { kind, description: desc.replace(/\+/g, " ") };
+}
+
 function App() {
   const { session, loading } = useSession();
   const [publicView, setPublicView] = useState<PublicView>("landing");
-  const [recoveryMode, setRecoveryMode] = useState(false);
 
-  // Detect Supabase PASSWORD_RECOVERY event. Fires wanneer de user
-  // op een reset-password link in een mail klikt. Supabase creëert een
-  // tijdelijke session waarin enkel password-update is toegestaan.
+  // Recovery-mode initial state: check de URL hash direct (vóór React rendert).
+  const [recoveryMode, setRecoveryMode] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    const hash = window.location.hash;
+    return hash.includes("type=recovery") || hash.includes("type%3Drecovery");
+  });
+
+  // Auth-error initial state: vang verlopen / ongeldige reset/magic-links af
+  // zodat de user niet stilzwijgend op de landing belandt.
+  const [authError, setAuthError] = useState(() => parseHashError());
+
+  // Als er een auth-error in de hash zat, spring direct naar de AuthView
+  // (login tab met forgot-password ingang) zodat de user makkelijk
+  // een nieuwe link kan aanvragen.
+  useEffect(() => {
+    if (authError) {
+      setPublicView("login");
+    }
+  }, [authError]);
+
+  // Detect Supabase PASSWORD_RECOVERY event voor het geval Supabase
+  // de hash later verwerkt (race-condition fallback).
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
@@ -76,10 +112,15 @@ function App() {
     return (
       <AuthView
         initialMode={publicView === "login" ? "login" : "signup"}
+        authError={authError}
         onAuth={() => {
           // useSession picks up the new session via onAuthStateChange.
         }}
-        onBack={() => setPublicView("landing")}
+        onBack={() => {
+          setAuthError(null);
+          setPublicView("landing");
+        }}
+        onDismissError={() => setAuthError(null)}
       />
     );
   }

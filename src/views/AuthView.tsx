@@ -13,13 +13,26 @@ import {
 type Mode = "login" | "signup";
 type LoginMethod = "password" | "magic";
 
-type Props = {
-  initialMode: Mode;
-  onAuth: () => void;
-  onBack: () => void;
+export type AuthError = {
+  kind: "expired" | "invalid" | "other";
+  description: string;
 };
 
-export function AuthView({ initialMode, onAuth, onBack }: Props) {
+type Props = {
+  initialMode: Mode;
+  authError?: AuthError | null;
+  onAuth: () => void;
+  onBack: () => void;
+  onDismissError?: () => void;
+};
+
+export function AuthView({
+  initialMode,
+  authError,
+  onAuth,
+  onBack,
+  onDismissError,
+}: Props) {
   const [mode, setMode] = useState<Mode>(initialMode);
 
   return (
@@ -68,8 +81,15 @@ export function AuthView({ initialMode, onAuth, onBack }: Props) {
 
               {!SUPABASE_CONFIGURED && <ConfigWarning />}
 
+              {authError && (
+                <AuthErrorBanner error={authError} onDismiss={onDismissError} />
+              )}
+
               {mode === "login" ? (
-                <LoginForm onAuth={onAuth} />
+                <LoginForm
+                  onAuth={onAuth}
+                  startInForgotMode={authError?.kind === "expired"}
+                />
               ) : (
                 <SignupForm onAuth={onAuth} />
               )}
@@ -81,6 +101,46 @@ export function AuthView({ initialMode, onAuth, onBack }: Props) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function AuthErrorBanner({
+  error,
+  onDismiss,
+}: {
+  error: AuthError;
+  onDismiss?: () => void;
+}) {
+  const title =
+    error.kind === "expired"
+      ? "Link is verlopen"
+      : error.kind === "invalid"
+        ? "Link is ongeldig"
+        : "Er ging iets mis";
+  const message =
+    error.kind === "expired"
+      ? "Reset-links zijn één uur geldig en maar één keer bruikbaar. Vraag hieronder een nieuwe aan."
+      : error.kind === "invalid"
+        ? "Deze link is niet meer geldig. Vraag een nieuwe aan via 'Wachtwoord vergeten'."
+        : error.description || "Probeer opnieuw of vraag een nieuwe link aan.";
+
+  return (
+    <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-800">
+      <div className="mb-1 flex items-start justify-between gap-2">
+        <strong>{title}</strong>
+        {onDismiss && (
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="text-amber-600 hover:text-amber-800"
+            aria-label="Sluit melding"
+          >
+            ×
+          </button>
+        )}
+      </div>
+      <p>{message}</p>
     </div>
   );
 }
@@ -130,7 +190,13 @@ function SidePanel() {
 // LOGIN FORM
 // =============================================================================
 
-function LoginForm({ onAuth }: { onAuth: () => void }) {
+function LoginForm({
+  onAuth,
+  startInForgotMode = false,
+}: {
+  onAuth: () => void;
+  startInForgotMode?: boolean;
+}) {
   const [method, setMethod] = useState<LoginMethod>("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -138,7 +204,7 @@ function LoginForm({ onAuth }: { onAuth: () => void }) {
     "idle" | "busy" | "magic-sent" | "reset-sent"
   >("idle");
   const [error, setError] = useState<string | null>(null);
-  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotMode, setForgotMode] = useState(startInForgotMode);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
