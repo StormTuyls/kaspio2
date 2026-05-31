@@ -134,15 +134,22 @@ function LoginForm({ onAuth }: { onAuth: () => void }) {
   const [method, setMethod] = useState<LoginMethod>("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [status, setStatus] = useState<"idle" | "busy" | "magic-sent">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "busy" | "magic-sent" | "reset-sent"
+  >("idle");
   const [error, setError] = useState<string | null>(null);
+  const [forgotMode, setForgotMode] = useState(false);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setStatus("busy");
     try {
-      if (method === "magic") {
+      if (forgotMode) {
+        const { error: err } = await resetPasswordForEmail(email);
+        if (err) throw err;
+        setStatus("reset-sent");
+      } else if (method === "magic") {
         const { error: err } = await signInWithMagicLink(email);
         if (err) throw err;
         setStatus("magic-sent");
@@ -164,6 +171,62 @@ function LoginForm({ onAuth }: { onAuth: () => void }) {
         We stuurden een inlog-link naar <strong>{email}</strong>. Klik die en
         je bent ingelogd.
       </div>
+    );
+  }
+
+  if (status === "reset-sent") {
+    return (
+      <div className="rounded-lg border border-mint-200 bg-mint-50 px-4 py-5 text-sm text-mint-800">
+        <div className="mb-1 font-semibold">Check je mailbox.</div>
+        We stuurden een reset-link naar <strong>{email}</strong>. Klik die en
+        je kunt een nieuw wachtwoord instellen.
+      </div>
+    );
+  }
+
+  if (forgotMode) {
+    return (
+      <form onSubmit={submit} className="space-y-4">
+        <h2 className="text-xl font-bold text-navy-900 dark:text-white">
+          Wachtwoord vergeten
+        </h2>
+        <p className="text-sm text-navy-500 dark:text-navy-300">
+          Vul je e-mailadres in, we sturen je een reset-link.
+        </p>
+
+        <Field label="E-mailadres">
+          <input
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="input"
+            autoFocus
+          />
+        </Field>
+
+        {error && <ErrorBox>{error}</ErrorBox>}
+
+        <button
+          type="submit"
+          disabled={status === "busy" || !SUPABASE_CONFIGURED}
+          className="btn-accent w-full"
+        >
+          {status === "busy" ? "Bezig…" : "Stuur reset-link"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setForgotMode(false);
+            setError(null);
+          }}
+          className="block w-full text-center text-xs text-navy-400 hover:text-navy-700 dark:hover:text-navy-100"
+        >
+          ← Terug naar inloggen
+        </button>
+      </form>
     );
   }
 
@@ -212,6 +275,20 @@ function LoginForm({ onAuth }: { onAuth: () => void }) {
             ? "Stuur inlog-link"
             : "Inloggen"}
       </button>
+
+      {method === "password" && (
+        <button
+          type="button"
+          onClick={() => {
+            setForgotMode(true);
+            setError(null);
+            setPassword("");
+          }}
+          className="block w-full text-center text-xs text-navy-400 hover:text-navy-700 dark:hover:text-navy-100"
+        >
+          Wachtwoord vergeten?
+        </button>
+      )}
     </form>
   );
 }
