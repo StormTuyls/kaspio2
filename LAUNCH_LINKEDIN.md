@@ -54,9 +54,7 @@ Drie versies van de hoofdpost (verschillende tone) + 5 persoonlijke DM-varianten
 
 LinkedIn straft posts met externe links af. **Zet de link in de eerste comment**, niet in de post zelf:
 
-> https://kaspio-alpha.vercel.app
->
-> (P.S. domein kaspio.be komt later, dit is de prototype-URL)
+> https://kaspio.be
 
 ---
 
@@ -122,7 +120,7 @@ Dit kweekt vertrouwen ("hij doet écht het werk") en lokt nog meer gesprekken ui
 
 - [ ] Variant gekozen (A / B / C)
 - [ ] Naam aangepast in de post (geen "[X]" placeholders)
-- [ ] Link `kaspio-alpha.vercel.app` getest, opent zonder fouten?
+- [ ] Link `kaspio.be` getest, opent zonder fouten?
 - [ ] Calendly opgezet en in DM-templates ingevuld
 - [ ] 5 namen klaar voor DM-set (papier of in Notion)
 - [ ] LinkedIn open in browser én op telefoon (snel reageren op eerste comments)

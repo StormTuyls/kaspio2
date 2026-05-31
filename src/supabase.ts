@@ -113,6 +113,18 @@ export async function signOut() {
   return supabase.auth.signOut();
 }
 
+/** Vraag een wachtwoord-reset mail aan. Supabase stuurt link met recovery token. */
+export async function resetPasswordForEmail(email: string) {
+  return supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/`,
+  });
+}
+
+/** Update het wachtwoord van de ingelogde (of recovering) user. */
+export async function updateUserPassword(password: string) {
+  return supabase.auth.updateUser({ password });
+}
+
 // ============================================================================
 // DATABASE TYPES
 // ============================================================================

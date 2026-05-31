@@ -3,6 +3,7 @@ import type { FormEvent, ReactNode } from "react";
 import { Mark } from "../components/Logo";
 import {
   SUPABASE_CONFIGURED,
+  resetPasswordForEmail,
   signInWithMagicLink,
   signInWithPassword,
   signUpWithPassword,

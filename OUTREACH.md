@@ -147,7 +147,7 @@ Of antwoord gewoon met een tijd die past, ik ben flexibel.
 
 Vriendelijke groet,
 Storm Tuyls
-kaspio-alpha.vercel.app
+kaspio.be
 ```
 
 **Aanpassingen per doelgroep:**

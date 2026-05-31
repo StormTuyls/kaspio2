@@ -11,6 +11,7 @@ import { AuditView } from "./views/AuditView";
 import { SettingsView } from "./views/SettingsView";
 import { Landing } from "./views/Landing";
 import { AuthView } from "./views/AuthView";
+import { PasswordResetView } from "./views/PasswordResetView";
 import { Modal } from "./components/Modal";
 import { PotForm } from "./components/PotForm";
 import { TransactionForm } from "./components/TransactionForm";
@@ -37,6 +38,19 @@ type Account = {
 function App() {
   const { session, loading } = useSession();
   const [publicView, setPublicView] = useState<PublicView>("landing");
+  const [recoveryMode, setRecoveryMode] = useState(false);
+
+  // Detect Supabase PASSWORD_RECOVERY event. Fires wanneer de user
+  // op een reset-password link in een mail klikt. Supabase creëert een
+  // tijdelijke session waarin enkel password-update is toegestaan.
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setRecoveryMode(true);
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   if (loading) {
     return (
@@ -44,6 +58,10 @@ function App() {
         Laden…
       </div>
     );
+  }
+
+  if (recoveryMode) {
+    return <PasswordResetView onDone={() => setRecoveryMode(false)} />;
   }
 
   if (!session) {
