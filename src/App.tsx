@@ -15,6 +15,7 @@ import {
 import { InviteMemberForm } from "./components/InviteMemberForm";
 import { MembersListView } from "./views/MembersListView";
 import { AuditLogView } from "./views/AuditLogView";
+import { OrgOnboardingView } from "./views/OrgOnboardingView";
 import type { Pot as DbPot, Transaction as DbTransaction } from "./supabase";
 import type { Pot, Transaction } from "./types";
 import { signOut, supabase, useSession } from "./supabase";
@@ -327,7 +328,7 @@ function AuthedApp({
 
   const localStore = useAppState(account.id, account.fullName);
   const store = useBridgedStore(localStore, account.id);
-  const { org } = useCurrentOrg();
+  const { org, loading: orgLoading, refresh: refreshOrg } = useCurrentOrg();
   const orgId = org?.id ?? null;
   const { pots: dbPots } = usePots(orgId);
   const { invites, sendInvite, revokeInvite } = useOrgInvites(orgId);
@@ -360,10 +361,34 @@ function AuthedApp({
   const potsForUser = visiblePots(store.state.pots, currentUser);
   const selectedPot = potsForUser.find((p) => p.id === selectedPotId) ?? null;
 
-  if (!org || !currentUser) {
+  // Wacht maximaal even op de eerste fetch. Daarna: als nog steeds geen org,
+  // is dat geen netwerk-issue maar een data-issue (user heeft geen membership).
+  if (orgLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-canvas text-navy-500 dark:bg-navy-950 dark:text-navy-300">
         Organisatie aan het laden…
+      </div>
+    );
+  }
+
+  // Logged-in user heeft geen org en geen membership. Toon onboarding.
+  if (!org) {
+    return (
+      <OrgOnboardingView
+        userId={account.id}
+        fullName={account.fullName}
+        onCreated={() => refreshOrg()}
+      />
+    );
+  }
+
+  // Org bestaat maar geen membership voor deze user — should not happen normally
+  // (de on_org_created trigger maakt automatisch een admin-membership). Fall back
+  // op loading, dan refetch.
+  if (!currentUser) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-canvas text-navy-500 dark:bg-navy-950 dark:text-navy-300">
+        Lidmaatschap aan het laden…
       </div>
     );
   }
