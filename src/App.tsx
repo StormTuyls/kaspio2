@@ -340,24 +340,22 @@ function AuthedApp({
   const [showInvite, setShowInvite] = useState(false);
   const [tab, setTab] = useState<Tab>("potjes");
 
-  // Bepaal rol uit Supabase memberships (single source of truth voor rol)
+  // Bepaal rol. Fall back op "ben ik owner van de org?" als de memberships-fetch
+  // nog niet klaar is of RLS de query blokkeert. Voorkomt eindeloos hangen.
   const myMembership = orgMembers.find((m) => m.user_id === account.id) ?? null;
-  const isAdmin = myMembership?.role === "admin";
+  const isOwner = org?.owner_id === account.id;
+  const isAdmin = myMembership?.role === "admin" || isOwner;
   const adminCount = orgMembers.filter((m) => m.role === "admin").length;
 
-  // Voor de bestaande views die nog de oude localStorage `Member`-shape verwachten:
-  // construct een synthetische "currentUser" die hen tevreden houdt.
-  const currentUser = myMembership
-    ? {
-        id: account.id,
-        name: account.fullName,
-        role: myMembership.role === "admin" ? ("admin" as const) : ("pot_owner" as const),
-        createdAt: account.createdAt,
-      }
-    : null;
+  // Synthetische currentUser, altijd gedefinieerd zolang session bestaat.
+  const currentUser = {
+    id: account.id,
+    name: account.fullName,
+    role: isAdmin ? ("admin" as const) : ("pot_owner" as const),
+    createdAt: account.createdAt,
+  };
 
   // RLS in Supabase doet pot-filtering al, dus visiblePots() is een no-op voor admins.
-  // We laten 't staan voor backward compat met de oude pot-shape.
   const potsForUser = visiblePots(store.state.pots, currentUser);
   const selectedPot = potsForUser.find((p) => p.id === selectedPotId) ?? null;
 
@@ -379,17 +377,6 @@ function AuthedApp({
         fullName={account.fullName}
         onCreated={() => refreshOrg()}
       />
-    );
-  }
-
-  // Org bestaat maar geen membership voor deze user — should not happen normally
-  // (de on_org_created trigger maakt automatisch een admin-membership). Fall back
-  // op loading, dan refetch.
-  if (!currentUser) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-canvas text-navy-500 dark:bg-navy-950 dark:text-navy-300">
-        Lidmaatschap aan het laden…
-      </div>
     );
   }
 
