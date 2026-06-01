@@ -1,13 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import "./App.css";
 import { useAppState, visiblePots } from "./storage";
+import {
+  acceptPendingInvites,
+  useAuditLog,
+  useCurrentOrg,
+  useOrgInvites,
+  useOrgMembers,
+  usePots,
+  useTransactions,
+} from "./data";
+import { InviteMemberForm } from "./components/InviteMemberForm";
+import { MembersListView } from "./views/MembersListView";
+import { AuditLogView } from "./views/AuditLogView";
+import type { Pot as DbPot, Transaction as DbTransaction } from "./supabase";
+import type { Pot, Transaction } from "./types";
 import { signOut, supabase, useSession } from "./supabase";
 import { Overview } from "./views/Overview";
 import { PotDetail } from "./views/PotDetail";
-import { MembersView } from "./views/MembersView";
-import { AuditView } from "./views/AuditView";
 import { SettingsView } from "./views/SettingsView";
 import { Landing } from "./views/Landing";
 import { AuthView } from "./views/AuthView";
@@ -133,21 +145,161 @@ function App() {
 // (happens when email-confirmation is enabled and signup-flow was interrupted).
 function useEnsureOrg(session: Session) {
   useEffect(() => {
+    // 1. Eventueel pending org aanmaken (uit interrupted signup-flow)
     const pendingName = sessionStorage.getItem("kaspio.pending_org_name");
-    if (!pendingName) return;
-    sessionStorage.removeItem("kaspio.pending_org_name");
-    const orgInsert = { name: pendingName, owner_id: session.user.id };
-    supabase
-      .from("organisations")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .insert(orgInsert as any)
-      .then(({ error }) => {
-        if (error) {
-          // eslint-disable-next-line no-console
-          console.warn("[Kaspio] Kon pending org niet aanmaken:", error.message);
-        }
-      });
+    if (pendingName) {
+      sessionStorage.removeItem("kaspio.pending_org_name");
+      const orgInsert = { name: pendingName, owner_id: session.user.id };
+      supabase
+        .from("organisations")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert(orgInsert as any)
+        .then(({ error }) => {
+          if (error) {
+            // eslint-disable-next-line no-console
+            console.warn(
+              "[Kaspio] Kon pending org niet aanmaken:",
+              error.message,
+            );
+          }
+        });
+    }
+
+    // 2. Accepteer pending org-invites voor deze user (kan 0 of meer zijn)
+    acceptPendingInvites().then((accepted) => {
+      if (accepted > 0) {
+        // eslint-disable-next-line no-console
+        console.info(`[Kaspio] ${accepted} uitnodiging(en) geaccepteerd.`);
+      }
+    });
   }, [session.user.id]);
+}
+
+// =============================================================================
+// useBridgedStore — combineert oude localStorage-store met Supabase pots/transactions
+// =============================================================================
+// Sprint 2A: pots + transactions komen uit Supabase. Members/audit/branding/
+// notifications blijven (voor nu) in localStorage. Views krijgen dezelfde
+// store-shape als voor de migratie, dus geen view-rewrites nodig.
+
+type LocalStore = ReturnType<typeof useAppState>;
+
+function dbPotToUiPot(p: DbPot, currentUserId: string): Pot {
+  return {
+    id: p.id,
+    name: p.name,
+    color: p.color,
+    // ownerId mapping: alle Supabase-pots die de user kan zien horen via RLS bij hem.
+    // Tot we members en pot_owner-rollen volledig migreren, doen we alsof de
+    // current user owner is (zo werkt visiblePots() correct in admin-modus).
+    ownerId: currentUserId,
+    targetAmount: p.target_amount ?? undefined,
+    createdAt: p.created_at,
+  };
+}
+
+function dbTxToUiTx(t: DbTransaction): Transaction {
+  return {
+    id: t.id,
+    potId: t.pot_id,
+    direction: t.direction,
+    amount: Number(t.amount),
+    occurredOn: t.occurred_on,
+    counterparty: t.counterparty ?? "",
+    memo: t.memo ?? undefined,
+    createdAt: t.created_at,
+  };
+}
+
+function useBridgedStore(localStore: LocalStore, currentUserId: string) {
+  const { org } = useCurrentOrg();
+  const orgId = org?.id ?? null;
+  const {
+    pots: dbPots,
+    addPot: addDbPot,
+    updatePot: updateDbPot,
+    deletePot: deleteDbPot,
+  } = usePots(orgId);
+  const {
+    transactions: dbTx,
+    addTransaction: addDbTx,
+    deleteTransaction: deleteDbTx,
+  } = useTransactions(orgId);
+
+  const pots = useMemo(
+    () => dbPots.map((p) => dbPotToUiPot(p, currentUserId)),
+    [dbPots, currentUserId],
+  );
+  const transactions = useMemo(() => dbTx.map(dbTxToUiTx), [dbTx]);
+
+  // Build a new store object met dezelfde shape als de oude useAppState,
+  // maar met pots/transactions uit Supabase + mutaties die naar Supabase schrijven.
+  return useMemo(() => {
+    return {
+      ...localStore,
+      state: {
+        ...localStore.state,
+        pots,
+        transactions,
+      },
+      addPot: async (input: {
+        name: string;
+        color?: string;
+        targetAmount?: number;
+        description?: string;
+      }) => {
+        await addDbPot({
+          name: input.name,
+          color: input.color ?? "#1D9E75",
+          targetAmount: input.targetAmount,
+          description: input.description,
+        });
+      },
+      updatePot: async (
+        id: string,
+        patch: {
+          name?: string;
+          color?: string;
+          targetAmount?: number;
+          description?: string;
+        },
+      ) => {
+        await updateDbPot(id, patch);
+      },
+      deletePot: async (id: string) => {
+        await deleteDbPot(id);
+      },
+      addTransaction: async (input: {
+        potId: string;
+        direction: "in" | "out";
+        amount: number;
+        occurredOn: string;
+        counterparty: string;
+        memo?: string;
+      }) => {
+        await addDbTx({
+          potId: input.potId,
+          direction: input.direction,
+          amount: input.amount,
+          occurredOn: input.occurredOn,
+          counterparty: input.counterparty || null,
+          memo: input.memo || null,
+        });
+      },
+      deleteTransaction: async (id: string) => {
+        await deleteDbTx(id);
+      },
+    };
+  }, [
+    localStore,
+    pots,
+    transactions,
+    addDbPot,
+    updateDbPot,
+    deleteDbPot,
+    addDbTx,
+    deleteDbTx,
+  ]);
 }
 
 function AuthedApp({
@@ -173,23 +325,45 @@ function AuthedApp({
     createdAt: session.user.created_at,
   };
 
-  const store = useAppState(account.id, account.fullName);
+  const localStore = useAppState(account.id, account.fullName);
+  const store = useBridgedStore(localStore, account.id);
+  const { org } = useCurrentOrg();
+  const orgId = org?.id ?? null;
+  const { pots: dbPots } = usePots(orgId);
+  const { invites, sendInvite, revokeInvite } = useOrgInvites(orgId);
+  const { members: orgMembers, updateRole, removeMember } = useOrgMembers(orgId);
+  const { entries: auditEntries, loading: auditLoading } = useAuditLog(orgId);
   const [selectedPotId, setSelectedPotId] = useState<string | null>(null);
   const [showAddPot, setShowAddPot] = useState(false);
   const [showAddTx, setShowAddTx] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
   const [tab, setTab] = useState<Tab>("potjes");
 
-  const currentUser =
-    store.state.members.find((m) => m.id === store.state.currentUserId) ?? null;
+  // Bepaal rol uit Supabase memberships (single source of truth voor rol)
+  const myMembership = orgMembers.find((m) => m.user_id === account.id) ?? null;
+  const isAdmin = myMembership?.role === "admin";
+  const adminCount = orgMembers.filter((m) => m.role === "admin").length;
+
+  // Voor de bestaande views die nog de oude localStorage `Member`-shape verwachten:
+  // construct een synthetische "currentUser" die hen tevreden houdt.
+  const currentUser = myMembership
+    ? {
+        id: account.id,
+        name: account.fullName,
+        role: myMembership.role === "admin" ? ("admin" as const) : ("pot_owner" as const),
+        createdAt: account.createdAt,
+      }
+    : null;
+
+  // RLS in Supabase doet pot-filtering al, dus visiblePots() is een no-op voor admins.
+  // We laten 't staan voor backward compat met de oude pot-shape.
   const potsForUser = visiblePots(store.state.pots, currentUser);
   const selectedPot = potsForUser.find((p) => p.id === selectedPotId) ?? null;
-  const isAdmin = currentUser?.role === "admin";
-  const adminCount = store.state.members.filter((m) => m.role === "admin").length;
 
-  if (!currentUser) {
+  if (!org || !currentUser) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-canvas text-navy-500 dark:bg-navy-950 dark:text-navy-300">
-        Account aan het laden…
+        Organisatie aan het laden…
       </div>
     );
   }
@@ -203,11 +377,15 @@ function AuthedApp({
         <Sidebar
           tab={tab}
           isAdmin={!!isAdmin}
-          membersCount={store.state.members.length}
+          membersCount={orgMembers.length}
           potsCount={store.state.pots.length}
           adminCount={adminCount}
-          auditCount={store.state.auditLog.length}
-          organizationName={account.organizationName}
+          auditCount={auditEntries.length}
+          organizationName={org.name}
+          pots={store.state.pots}
+          transactions={store.state.transactions}
+          selectedPotId={selectedPotId}
+          onSelectPot={(id) => setSelectedPotId(id)}
           brandName={brandName}
           branding={store.state.branding}
           onTab={(t) => {
@@ -248,15 +426,18 @@ function AuthedApp({
                 }}
               />
             ) : tab === "leden" && isAdmin ? (
-              <MembersView
-                members={store.state.members}
-                currentUserId={store.state.currentUserId}
-                onAdd={(values) => store.addMember(values)}
-                onUpdate={(id, values) => store.updateMember(id, values)}
-                onDelete={(id) => store.deleteMember(id)}
+              <MembersListView
+                currentUserId={account.id}
+                members={orgMembers}
+                invites={invites}
+                pots={dbPots}
+                onInviteClick={() => setShowInvite(true)}
+                onUpdateRole={updateRole}
+                onRemoveMember={removeMember}
+                onRevokeInvite={revokeInvite}
               />
             ) : tab === "activiteit" && isAdmin ? (
-              <AuditView entries={store.state.auditLog} onClear={() => store.clearAuditLog()} />
+              <AuditLogView entries={auditEntries} loading={auditLoading} />
             ) : tab === "instellingen" && isAdmin ? (
               <SettingsView
                 account={account}
@@ -272,7 +453,7 @@ function AuthedApp({
                 allTransactions={store.state.transactions}
                 members={store.state.members}
                 currentUser={currentUser}
-                organizationName={account.organizationName}
+                organizationName={org.name}
                 onSelect={(id) => setSelectedPotId(id)}
                 onAddPot={() => setShowAddPot(true)}
               />
@@ -285,8 +466,8 @@ function AuthedApp({
         <BottomNav
           tab={tab}
           potsCount={store.state.pots.length}
-          membersCount={store.state.members.length}
-          auditCount={store.state.auditLog.length}
+          membersCount={orgMembers.length}
+          auditCount={auditEntries.length}
           onTab={(t) => {
             setTab(t);
             setSelectedPotId(null);
@@ -296,9 +477,8 @@ function AuthedApp({
 
       <Modal open={showAddPot} title="Nieuw potje" onClose={() => setShowAddPot(false)}>
         <PotForm
-          members={store.state.members}
-          onSubmit={(values) => {
-            store.addPot(values);
+          onSubmit={async (values) => {
+            await store.addPot(values);
             setShowAddPot(false);
           }}
           onCancel={() => setShowAddPot(false)}
@@ -316,6 +496,23 @@ function AuthedApp({
           />
         )}
       </Modal>
+
+      <Modal
+        open={showInvite}
+        title="Lid uitnodigen"
+        onClose={() => setShowInvite(false)}
+      >
+        {orgId && (
+          <InviteMemberForm
+            orgId={orgId}
+            pots={dbPots}
+            pendingInvites={invites}
+            onInvite={sendInvite}
+            onRevoke={revokeInvite}
+            onClose={() => setShowInvite(false)}
+          />
+        )}
+      </Modal>
     </div>
   );
 }
@@ -330,6 +527,10 @@ function Sidebar({
   organizationName,
   brandName,
   branding,
+  pots,
+  transactions,
+  selectedPotId,
+  onSelectPot,
   onTab,
 }: {
   tab: Tab;
@@ -341,8 +542,19 @@ function Sidebar({
   organizationName: string;
   brandName: string;
   branding: Branding;
+  pots: Pot[];
+  transactions: Transaction[];
+  selectedPotId: string | null;
+  onSelectPot: (id: string) => void;
   onTab: (t: Tab) => void;
 }) {
+  const balanceFor = (potId: string) =>
+    transactions
+      .filter((t) => t.potId === potId)
+      .reduce(
+        (sum, t) => sum + (t.direction === "in" ? t.amount : -t.amount),
+        0,
+      );
   return (
     <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-navy-900 bg-navy-900 px-5 py-6 text-navy-100 lg:flex dark:border-navy-800">
       <div className="mb-8 flex items-center gap-2.5">
@@ -394,6 +606,44 @@ function Sidebar({
           </>
         )}
       </nav>
+
+      {pots.length > 0 && (
+        <div className="mt-6 border-t border-navy-800 pt-4">
+          <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-navy-400">
+            Potjes
+          </p>
+          <ul className="space-y-0.5 text-sm">
+            {pots.map((p) => {
+              const active = tab === "potjes" && selectedPotId === p.id;
+              return (
+                <li key={p.id}>
+                  <button
+                    onClick={() => {
+                      onTab("potjes");
+                      onSelectPot(p.id);
+                    }}
+                    className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition ${
+                      active
+                        ? "bg-white/10 font-semibold text-white"
+                        : "text-navy-200 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    <span
+                      aria-hidden
+                      className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                      style={{ backgroundColor: p.color ?? "#1D9E75" }}
+                    />
+                    <span className="truncate">{p.name}</span>
+                    <span className="ml-auto text-[11px] text-navy-400">
+                      €{Math.round(balanceFor(p.id))}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       <div className="mt-auto rounded-2xl border border-navy-700 bg-navy-800/60 p-4 text-xs text-navy-200">
         {adminCount > 1 ? (

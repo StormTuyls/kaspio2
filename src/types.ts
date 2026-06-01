@@ -11,6 +11,7 @@ export type Pot = {
   id: string;
   name: string;
   ownerId: string;
+  color?: string;
   targetAmount?: number;
   createdAt: string;
 };

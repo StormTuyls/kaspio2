@@ -15,7 +15,12 @@ type Props = {
   onBack: () => void;
   onAddTransaction: () => void;
   onDeleteTransaction: (id: string) => void;
-  onUpdatePot: (patch: { name: string; ownerId: string; targetAmount?: number }) => void;
+  onUpdatePot: (patch: {
+    name: string;
+    color?: string;
+    targetAmount?: number;
+    description?: string;
+  }) => void | Promise<void>;
   onDeletePot: () => void;
 };
 
@@ -76,10 +81,24 @@ export function PotDetail({
         ← Terug naar overzicht
       </button>
 
-      <div className="card p-6">
+      <div className="card relative overflow-hidden p-6">
+        <span
+          aria-hidden
+          className="absolute left-0 top-0 h-full w-1.5"
+          style={{ backgroundColor: pot.color ?? "#1D9E75" }}
+        />
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="mb-1 text-2xl font-bold text-navy-900 dark:text-white">{pot.name}</h1>
+            <div className="mb-1 flex items-center gap-2.5">
+              <span
+                aria-hidden
+                className="h-3 w-3 flex-shrink-0 rounded-full"
+                style={{ backgroundColor: pot.color ?? "#1D9E75" }}
+              />
+              <h1 className="text-2xl font-bold text-navy-900 dark:text-white">
+                {pot.name}
+              </h1>
+            </div>
             <div className="flex items-center gap-2 text-sm text-navy-500 dark:text-navy-300">
               <Avatar name={owner?.name ?? "—"} size="sm" />
               <span>{owner?.name ?? "Geen verantwoordelijke"}</span>
@@ -312,10 +331,13 @@ export function PotDetail({
 
       <Modal open={editing} title="Potje bewerken" onClose={() => setEditing(false)}>
         <PotForm
-          initial={pot}
-          members={members}
-          onSubmit={(values) => {
-            onUpdatePot(values);
+          initial={{
+            name: pot.name,
+            color: pot.color ?? "#1D9E75",
+            targetAmount: pot.targetAmount,
+          }}
+          onSubmit={async (values) => {
+            await onUpdatePot(values);
             setEditing(false);
           }}
           onCancel={() => setEditing(false)}

@@ -141,15 +141,29 @@ function PotCard({
       ? Math.min(100, Math.max(0, (balance / pot.targetAmount) * 100))
       : null;
 
+  const dotColor = pot.color ?? "#1D9E75";
+
   return (
     <button
       onClick={onSelect}
-      className="card group flex flex-col p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md"
+      className="card group relative flex flex-col overflow-hidden p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md"
     >
+      <span
+        aria-hidden
+        className="absolute left-0 top-0 h-full w-1.5"
+        style={{ backgroundColor: dotColor }}
+      />
       <div className="mb-1 flex items-center justify-between gap-2">
-        <h3 className="truncate text-base font-semibold text-navy-900 group-hover:text-azure-600 dark:text-navy-50 dark:group-hover:text-azure-300">
-          {pot.name}
-        </h3>
+        <div className="flex min-w-0 items-center gap-2">
+          <span
+            aria-hidden
+            className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+            style={{ backgroundColor: dotColor }}
+          />
+          <h3 className="truncate text-base font-semibold text-navy-900 group-hover:text-azure-600 dark:text-navy-50 dark:group-hover:text-azure-300">
+            {pot.name}
+          </h3>
+        </div>
         <span className="text-navy-300 transition group-hover:text-azure-500 dark:text-navy-500">
           →
         </span>

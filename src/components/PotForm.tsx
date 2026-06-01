@@ -1,28 +1,74 @@
 import { useState } from "react";
 import type { FormEvent, ReactNode } from "react";
-import type { Member, Pot } from "../types";
+
+// Kaspio kleurpalet — eerste optie is de primary teal.
+const POT_COLORS = [
+  { hex: "#1D9E75", label: "Teal" },
+  { hex: "#0F6E56", label: "Donker teal" },
+  { hex: "#EF9F27", label: "Amber" },
+  { hex: "#2289F5", label: "Blauw" },
+  { hex: "#8B5CF6", label: "Paars" },
+  { hex: "#EC4899", label: "Roze" },
+  { hex: "#F43F5E", label: "Rood" },
+  { hex: "#84CC16", label: "Limoen" },
+];
+
+export type PotFormValues = {
+  name: string;
+  color: string;
+  targetAmount?: number;
+  description?: string;
+};
 
 type Props = {
-  initial?: Pot;
-  members: Member[];
-  onSubmit: (values: { name: string; ownerId: string; targetAmount?: number }) => void;
+  initial?: { name: string; color: string; targetAmount?: number; description?: string };
+  onSubmit: (values: PotFormValues) => void | Promise<void>;
   onCancel: () => void;
 };
 
-export function PotForm({ initial, members, onSubmit, onCancel }: Props) {
+export function PotForm({ initial, onSubmit, onCancel }: Props) {
   const [name, setName] = useState(initial?.name ?? "");
-  const [ownerId, setOwnerId] = useState(initial?.ownerId ?? members[0]?.id ?? "");
-  const [target, setTarget] = useState(initial?.targetAmount?.toString() ?? "");
+  const [color, setColor] = useState(initial?.color ?? POT_COLORS[0].hex);
+  const [target, setTarget] = useState(
+    initial?.targetAmount?.toString() ?? "",
+  );
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !ownerId) return;
-    const targetAmount = target ? Number(target) : undefined;
-    onSubmit({
-      name: name.trim(),
-      ownerId,
-      targetAmount: Number.isFinite(targetAmount) && targetAmount! > 0 ? targetAmount : undefined,
-    });
+    setError(null);
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setError("Geef het potje een naam.");
+      return;
+    }
+    if (trimmed.length > 80) {
+      setError("Naam is te lang (max 80 tekens).");
+      return;
+    }
+    let targetAmount: number | undefined;
+    if (target.trim()) {
+      const v = Number(target);
+      if (!Number.isFinite(v) || v <= 0) {
+        setError("Doelbedrag moet een positief getal zijn.");
+        return;
+      }
+      targetAmount = v;
+    }
+    setBusy(true);
+    try {
+      await onSubmit({
+        name: trimmed,
+        color,
+        targetAmount,
+        description: description.trim() || undefined,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Iets ging mis.");
+      setBusy(false);
+    }
   }
 
   return (
@@ -33,43 +79,87 @@ export function PotForm({ initial, members, onSubmit, onCancel }: Props) {
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Bijv. Tournee 2026"
+          placeholder="Bijv. Kamp 2026"
+          maxLength={80}
           className="input"
           required
         />
       </Field>
-      <Field label="Verantwoordelijke" required>
-        <select
-          value={ownerId}
-          onChange={(e) => setOwnerId(e.target.value)}
-          className="input"
-          required
-        >
-          {members.length === 0 && <option value="">Geen leden — voeg eerst iemand toe</option>}
-          {members.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name} {m.role === "admin" ? "(Admin)" : ""}
-            </option>
+
+      <Field label="Kleur">
+        <div className="flex flex-wrap gap-2">
+          {POT_COLORS.map((c) => (
+            <button
+              key={c.hex}
+              type="button"
+              onClick={() => setColor(c.hex)}
+              aria-label={c.label}
+              aria-pressed={color === c.hex}
+              className={`relative h-9 w-9 rounded-full transition ${
+                color === c.hex
+                  ? "ring-2 ring-offset-2 ring-offset-white dark:ring-offset-navy-900"
+                  : "hover:scale-110"
+              }`}
+              style={{ backgroundColor: c.hex }}
+            >
+              {color === c.hex && (
+                <span
+                  className="absolute inset-0 flex items-center justify-center text-white"
+                  aria-hidden
+                >
+                  ✓
+                </span>
+              )}
+            </button>
           ))}
-        </select>
+        </div>
       </Field>
-      <Field label="Doelbedrag (optioneel)">
-        <input
-          type="number"
-          step="0.01"
-          min="0"
-          value={target}
-          onChange={(e) => setTarget(e.target.value)}
-          placeholder="0,00"
-          className="input"
+
+      <Field label="Doelbedrag" hint="Optioneel — bv. €500 voor het kamp">
+        <div className="relative">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-navy-400">
+            €
+          </span>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            value={target}
+            onChange={(e) => setTarget(e.target.value)}
+            placeholder="0,00"
+            className="input pl-7"
+          />
+        </div>
+      </Field>
+
+      <Field label="Beschrijving" hint="Optioneel — wat is het doel van dit potje?">
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Bijv. Inkomsten en uitgaven voor het zomer kamp"
+          rows={2}
+          className="input resize-none"
+          maxLength={500}
         />
       </Field>
+
+      {error && (
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          {error}
+        </div>
+      )}
+
       <div className="flex justify-end gap-2 pt-2">
-        <button type="button" onClick={onCancel} className="btn-secondary">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="btn-secondary"
+          disabled={busy}
+        >
           Annuleren
         </button>
-        <button type="submit" className="btn-accent" disabled={!ownerId}>
-          {initial ? "Opslaan" : "Potje aanmaken"}
+        <button type="submit" className="btn-accent" disabled={busy}>
+          {busy ? "Bezig…" : initial ? "Opslaan" : "Potje aanmaken"}
         </button>
       </div>
     </form>
@@ -79,10 +169,12 @@ export function PotForm({ initial, members, onSubmit, onCancel }: Props) {
 function Field({
   label,
   required,
+  hint,
   children,
 }: {
   label: string;
   required?: boolean;
+  hint?: string;
   children: ReactNode;
 }) {
   return (
@@ -92,6 +184,11 @@ function Field({
         {required && <span className="text-rose-500"> *</span>}
       </span>
       {children}
+      {hint && (
+        <span className="mt-1 block text-xs text-navy-400 dark:text-navy-300">
+          {hint}
+        </span>
+      )}
     </label>
   );
 }
