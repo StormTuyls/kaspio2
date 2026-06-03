@@ -332,7 +332,11 @@ function AuthedApp({
   const orgId = org?.id ?? null;
   const { pots: dbPots } = usePots(orgId);
   const { invites, sendInvite, revokeInvite } = useOrgInvites(orgId);
-  const { members: orgMembers, updateRole, removeMember } = useOrgMembers(orgId);
+  const {
+    members: orgMembers,
+    setMemberPermissions,
+    removeMember,
+  } = useOrgMembers(orgId);
   const { entries: auditEntries, loading: auditLoading } = useAuditLog(orgId);
   const [selectedPotId, setSelectedPotId] = useState<string | null>(null);
   const [showAddPot, setShowAddPot] = useState(false);
@@ -439,12 +443,13 @@ function AuthedApp({
               />
             ) : tab === "leden" && isAdmin ? (
               <MembersListView
+                orgId={org.id}
                 currentUserId={account.id}
                 members={orgMembers}
                 invites={invites}
                 pots={dbPots}
                 onInviteClick={() => setShowInvite(true)}
-                onUpdateRole={updateRole}
+                onSavePermissions={setMemberPermissions}
                 onRemoveMember={removeMember}
                 onRevokeInvite={revokeInvite}
               />

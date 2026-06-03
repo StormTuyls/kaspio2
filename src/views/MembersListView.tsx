@@ -1,34 +1,45 @@
-import { useState } from "react";
-import type { OrgInvite, OrgMember } from "../data";
+import { useMemo, useState } from "react";
+import type { GroupedMember, OrgInvite, OrgMember } from "../data";
+import { groupMembersByUser } from "../data";
 import type { MemberRole, Pot } from "../supabase";
+import { Modal } from "../components/Modal";
+import { ManageMemberModal } from "../components/ManageMemberModal";
 
 type Props = {
+  orgId: string;
   currentUserId: string;
   members: OrgMember[];
   invites: OrgInvite[];
   pots: Pot[];
   onInviteClick: () => void;
-  onUpdateRole: (
-    membershipId: string,
+  onSavePermissions: (
+    userId: string,
+    orgId: string,
     role: MemberRole,
-    potId: string | null,
+    potIds: string[],
   ) => Promise<{ error: string | null }>;
-  onRemoveMember: (membershipId: string) => Promise<{ error: string | null }>;
+  onRemoveMember: (
+    userId: string,
+    orgId: string,
+  ) => Promise<{ error: string | null }>;
   onRevokeInvite: (id: string) => Promise<{ error: string | null }>;
 };
 
 export function MembersListView({
+  orgId,
   currentUserId,
   members,
   invites,
   pots,
   onInviteClick,
-  onUpdateRole,
+  onSavePermissions,
   onRemoveMember,
   onRevokeInvite,
 }: Props) {
+  const grouped = useMemo(() => groupMembersByUser(members), [members]);
   const pendingInvites = invites.filter((i) => !i.accepted_at);
-  const adminCount = members.filter((m) => m.role === "admin").length;
+  const adminCount = grouped.filter((m) => m.effectiveRole === "admin").length;
+  const [managing, setManaging] = useState<GroupedMember | null>(null);
 
   return (
     <div className="space-y-6">
@@ -38,8 +49,7 @@ export function MembersListView({
             Iemand uitnodigen
           </h3>
           <p className="text-sm text-navy-500 dark:text-navy-300">
-            Admin, pot-owner of lezer. Nieuwe leden komen vanzelf binnen bij hun
-            eerste login.
+            Admin, pot-owner of lezer. Krijg een KASP-code om door te sturen.
           </p>
         </div>
         <button onClick={onInviteClick} className="btn-accent">
@@ -53,58 +63,89 @@ export function MembersListView({
             Openstaande uitnodigingen ({pendingInvites.length})
           </h3>
           <ul className="space-y-2">
-            {pendingInvites.map((inv) => (
-              <li
-                key={inv.id}
-                className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-sm dark:bg-navy-900"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium text-navy-900 dark:text-white">
-                    {inv.email}
-                  </div>
-                  <div className="text-xs text-navy-400">
-                    {roleLabel(inv.role)}
-                    {inv.pot_id &&
-                      ` · ${pots.find((p) => p.id === inv.pot_id)?.name ?? "?"}`}
-                    {" · wacht op eerste login"}
-                  </div>
-                </div>
-                <button
-                  onClick={() => onRevokeInvite(inv.id)}
-                  className="text-xs font-semibold text-rose-600 hover:underline"
+            {pendingInvites.map((inv) => {
+              const invitePots = (inv.pot_ids ?? [])
+                .map((id) => pots.find((p) => p.id === id)?.name)
+                .filter(Boolean) as string[];
+              if (inv.pot_id && invitePots.length === 0) {
+                const legacyName = pots.find((p) => p.id === inv.pot_id)?.name;
+                if (legacyName) invitePots.push(legacyName);
+              }
+              return (
+                <li
+                  key={inv.id}
+                  className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-sm dark:bg-navy-900"
                 >
-                  Intrekken
-                </button>
-              </li>
-            ))}
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium text-navy-900 dark:text-white">
+                      {inv.email}
+                    </div>
+                    <div className="text-xs text-navy-400">
+                      {roleLabel(inv.role)}
+                      {invitePots.length > 0 &&
+                        ` · ${invitePots.join(", ")}`}
+                      {" · wacht op eerste login"}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onRevokeInvite(inv.id)}
+                    className="text-xs font-semibold text-rose-600 hover:underline"
+                  >
+                    Intrekken
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}
 
       <section className="rounded-2xl border border-navy-100 bg-white p-5 dark:border-navy-700 dark:bg-navy-900">
         <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-navy-500 dark:text-navy-300">
-          Actieve leden ({members.length})
+          Actieve leden ({grouped.length})
         </h3>
-        {members.length === 0 ? (
+        {grouped.length === 0 ? (
           <p className="text-sm text-navy-400">
-            Nog geen actieve leden behalve jezelf.
+            Nog geen actieve leden. Nodig iemand uit met de knop hierboven.
           </p>
         ) : (
           <ul className="divide-y divide-navy-100 dark:divide-navy-700">
-            {members.map((m) => (
+            {grouped.map((m) => (
               <MemberRow
-                key={m.membership_id}
+                key={m.user_id}
                 member={m}
                 pots={pots}
                 isCurrentUser={m.user_id === currentUserId}
-                isOnlyAdmin={m.role === "admin" && adminCount === 1}
-                onUpdateRole={onUpdateRole}
-                onRemove={onRemoveMember}
+                isOnlyAdmin={
+                  m.effectiveRole === "admin" && adminCount === 1
+                }
+                onManage={() => setManaging(m)}
               />
             ))}
           </ul>
         )}
       </section>
+
+      <Modal
+        open={!!managing}
+        title="Lid beheren"
+        onClose={() => setManaging(null)}
+      >
+        {managing && (
+          <ManageMemberModal
+            orgId={orgId}
+            member={managing}
+            pots={pots}
+            isOnlyAdmin={
+              managing.effectiveRole === "admin" && adminCount === 1
+            }
+            isSelf={managing.user_id === currentUserId}
+            onSave={onSavePermissions}
+            onRemove={onRemoveMember}
+            onClose={() => setManaging(null)}
+          />
+        )}
+      </Modal>
     </div>
   );
 }
@@ -114,50 +155,17 @@ function MemberRow({
   pots,
   isCurrentUser,
   isOnlyAdmin,
-  onUpdateRole,
-  onRemove,
+  onManage,
 }: {
-  member: OrgMember;
+  member: GroupedMember;
   pots: Pot[];
   isCurrentUser: boolean;
   isOnlyAdmin: boolean;
-  onUpdateRole: (
-    membershipId: string,
-    role: MemberRole,
-    potId: string | null,
-  ) => Promise<{ error: string | null }>;
-  onRemove: (membershipId: string) => Promise<{ error: string | null }>;
+  onManage: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [role, setRole] = useState<MemberRole>(member.role);
-  const [potId, setPotId] = useState<string>(member.pot_id ?? "");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function save() {
-    setError(null);
-    if (role === "pot_owner" && !potId) {
-      setError("Kies een potje voor deze rol.");
-      return;
-    }
-    setBusy(true);
-    const res = await onUpdateRole(
-      member.membership_id,
-      role,
-      role === "pot_owner" ? potId : null,
-    );
-    setBusy(false);
-    if (res.error) setError(res.error);
-    else setEditing(false);
-  }
-
-  async function remove() {
-    if (!confirm(`Verwijder ${member.full_name} uit de organisatie?`)) return;
-    setBusy(true);
-    const res = await onRemove(member.membership_id);
-    setBusy(false);
-    if (res.error) setError(res.error);
-  }
+  const potNames = member.potIds
+    .map((id) => pots.find((p) => p.id === id)?.name)
+    .filter(Boolean) as string[];
 
   return (
     <li className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -171,84 +179,45 @@ function MemberRow({
               jij
             </span>
           )}
+          {isOnlyAdmin && (
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+              enige admin
+            </span>
+          )}
         </div>
         <div className="text-xs text-navy-400">{member.email}</div>
-        {!editing && (
-          <div className="mt-1 text-xs text-navy-500">
-            {roleLabel(member.role)}
-            {member.role === "pot_owner" &&
-              ` · ${pots.find((p) => p.id === member.pot_id)?.name ?? "?"}`}
-          </div>
-        )}
+        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-navy-500">
+          <span className="font-semibold">{roleLabel(member.effectiveRole)}</span>
+          {member.effectiveRole === "pot_owner" && potNames.length > 0 && (
+            <>
+              <span>·</span>
+              <span className="flex flex-wrap gap-1">
+                {member.potIds.map((id) => {
+                  const pot = pots.find((p) => p.id === id);
+                  if (!pot) return null;
+                  return (
+                    <span
+                      key={id}
+                      className="inline-flex items-center gap-1 rounded-full bg-canvas px-2 py-0.5 dark:bg-navy-800"
+                    >
+                      <span
+                        aria-hidden
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{ backgroundColor: pot.color }}
+                      />
+                      {pot.name}
+                    </span>
+                  );
+                })}
+              </span>
+            </>
+          )}
+        </div>
       </div>
 
-      {editing ? (
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as MemberRole)}
-            className="input min-w-[140px]"
-          >
-            <option value="admin">Admin</option>
-            <option value="pot_owner">Pot owner</option>
-            <option value="reader">Lezer</option>
-          </select>
-          {role === "pot_owner" && (
-            <select
-              value={potId}
-              onChange={(e) => setPotId(e.target.value)}
-              className="input min-w-[140px]"
-            >
-              <option value="">Kies potje</option>
-              {pots.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          )}
-          <button onClick={save} disabled={busy} className="btn-accent">
-            {busy ? "…" : "Opslaan"}
-          </button>
-          <button
-            onClick={() => {
-              setEditing(false);
-              setError(null);
-              setRole(member.role);
-              setPotId(member.pot_id ?? "");
-            }}
-            className="btn-secondary"
-          >
-            Annuleren
-          </button>
-        </div>
-      ) : (
-        <div className="flex gap-2">
-          {!isOnlyAdmin && (
-            <button
-              onClick={() => setEditing(true)}
-              className="text-xs font-semibold text-navy-500 hover:text-navy-900"
-            >
-              Wijzig rol
-            </button>
-          )}
-          {!isCurrentUser && (
-            <button
-              onClick={remove}
-              disabled={busy}
-              className="text-xs font-semibold text-rose-600 hover:underline disabled:opacity-50"
-            >
-              Verwijderen
-            </button>
-          )}
-        </div>
-      )}
-
-      {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
-          {error}
-        </div>
-      )}
+      <button onClick={onManage} className="btn-secondary text-sm">
+        Beheer
+      </button>
     </li>
   );
 }

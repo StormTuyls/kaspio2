@@ -249,7 +249,10 @@ export type OrgInvite = {
   organisation_id: string;
   email: string;
   role: MemberRole;
+  /** Legacy single pot_id, blijft voor backward compat. */
   pot_id: string | null;
+  /** Nieuwe multi-pot toewijzing. */
+  pot_ids: string[] | null;
   invited_by: string | null;
   accepted_at: string | null;
   accepted_by: string | null;
@@ -260,8 +263,14 @@ export type OrgInvite = {
 export type InviteInput = {
   email: string;
   role: MemberRole;
-  potId?: string | null;
+  potIds?: string[];
   expiresAt?: string | null;
+};
+
+export type InviteResult = {
+  error: string | null;
+  /** Beta invite code die de admin moet doorsturen aan de uitgenodigde. */
+  betaCode?: string;
 };
 
 export function useOrgInvites(orgId: string | null) {
@@ -288,25 +297,44 @@ export function useOrgInvites(orgId: string | null) {
     fetchInvites();
   }, [fetchInvites]);
 
-  async function sendInvite(
-    input: InviteInput,
-  ): Promise<{ error: string | null }> {
+  async function sendInvite(input: InviteInput): Promise<InviteResult> {
     if (!orgId) return { error: "Geen organisatie geselecteerd." };
-    const { error } = await supabase.rpc(
+    const email = input.email.trim().toLowerCase();
+
+    // 1. Maak de org-invite (rol + pot-toewijzing)
+    const { error: orgInviteError } = await supabase.rpc(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       "create_org_invite" as any,
       {
         p_org_id: orgId,
-        p_email: input.email.trim().toLowerCase(),
+        p_email: email,
         p_role: input.role,
-        p_pot_id: input.potId ?? null,
+        p_pot_ids: input.role === "pot_owner" ? input.potIds ?? null : null,
         p_expires_at: input.expiresAt ?? null,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
     );
-    if (error) return { error: error.message };
+    if (orgInviteError) return { error: orgInviteError.message };
+
+    // 2. Genereer automatisch een beta-invite-code voor diezelfde email,
+    //    zodat de admin niet apart in SQL Editor hoeft te werken.
+    const { data: codeData, error: codeError } = await supabase.rpc(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      "create_invite" as any,
+      {
+        p_email: email,
+        p_note: `Auto-generated bij org-invite naar ${email}`,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
+    );
     await fetchInvites();
-    return { error: null };
+    if (codeError) {
+      // Org invite is gemaakt, beta code niet. Geen kritieke fout maar wel warnen.
+      // eslint-disable-next-line no-console
+      console.warn("[Kaspio] Beta-invite-code niet gegenereerd:", codeError.message);
+      return { error: null };
+    }
+    return { error: null, betaCode: codeData as string };
   }
 
   async function revokeInvite(id: string): Promise<{ error: string | null }> {
@@ -405,38 +433,90 @@ export function useOrgMembers(orgId: string | null) {
     fetchMembers();
   }, [fetchMembers]);
 
-  async function updateRole(
-    membershipId: string,
+  /** Set all permissions atomically: replaces existing memberships for this user. */
+  async function setMemberPermissions(
+    userId: string,
+    orgId: string,
     role: MemberRole,
-    potId: string | null,
+    potIds: string[],
   ): Promise<{ error: string | null }> {
-    const { error } = await (
-      supabase.from("memberships") as unknown as {
-        update: (v: Record<string, unknown>) => {
-          eq: (k: string, v: string) => Promise<{ error: Error | null }>;
-        };
-      }
-    )
-      .update({ role, pot_id: potId })
-      .eq("id", membershipId);
+    const { error } = await supabase.rpc(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      "set_member_permissions" as any,
+      {
+        p_org_id: orgId,
+        p_user_id: userId,
+        p_role: role,
+        p_pot_ids: role === "pot_owner" ? potIds : null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
+    );
     if (error) return { error: error.message };
     await fetchMembers();
     return { error: null };
   }
 
   async function removeMember(
-    membershipId: string,
+    userId: string,
+    orgId: string,
   ): Promise<{ error: string | null }> {
-    const { error } = await supabase
-      .from("memberships")
-      .delete()
-      .eq("id", membershipId);
+    const { error } = await supabase.rpc(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      "remove_member" as any,
+      { p_org_id: orgId, p_user_id: userId } as never,
+    );
     if (error) return { error: error.message };
     await fetchMembers();
     return { error: null };
   }
 
-  return { members, loading, updateRole, removeMember, refresh: fetchMembers };
+  return {
+    members,
+    loading,
+    setMemberPermissions,
+    removeMember,
+    refresh: fetchMembers,
+  };
+}
+
+// =============================================================================
+// Grouped members: één rij per user met al z'n permissions geaggregeerd
+// =============================================================================
+
+export type GroupedMember = {
+  user_id: string;
+  full_name: string;
+  email: string;
+  /** Effectieve rol: admin als ze er één hebben, anders pot_owner of reader. */
+  effectiveRole: MemberRole;
+  /** Pot IDs als ze pot_owner zijn. Lege array voor admin/reader. */
+  potIds: string[];
+};
+
+export function groupMembersByUser(members: OrgMember[]): GroupedMember[] {
+  const byUser = new Map<string, GroupedMember>();
+  for (const m of members) {
+    const existing = byUser.get(m.user_id);
+    if (!existing) {
+      byUser.set(m.user_id, {
+        user_id: m.user_id,
+        full_name: m.full_name,
+        email: m.email,
+        effectiveRole: m.role,
+        potIds: m.pot_id ? [m.pot_id] : [],
+      });
+    } else {
+      // Admin trumps alles
+      if (m.role === "admin") existing.effectiveRole = "admin";
+      else if (m.role === "reader" && existing.effectiveRole !== "admin") {
+        existing.effectiveRole = "reader";
+      }
+      if (m.pot_id && !existing.potIds.includes(m.pot_id)) {
+        existing.potIds.push(m.pot_id);
+      }
+    }
+  }
+  return Array.from(byUser.values());
 }
 
 // =============================================================================
