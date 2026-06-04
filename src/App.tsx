@@ -784,7 +784,7 @@ function BottomNav({
             onClick={() => onTab(it.tab)}
             className={`relative flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold transition ${
               active
-                ? "text-mint-600 dark:text-mint-400"
+                ? "text-teal-600 dark:text-teal-400"
                 : "text-navy-400 hover:text-navy-700 dark:text-navy-400 dark:hover:text-white"
             }`}
           >
@@ -802,14 +802,14 @@ function BottomNav({
                 {it.icon}
               </svg>
               {it.badge && (
-                <span className="absolute -right-1.5 -top-1 flex min-w-[14px] items-center justify-center rounded-full bg-mint-500 px-1 text-[9px] font-bold text-white">
+                <span className="absolute -right-1.5 -top-1 flex min-w-[14px] items-center justify-center rounded-full bg-teal-500 px-1 text-[9px] font-bold text-white">
                   {it.badge}
                 </span>
               )}
             </span>
             <span>{it.label}</span>
             {active && (
-              <span className="absolute -top-px h-0.5 w-8 rounded-full bg-mint-500" />
+              <span className="absolute -top-px h-0.5 w-8 rounded-full bg-teal-500" />
             )}
           </button>
         );
@@ -862,12 +862,18 @@ function NavItem({
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition ${
+      className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition ${
         active
-          ? "bg-white/10 text-white"
+          ? "bg-teal-500/15 text-white"
           : "text-navy-200 hover:bg-white/5 hover:text-white"
       }`}
     >
+      {active && (
+        <span
+          aria-hidden
+          className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-teal-400"
+        />
+      )}
       <svg
         width="18"
         height="18"
@@ -877,12 +883,17 @@ function NavItem({
         strokeWidth="2"
         strokeLinejoin="round"
         strokeLinecap="round"
+        className={active ? "text-teal-300" : ""}
       >
         {icon}
       </svg>
       <span className="flex-1 text-left font-semibold">{label}</span>
       {badge && (
-        <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold">
+        <span
+          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+            active ? "bg-teal-400/20 text-teal-200" : "bg-white/10"
+          }`}
+        >
           {badge}
         </span>
       )}

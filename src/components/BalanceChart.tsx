@@ -58,7 +58,7 @@ export function BalanceChart({ transactions }: Props) {
           {formatEuro(last.balance)}
         </span>
       </div>
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-44 w-full text-mint-500">
+      <svg viewBox={`0 0 ${width} ${height}`} className="h-44 w-full text-teal-500">
         <line
           x1={padX}
           x2={width - padX}
@@ -68,7 +68,7 @@ export function BalanceChart({ transactions }: Props) {
           stroke="currentColor"
           strokeDasharray="4 4"
         />
-        <path d={areaPath} className="fill-mint-500/15" />
+        <path d={areaPath} className="fill-teal-500/15" />
         <path
           d={path}
           fill="none"

@@ -175,7 +175,7 @@ function MemberRow({
             {member.full_name}
           </span>
           {isCurrentUser && (
-            <span className="rounded-full bg-mint-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-mint-700">
+            <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">
               jij
             </span>
           )}

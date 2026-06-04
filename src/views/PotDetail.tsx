@@ -144,7 +144,7 @@ export function PotDetail({
             <p className="text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
               Inkomend
             </p>
-            <p className="text-xl font-bold text-mint-600 dark:text-mint-400">
+            <p className="text-xl font-bold tabular-nums text-teal-700 dark:text-teal-300">
               {formatEuro(totalIn)}
             </p>
           </div>
@@ -152,7 +152,7 @@ export function PotDetail({
             <p className="text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
               Uitgaand
             </p>
-            <p className="text-xl font-bold text-rose-600 dark:text-rose-400">
+            <p className="text-xl font-bold tabular-nums text-amber-700 dark:text-amber-400">
               {formatEuro(totalOut)}
             </p>
           </div>
@@ -162,13 +162,13 @@ export function PotDetail({
           <div className="mt-5">
             <div className="mb-1.5 flex justify-between text-xs text-navy-500 dark:text-navy-300">
               <span>Doel: {formatEuro(pot.targetAmount!)}</span>
-              <span className="font-semibold text-mint-600 dark:text-mint-400">
+              <span className="font-semibold text-teal-600 dark:text-teal-400">
                 {progress.toFixed(0)}%
               </span>
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-navy-100 dark:bg-navy-700">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-mint-500 to-mint-400 transition-all"
+                className="h-full rounded-full bg-gradient-to-r from-teal-400 to-teal-600 transition-all"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -244,10 +244,10 @@ export function PotDetail({
                           {tx.counterparty}
                         </span>
                         <span
-                          className={`whitespace-nowrap text-base font-bold ${
+                          className={`whitespace-nowrap text-base font-bold tabular-nums ${
                             tx.direction === "in"
-                              ? "text-mint-600 dark:text-mint-400"
-                              : "text-rose-600 dark:text-rose-400"
+                              ? "text-teal-700 dark:text-teal-300"
+                              : "text-amber-700 dark:text-amber-400"
                           }`}
                         >
                           {tx.direction === "in" ? "+" : "−"}
@@ -299,10 +299,10 @@ export function PotDetail({
                           {tx.memo ?? "—"}
                         </td>
                         <td
-                          className={`whitespace-nowrap px-4 py-3 text-right font-semibold ${
+                          className={`whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums ${
                             tx.direction === "in"
-                              ? "text-mint-600 dark:text-mint-400"
-                              : "text-rose-600 dark:text-rose-400"
+                              ? "text-teal-700 dark:text-teal-300"
+                              : "text-amber-700 dark:text-amber-400"
                           }`}
                         >
                           {tx.direction === "in" ? "+" : "−"}

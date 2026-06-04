@@ -202,7 +202,7 @@ function RoleOption({
     <label
       className={`flex cursor-pointer items-start gap-3 rounded-lg border-2 p-3 transition ${
         checked
-          ? "border-mint-500 bg-mint-50 dark:bg-mint-900/20"
+          ? "border-teal-500 bg-teal-50 dark:bg-teal-900/20"
           : "border-navy-100 dark:border-navy-700"
       } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
     >

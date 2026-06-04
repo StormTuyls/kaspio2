@@ -41,7 +41,7 @@ export function Overview({
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-sm font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+        <p className="text-sm font-semibold uppercase tracking-wider text-teal-600 dark:text-teal-400">
           {organizationName}
         </p>
         <h1 className="text-2xl font-bold text-navy-900 dark:text-white">
@@ -53,19 +53,19 @@ export function Overview({
         <Stat
           label={isAdmin ? "Totaal saldo" : "Mijn saldo"}
           value={formatEuro(total)}
-          accent="navy"
+          accent="teal-bold"
           big
         />
         <Stat
           label="Inkomend"
           value={formatEuro(totalIn)}
-          accent="mint"
+          accent="teal"
           delta={`${txInScope.filter((t) => t.direction === "in").length} transacties`}
         />
         <Stat
           label="Uitgaand"
           value={formatEuro(totalOut)}
-          accent="rose"
+          accent="amber"
           delta={`${txInScope.filter((t) => t.direction === "out").length} transacties`}
         />
       </div>
@@ -146,7 +146,7 @@ function PotCard({
   return (
     <button
       onClick={onSelect}
-      className="card group relative flex flex-col overflow-hidden p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md"
+      className="card group relative flex flex-col overflow-hidden p-5 text-left transition duration-200 hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-lg dark:hover:border-teal-800"
     >
       <span
         aria-hidden
@@ -160,11 +160,11 @@ function PotCard({
             className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
             style={{ backgroundColor: dotColor }}
           />
-          <h3 className="truncate text-base font-semibold text-navy-900 group-hover:text-azure-600 dark:text-navy-50 dark:group-hover:text-azure-300">
+          <h3 className="truncate text-base font-semibold text-navy-900 transition group-hover:text-teal-700 dark:text-navy-50 dark:group-hover:text-teal-300">
             {pot.name}
           </h3>
         </div>
-        <span className="text-navy-300 transition group-hover:text-azure-500 dark:text-navy-500">
+        <span className="text-navy-300 transition group-hover:translate-x-0.5 group-hover:text-teal-600 dark:text-navy-500 dark:group-hover:text-teal-400">
           →
         </span>
       </div>
@@ -173,7 +173,7 @@ function PotCard({
         <span className="truncate">{owner?.name ?? "Geen verantwoordelijke"}</span>
       </div>
 
-      <div className="mb-3 text-2xl font-bold text-navy-900 dark:text-navy-50">
+      <div className="mb-3 text-2xl font-bold tabular-nums text-navy-900 dark:text-navy-50">
         {formatEuro(balance)}
       </div>
 
@@ -181,13 +181,13 @@ function PotCard({
         <div className="mb-3">
           <div className="mb-1 flex justify-between text-xs text-navy-400 dark:text-navy-300">
             <span>Doel: {formatEuro(pot.targetAmount!)}</span>
-            <span className="font-semibold text-mint-600 dark:text-mint-400">
+            <span className="font-semibold text-teal-600 dark:text-teal-400">
               {progress.toFixed(0)}%
             </span>
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-navy-100 dark:bg-navy-700">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-mint-500 to-mint-400 transition-all"
+              className="h-full rounded-full bg-gradient-to-r from-teal-400 to-teal-600 transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -200,7 +200,7 @@ function PotCard({
             <span className="text-navy-500 dark:text-navy-300">
               Laatste in: {formatDate(lastIncoming.occurredOn)}
             </span>
-            <span className="font-semibold text-mint-600 dark:text-mint-400">
+            <span className="font-semibold tabular-nums text-teal-700 dark:text-teal-300">
               +{formatEuro(lastIncoming.amount)}
             </span>
           </>
@@ -236,8 +236,8 @@ function RecentActivity({
                 <div
                   className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
                     positive
-                      ? "bg-mint-50 text-mint-600 dark:bg-mint-900/30 dark:text-mint-400"
-                      : "bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400"
+                      ? "bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400"
+                      : "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
                   }`}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -254,10 +254,10 @@ function RecentActivity({
                       {tx.counterparty}
                     </span>
                     <span
-                      className={`whitespace-nowrap text-sm font-semibold ${
+                      className={`whitespace-nowrap text-sm font-semibold tabular-nums ${
                         positive
-                          ? "text-mint-600 dark:text-mint-400"
-                          : "text-rose-600 dark:text-rose-400"
+                          ? "text-teal-700 dark:text-teal-300"
+                          : "text-amber-700 dark:text-amber-400"
                       }`}
                     >
                       {positive ? "+" : "−"}
@@ -287,24 +287,35 @@ function Stat({
 }: {
   label: string;
   value: string;
-  accent: "navy" | "mint" | "rose";
+  accent: "teal-bold" | "teal" | "amber" | "rose";
   delta?: string;
   big?: boolean;
 }) {
   const ring = {
-    navy: "before:bg-navy-700 dark:before:bg-azure-400",
-    mint: "before:bg-mint-500",
+    "teal-bold":
+      "before:bg-gradient-to-b before:from-teal-500 before:to-teal-700",
+    teal: "before:bg-teal-400",
+    amber: "before:bg-amber-500",
     rose: "before:bg-rose-500",
   }[accent];
+  const isHero = accent === "teal-bold";
   return (
     <div
-      className={`card relative overflow-hidden p-5 before:absolute before:left-0 before:top-0 before:h-full before:w-1 ${ring}`}
+      className={`card relative overflow-hidden p-5 before:absolute before:left-0 before:top-0 before:h-full before:w-1 ${ring} ${
+        isHero
+          ? "ring-1 ring-teal-100/60 dark:ring-teal-900/40"
+          : ""
+      }`}
     >
       <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
         {label}
       </p>
       <p
-        className={`font-extrabold text-navy-900 dark:text-navy-50 ${big ? "text-3xl" : "text-2xl"}`}
+        className={`font-extrabold ${
+          isHero
+            ? "text-teal-700 dark:text-teal-300"
+            : "text-navy-900 dark:text-navy-50"
+        } ${big ? "text-3xl" : "text-2xl"}`}
       >
         {value}
       </p>

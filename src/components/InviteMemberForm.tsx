@@ -231,7 +231,7 @@ function SuccessBox({ email, code }: { email: string; code?: string }) {
   }
 
   return (
-    <div className="rounded-lg border border-mint-200 bg-mint-50 px-4 py-4 text-sm text-mint-800">
+    <div className="rounded-lg border border-teal-200 bg-teal-50 px-4 py-4 text-sm text-teal-800 dark:border-teal-800 dark:bg-teal-900/20 dark:text-teal-200">
       <div className="mb-2 font-semibold">✓ Uitnodiging klaar voor {email}</div>
       {code ? (
         <>
@@ -239,7 +239,7 @@ function SuccessBox({ email, code }: { email: string; code?: string }) {
             Stuur deze beta-code mee in je mail. Zonder code kunnen ze geen
             account aanmaken.
           </p>
-          <div className="mb-3 rounded-md bg-white px-3 py-2 font-mono text-base font-bold tracking-wider text-mint-700">
+          <div className="mb-3 rounded-md bg-white px-3 py-2 font-mono text-base font-bold tracking-wider text-teal-700 dark:bg-navy-900 dark:text-teal-300">
             {code}
           </div>
           <button
@@ -253,7 +253,7 @@ function SuccessBox({ email, code }: { email: string; code?: string }) {
       ) : (
         <p>
           Stuur hen een mailtje met de uitnodiging via{" "}
-          <code className="rounded bg-mint-100 px-1">kaspio.be</code>.
+          <code className="rounded bg-teal-100 px-1 dark:bg-teal-900/40">kaspio.be</code>.
         </p>
       )}
     </div>

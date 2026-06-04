@@ -68,7 +68,7 @@ export function TransactionForm({ onSubmit, onCancel }: Props) {
           onClick={() => setDirection("in")}
           className={`flex items-center justify-center gap-2 rounded-xl border-2 px-3 py-2.5 text-sm font-semibold transition ${
             direction === "in"
-              ? "border-mint-500 bg-mint-50 text-mint-700"
+              ? "border-teal-500 bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300"
               : "border-navy-100 text-navy-500 hover:border-navy-200 dark:border-navy-700 dark:text-navy-300 dark:hover:border-navy-600"
           }`}
         >
@@ -79,7 +79,7 @@ export function TransactionForm({ onSubmit, onCancel }: Props) {
           onClick={() => setDirection("out")}
           className={`flex items-center justify-center gap-2 rounded-xl border-2 px-3 py-2.5 text-sm font-semibold transition ${
             direction === "out"
-              ? "border-rose-500 bg-rose-50 text-rose-700"
+              ? "border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
               : "border-navy-100 text-navy-500 hover:border-navy-200 dark:border-navy-700 dark:text-navy-300 dark:hover:border-navy-600"
           }`}
         >

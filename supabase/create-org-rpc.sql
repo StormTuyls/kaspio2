@@ -18,6 +18,7 @@ as $$
 declare
   v_user uuid := auth.uid();
   v_full_name text;
+  v_email text;
   v_org_id uuid;
   v_trimmed text := trim(p_name);
 begin
@@ -28,15 +29,34 @@ begin
     raise exception 'Organisatie heeft een naam nodig' using errcode = '22023';
   end if;
 
-  -- Zorg dat het profile bestaat (defensief)
-  select coalesce(raw_user_meta_data->>'full_name', email, 'Onbekend')
-    into v_full_name
-    from auth.users
-    where id = v_user;
+  -- Haal user-data uit auth.users (defensief)
+  select
+    coalesce(raw_user_meta_data->>'full_name', email, 'Onbekend'),
+    email
+  into v_full_name, v_email
+  from auth.users
+  where id = v_user;
 
-  insert into public.profiles (id, full_name)
-  values (v_user, coalesce(v_full_name, 'Onbekend'))
+  if v_email is null then
+    raise exception 'Geen e-mailadres bekend voor deze user' using errcode = '23502';
+  end if;
+
+  -- Zorg dat het profile bestaat (defensief, voor users die signupten
+  -- vóór de handle_new_user trigger live was).
+  insert into public.profiles (id, full_name, email)
+  values (v_user, coalesce(v_full_name, 'Onbekend'), v_email)
   on conflict (id) do nothing;
+
+  -- Voorkom duplicaten: als user al een org met deze naam heeft, return die.
+  select id into v_org_id
+  from public.organisations
+  where owner_id = v_user
+    and lower(name) = lower(v_trimmed)
+  limit 1;
+
+  if v_org_id is not null then
+    return v_org_id;
+  end if;
 
   -- Maak de org aan (bypasst RLS dankzij SECURITY DEFINER)
   insert into public.organisations (name, owner_id)
@@ -59,3 +79,18 @@ end;
 $$;
 
 grant execute on function public.create_organisation(text) to authenticated;
+
+-- ============================================================================
+-- Prevent duplicate org-names per owner (case-insensitive)
+-- ============================================================================
+-- Een user mag niet 2x dezelfde org-naam hebben. Index met lower() voor
+-- case-insensitive uniqueness. Past niet als er al duplicates bestaan ,
+-- dan eerst opruimen via:
+--   select owner_id, lower(name), count(*)
+--     from public.organisations
+--    group by owner_id, lower(name)
+--   having count(*) > 1;
+-- ============================================================================
+
+create unique index if not exists organisations_owner_name_unique
+  on public.organisations (owner_id, lower(name));

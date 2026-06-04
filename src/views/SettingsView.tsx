@@ -114,7 +114,7 @@ export function SettingsView({
                 onClick={() => onChange({ digestFrequency: f })}
                 className={`rounded-xl border-2 px-3 py-2 text-sm font-semibold transition ${
                   notifications.digestFrequency === f
-                    ? "border-mint-500 bg-mint-50 text-mint-700 dark:bg-mint-900/20 dark:text-mint-300"
+                    ? "border-teal-500 bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300"
                     : "border-navy-100 text-navy-500 hover:border-navy-200 dark:border-navy-700 dark:text-navy-300 dark:hover:border-navy-600"
                 }`}
               >
@@ -125,16 +125,6 @@ export function SettingsView({
         </div>
       </div>
 
-      <div className="card p-6">
-        <h2 className="mb-1 text-base font-semibold text-navy-900 dark:text-navy-50">
-          Gegevens
-        </h2>
-        <p className="text-sm text-navy-500 dark:text-navy-300">
-          Tijdens de bèta worden je gegevens lokaal in je browser bewaard. Wachtwoorden zijn
-          gehasht (SHA-256). Voor productie verschijnt later een gekoppelde Postgres-backend
-          (zie <code className="rounded bg-canvas px-1 dark:bg-navy-800">docker-compose.yml</code>).
-        </p>
-      </div>
     </div>
   );
 }
@@ -186,7 +176,7 @@ function Toggle({
       </div>
       <span
         className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition ${
-          value ? "bg-mint-500" : "bg-navy-200 dark:bg-navy-700"
+          value ? "bg-teal-500" : "bg-navy-200 dark:bg-navy-700"
         }`}
       >
         <span

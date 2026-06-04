@@ -76,17 +76,17 @@ function describeAction(entry: AuditRow): {
     insert: {
       verb: "aangemaakt",
       icon: "+",
-      color: "bg-mint-100 text-mint-700",
+      color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300",
     },
     update: {
       verb: "bewerkt",
       icon: "✎",
-      color: "bg-azure-100 text-azure-700",
+      color: "bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
     },
     delete: {
       verb: "verwijderd",
       icon: "×",
-      color: "bg-rose-100 text-rose-700",
+      color: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
     },
   };
   const opInfo = ops[op] ?? { verb: op, icon: "·", color: "bg-navy-100" };
