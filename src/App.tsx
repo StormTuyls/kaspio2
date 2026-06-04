@@ -6,7 +6,7 @@ import { useAppState, visiblePots } from "./storage";
 import {
   acceptPendingInvites,
   useAuditLog,
-  useCurrentOrg,
+  useMyOrgs,
   useOrgInvites,
   useOrgMembers,
   usePots,
@@ -16,6 +16,9 @@ import { InviteMemberForm } from "./components/InviteMemberForm";
 import { MembersListView } from "./views/MembersListView";
 import { AuditLogView } from "./views/AuditLogView";
 import { OrgOnboardingView } from "./views/OrgOnboardingView";
+import { OrgSwitcher } from "./components/OrgSwitcher";
+import { CreateOrgForm } from "./components/CreateOrgForm";
+import type { Organisation } from "./supabase";
 import type { Pot as DbPot, Transaction as DbTransaction } from "./supabase";
 import type { Pot, Transaction } from "./types";
 import { signOut, supabase, useSession } from "./supabase";
@@ -212,9 +215,11 @@ function dbTxToUiTx(t: DbTransaction): Transaction {
   };
 }
 
-function useBridgedStore(localStore: LocalStore, currentUserId: string) {
-  const { org } = useCurrentOrg();
-  const orgId = org?.id ?? null;
+function useBridgedStore(
+  localStore: LocalStore,
+  currentUserId: string,
+  orgId: string | null,
+) {
   const {
     pots: dbPots,
     addPot: addDbPot,
@@ -327,9 +332,15 @@ function AuthedApp({
   };
 
   const localStore = useAppState(account.id, account.fullName);
-  const store = useBridgedStore(localStore, account.id);
-  const { org, loading: orgLoading, refresh: refreshOrg } = useCurrentOrg();
+  const {
+    orgs,
+    selected: org,
+    loading: orgLoading,
+    setSelected: selectOrg,
+    createOrg,
+  } = useMyOrgs();
   const orgId = org?.id ?? null;
+  const store = useBridgedStore(localStore, account.id, orgId);
   const { pots: dbPots } = usePots(orgId);
   const { invites, sendInvite, revokeInvite } = useOrgInvites(orgId);
   const {
@@ -342,7 +353,15 @@ function AuthedApp({
   const [showAddPot, setShowAddPot] = useState(false);
   const [showAddTx, setShowAddTx] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [showNewOrg, setShowNewOrg] = useState(false);
   const [tab, setTab] = useState<Tab>("potjes");
+
+  /** Maak een nieuwe org aan en switch er naartoe (sluit modal). */
+  async function handleCreateOrg(name: string): Promise<{ error: string | null }> {
+    const res = await createOrg(name, account.id);
+    if (!res.error) setShowNewOrg(false);
+    return { error: res.error };
+  }
 
   // Bepaal rol. Fall back op "ben ik owner van de org?" als de memberships-fetch
   // nog niet klaar is of RLS de query blokkeert. Voorkomt eindeloos hangen.
@@ -377,9 +396,11 @@ function AuthedApp({
   if (!org) {
     return (
       <OrgOnboardingView
-        userId={account.id}
         fullName={account.fullName}
-        onCreated={() => refreshOrg()}
+        onCreate={async (name) => {
+          const res = await createOrg(name, account.id);
+          return { error: res.error };
+        }}
       />
     );
   }
@@ -397,7 +418,13 @@ function AuthedApp({
           potsCount={store.state.pots.length}
           adminCount={adminCount}
           auditCount={auditEntries.length}
-          organizationName={org.name}
+          orgs={orgs}
+          currentOrg={org}
+          onSelectOrg={(id) => {
+            selectOrg(id);
+            setSelectedPotId(null);
+          }}
+          onCreateOrg={() => setShowNewOrg(true)}
           pots={store.state.pots}
           transactions={store.state.transactions}
           selectedPotId={selectedPotId}
@@ -530,6 +557,19 @@ function AuthedApp({
           />
         )}
       </Modal>
+
+      <Modal
+        open={showNewOrg}
+        title="Nieuwe organisatie"
+        onClose={() => setShowNewOrg(false)}
+      >
+        <CreateOrgForm
+          title="Nieuwe organisatie aanmaken"
+          description="Bijv. een tweede club, vereniging of side-project. Je kunt achteraf wisselen tussen organisaties via de menubalk links."
+          onCreate={handleCreateOrg}
+          onCancel={() => setShowNewOrg(false)}
+        />
+      </Modal>
     </div>
   );
 }
@@ -541,7 +581,10 @@ function Sidebar({
   potsCount,
   adminCount,
   auditCount,
-  organizationName,
+  orgs,
+  currentOrg,
+  onSelectOrg,
+  onCreateOrg,
   brandName,
   branding,
   pots,
@@ -556,7 +599,10 @@ function Sidebar({
   potsCount: number;
   adminCount: number;
   auditCount: number;
-  organizationName: string;
+  orgs: Organisation[];
+  currentOrg: Organisation;
+  onSelectOrg: (id: string) => void;
+  onCreateOrg: () => void;
   brandName: string;
   branding: Branding;
   pots: Pot[];
@@ -574,12 +620,17 @@ function Sidebar({
       );
   return (
     <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-navy-900 bg-navy-900 px-5 py-6 text-navy-100 lg:flex dark:border-navy-800">
-      <div className="mb-8 flex items-center gap-2.5">
-        <BrandLogo branding={branding} variant="light" />
-        <div>
+      <div className="mb-8">
+        <div className="mb-2 flex items-center gap-2.5">
+          <BrandLogo branding={branding} variant="light" />
           <div className="text-sm font-bold text-white">{brandName}</div>
-          <div className="truncate text-xs text-navy-300">{organizationName}</div>
         </div>
+        <OrgSwitcher
+          orgs={orgs}
+          selected={currentOrg}
+          onSelect={onSelectOrg}
+          onCreateNew={onCreateOrg}
+        />
       </div>
 
       <nav className="space-y-1 text-sm">

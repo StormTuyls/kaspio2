@@ -4,14 +4,12 @@ import { Mark } from "../components/Logo";
 import {
   SUPABASE_CONFIGURED,
   resetPasswordForEmail,
-  signInWithMagicLink,
   signInWithPassword,
   signUpWithPassword,
   supabase,
 } from "../supabase";
 
 type Mode = "login" | "signup";
-type LoginMethod = "password" | "magic";
 
 export type AuthError = {
   kind: "expired" | "invalid" | "other";
@@ -197,12 +195,11 @@ function LoginForm({
   onAuth: () => void;
   startInForgotMode?: boolean;
 }) {
-  const [method, setMethod] = useState<LoginMethod>("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [status, setStatus] = useState<
-    "idle" | "busy" | "magic-sent" | "reset-sent"
-  >("idle");
+  const [status, setStatus] = useState<"idle" | "busy" | "reset-sent">(
+    "idle",
+  );
   const [error, setError] = useState<string | null>(null);
   const [forgotMode, setForgotMode] = useState(startInForgotMode);
 
@@ -215,10 +212,6 @@ function LoginForm({
         const { error: err } = await resetPasswordForEmail(email);
         if (err) throw err;
         setStatus("reset-sent");
-      } else if (method === "magic") {
-        const { error: err } = await signInWithMagicLink(email);
-        if (err) throw err;
-        setStatus("magic-sent");
       } else {
         const { error: err } = await signInWithPassword(email, password);
         if (err) throw err;
@@ -228,16 +221,6 @@ function LoginForm({
       setStatus("idle");
       setError(translateError(err));
     }
-  }
-
-  if (status === "magic-sent") {
-    return (
-      <div className="rounded-lg border border-mint-200 bg-mint-50 px-4 py-5 text-sm text-mint-800">
-        <div className="mb-1 font-semibold">Check je mailbox.</div>
-        We stuurden een inlog-link naar <strong>{email}</strong>. Klik die en
-        je bent ingelogd.
-      </div>
-    );
   }
 
   if (status === "reset-sent") {
@@ -302,8 +285,6 @@ function LoginForm({
         Welkom terug
       </h2>
 
-      <MethodToggle method={method} onChange={setMethod} />
-
       <Field label="E-mailadres">
         <input
           type="email"
@@ -315,18 +296,16 @@ function LoginForm({
         />
       </Field>
 
-      {method === "password" && (
-        <Field label="Wachtwoord">
-          <input
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="input"
-          />
-        </Field>
-      )}
+      <Field label="Wachtwoord">
+        <input
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          className="input"
+        />
+      </Field>
 
       {error && <ErrorBox>{error}</ErrorBox>}
 
@@ -335,64 +314,24 @@ function LoginForm({
         disabled={status === "busy" || !SUPABASE_CONFIGURED}
         className="btn-accent w-full"
       >
-        {status === "busy"
-          ? "Bezig…"
-          : method === "magic"
-            ? "Stuur inlog-link"
-            : "Inloggen"}
+        {status === "busy" ? "Bezig…" : "Inloggen"}
       </button>
 
-      {method === "password" && (
-        <button
-          type="button"
-          onClick={() => {
-            setForgotMode(true);
-            setError(null);
-            setPassword("");
-          }}
-          className="block w-full text-center text-xs text-navy-400 hover:text-navy-700 dark:hover:text-navy-100"
-        >
-          Wachtwoord vergeten?
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={() => {
+          setForgotMode(true);
+          setError(null);
+          setPassword("");
+        }}
+        className="block w-full text-center text-xs text-navy-400 hover:text-navy-700 dark:hover:text-navy-100"
+      >
+        Wachtwoord vergeten?
+      </button>
     </form>
   );
 }
 
-function MethodToggle({
-  method,
-  onChange,
-}: {
-  method: LoginMethod;
-  onChange: (m: LoginMethod) => void;
-}) {
-  return (
-    <div className="flex gap-2 text-xs">
-      <button
-        type="button"
-        onClick={() => onChange("password")}
-        className={`rounded-md px-2.5 py-1 font-semibold transition ${
-          method === "password"
-            ? "bg-mint-100 text-mint-800"
-            : "text-navy-500 hover:bg-navy-50"
-        }`}
-      >
-        Wachtwoord
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange("magic")}
-        className={`rounded-md px-2.5 py-1 font-semibold transition ${
-          method === "magic"
-            ? "bg-mint-100 text-mint-800"
-            : "text-navy-500 hover:bg-navy-50"
-        }`}
-      >
-        Magic link
-      </button>
-    </div>
-  );
-}
 
 // =============================================================================
 // SIGNUP FORM

@@ -16,35 +16,121 @@ import type {
 import { supabase } from "./supabase";
 
 // =============================================================================
-// useCurrentOrg
+// useMyOrgs , alle organisaties waar huidige user lid van is + welke geselecteerd
 // =============================================================================
-// Geeft de eerste organisatie terug waar de huidige user lid van is.
-// (Multi-org switch komt later, voor nu één org per user.)
 
-export function useCurrentOrg() {
-  const [org, setOrg] = useState<Organisation | null>(null);
+const SELECTED_ORG_STORAGE_KEY = "kaspio:selected_org";
+
+export function useMyOrgs() {
+  const [orgs, setOrgs] = useState<Organisation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedId, setSelectedIdState] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return window.localStorage.getItem(SELECTED_ORG_STORAGE_KEY);
+    } catch {
+      return null;
+    }
+  });
 
-  const fetchOrg = useCallback(async () => {
+  const fetchOrgs = useCallback(async () => {
     setLoading(true);
     setError(null);
     const { data, error: err } = await supabase
       .from("organisations")
       .select("*")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    if (err) setError(err.message);
-    else setOrg((data as Organisation | null) ?? null);
+      .order("created_at", { ascending: true });
+    if (err) {
+      setError(err.message);
+    } else {
+      setOrgs((data as Organisation[]) ?? []);
+    }
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    fetchOrg();
-  }, [fetchOrg]);
+    fetchOrgs();
+  }, [fetchOrgs]);
 
-  return { org, loading, error, refresh: fetchOrg };
+  // Als de geselecteerde org niet (meer) bestaat, default naar de eerste.
+  useEffect(() => {
+    if (orgs.length === 0) return;
+    if (!selectedId || !orgs.find((o) => o.id === selectedId)) {
+      const fallbackId = orgs[0].id;
+      setSelectedIdState(fallbackId);
+      try {
+        window.localStorage.setItem(SELECTED_ORG_STORAGE_KEY, fallbackId);
+      } catch {
+        // ignore
+      }
+    }
+  }, [orgs, selectedId]);
+
+  const setSelected = useCallback((id: string) => {
+    setSelectedIdState(id);
+    try {
+      window.localStorage.setItem(SELECTED_ORG_STORAGE_KEY, id);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  /** Maak een nieuwe org aan en selecteer 'm direct. */
+  const createOrg = useCallback(
+    async (
+      name: string,
+      ownerId: string,
+    ): Promise<{ error: string | null; orgId?: string }> => {
+      const insert = { name, owner_id: ownerId };
+      const { data, error: err } = await (
+        supabase.from("organisations") as unknown as {
+          insert: (v: Record<string, unknown>) => {
+            select: () => {
+              single: () => Promise<{
+                data: { id: string } | null;
+                error: Error | null;
+              }>;
+            };
+          };
+        }
+      )
+        .insert(insert)
+        .select()
+        .single();
+      if (err) return { error: err.message };
+      await fetchOrgs();
+      if (data?.id) {
+        setSelectedIdState(data.id);
+        try {
+          window.localStorage.setItem(SELECTED_ORG_STORAGE_KEY, data.id);
+        } catch {
+          // ignore
+        }
+      }
+      return { error: null, orgId: data?.id };
+    },
+    [fetchOrgs],
+  );
+
+  const selected = orgs.find((o) => o.id === selectedId) ?? null;
+
+  return {
+    orgs,
+    selected,
+    loading,
+    error,
+    setSelected,
+    createOrg,
+    refresh: fetchOrgs,
+  };
+}
+
+// Backward-compat alias: useCurrentOrg blijft werken maar geeft enkel `selected` terug.
+// Nieuwe code zou direct useMyOrgs moeten gebruiken voor toegang tot de full lijst.
+export function useCurrentOrg() {
+  const { selected, loading, error, refresh } = useMyOrgs();
+  return { org: selected, loading, error, refresh };
 }
 
 // =============================================================================
@@ -75,10 +161,13 @@ export function usePots(orgId: string | null) {
       .from("pots")
       .select("*")
       .eq("organisation_id", orgId)
-      .eq("archived", false)
       .order("created_at", { ascending: false });
     if (err) setError(err.message);
-    else setPots((data as Pot[]) ?? []);
+    else {
+      // Filter archived in JS (defensief: NULL = niet gearchiveerd)
+      const rows = (data as Pot[]) ?? [];
+      setPots(rows.filter((p) => p.archived !== true));
+    }
     setLoading(false);
   }, [orgId]);
 
