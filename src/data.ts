@@ -80,37 +80,44 @@ export function useMyOrgs() {
   const createOrg = useCallback(
     async (
       name: string,
-      ownerId: string,
+      _ownerId: string,
     ): Promise<{ error: string | null; orgId?: string }> => {
-      const insert = { name, owner_id: ownerId };
-      const { data, error: err } = await (
-        supabase.from("organisations") as unknown as {
-          insert: (v: Record<string, unknown>) => {
-            select: () => {
-              single: () => Promise<{
-                data: { id: string } | null;
-                error: Error | null;
-              }>;
-            };
-          };
-        }
-      )
-        .insert(insert)
-        .select()
-        .single();
+      // Gebruik de SECURITY DEFINER RPC i.p.v. direct INSERT. Die zorgt dat
+      // het profile bestaat en maakt org + admin-membership atomair aan.
+      // Bypasst RLS-edge cases op een gecontroleerde manier (de RPC checkt
+      // auth.uid() expliciet en weigert anonieme calls).
+      void _ownerId;
+      const { data: newOrgId, error: err } = await (
+        supabase.rpc as unknown as (
+          fn: string,
+          args: Record<string, unknown>,
+        ) => Promise<{ data: string | null; error: Error | null }>
+      )("create_organisation", { p_name: name });
       if (err) return { error: err.message };
-      await fetchOrgs();
-      if (data?.id) {
-        setSelectedIdState(data.id);
+
+      // Refetch zodat onze lijst de nieuwe org bevat.
+      const { data: refreshed } = await supabase
+        .from("organisations")
+        .select("*")
+        .order("created_at", { ascending: true });
+      const list = (refreshed as Organisation[]) ?? [];
+      setOrgs(list);
+
+      const freshId =
+        (typeof newOrgId === "string" ? newOrgId : null) ??
+        list[list.length - 1]?.id ??
+        null;
+      if (freshId) {
+        setSelectedIdState(freshId);
         try {
-          window.localStorage.setItem(SELECTED_ORG_STORAGE_KEY, data.id);
+          window.localStorage.setItem(SELECTED_ORG_STORAGE_KEY, freshId);
         } catch {
           // ignore
         }
       }
-      return { error: null, orgId: data?.id };
+      return { error: null, orgId: freshId ?? undefined };
     },
-    [fetchOrgs],
+    [],
   );
 
   const selected = orgs.find((o) => o.id === selectedId) ?? null;
