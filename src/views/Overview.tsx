@@ -1,5 +1,5 @@
 import { calcBalance, formatDate, formatEuro } from "../storage";
-import type { Member, Pot, Transaction } from "../types";
+import type { Member, Pot, PotGroup, Transaction } from "../types";
 
 type Props = {
   pots: Pot[];
@@ -7,8 +7,14 @@ type Props = {
   members: Member[];
   currentUser: Member;
   organizationName: string;
+  /** Potgroepen (takken/ploegen) voor visuele groepering. */
+  groups?: PotGroup[];
   onSelect: (id: string) => void;
   onAddPot: () => void;
+  /** Org-brede transactie toevoegen (admin). */
+  onAddTransaction?: () => void;
+  /** Open de "Nog toe te wijzen" inbox (admin). */
+  onOpenInbox?: () => void;
 };
 
 export function Overview({
@@ -17,11 +23,18 @@ export function Overview({
   members,
   currentUser,
   organizationName,
+  groups = [],
   onSelect,
   onAddPot,
+  onAddTransaction,
+  onOpenInbox,
 }: Props) {
+  const isAdmin = currentUser.role === "admin";
   const visibleIds = new Set(pots.map((p) => p.id));
-  const txInScope = allTransactions.filter((t) => visibleIds.has(t.potId));
+  // Admins tellen onverdeeld geld (potId null) mee: som potjes + onverdeeld = bank.
+  const txInScope = allTransactions.filter((t) =>
+    t.potId ? visibleIds.has(t.potId) : isAdmin,
+  );
   const total = txInScope.reduce(
     (sum, t) => sum + (t.direction === "in" ? t.amount : -t.amount),
     0,
@@ -29,14 +42,31 @@ export function Overview({
   const totalIn = txInScope.filter((t) => t.direction === "in").reduce((s, t) => s + t.amount, 0);
   const totalOut = txInScope.filter((t) => t.direction === "out").reduce((s, t) => s + t.amount, 0);
 
+  const unallocated = allTransactions.filter((t) => t.potId === null);
+  const unallocatedTotal = unallocated.reduce(
+    (sum, t) => sum + (t.direction === "in" ? t.amount : -t.amount),
+    0,
+  );
+
   const memberById = new Map(members.map((m) => [m.id, m] as const));
-  const isAdmin = currentUser.role === "admin";
 
   const recent = [...txInScope]
     .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn))
     .slice(0, 8);
 
   const potById = new Map(pots.map((p) => [p.id, p] as const));
+
+  // Groepeer potjes: secties per groep (in groeps-volgorde), rest ongegroepeerd.
+  const groupSections = groups
+    .map((g) => ({ group: g, pots: pots.filter((p) => p.groupId === g.id) }))
+    .filter((s) => s.pots.length > 0);
+  const ungrouped = pots.filter(
+    (p) => !p.groupId || !groups.some((g) => g.id === p.groupId),
+  );
+  const hasGroups = groupSections.length > 0;
+
+  const groupBalance = (groupPots: Pot[]) =>
+    groupPots.reduce((sum, p) => sum + calcBalance(allTransactions, p.id), 0);
 
   return (
     <div className="space-y-6">
@@ -70,6 +100,30 @@ export function Overview({
         />
       </div>
 
+      {isAdmin && onOpenInbox && unallocated.length > 0 && (
+        <button
+          onClick={onOpenInbox}
+          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-left transition hover:border-amber-300 dark:border-amber-900/50 dark:bg-amber-900/20"
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-base dark:bg-amber-900/40">
+              📥
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                {formatEuro(unallocatedTotal)} nog toe te wijzen
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                {unallocated.length}{" "}
+                {unallocated.length === 1 ? "transactie" : "transacties"} zonder
+                potje. Klik om toe te wijzen.
+              </p>
+            </div>
+          </div>
+          <span className="text-amber-600 dark:text-amber-400">→</span>
+        </button>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
@@ -77,9 +131,16 @@ export function Overview({
               {isAdmin ? "Alle potjes" : "Mijn potjes"}
             </h2>
             {isAdmin && (
-              <button onClick={onAddPot} className="btn-accent text-sm">
-                + Nieuw potje
-              </button>
+              <div className="flex gap-2">
+                {onAddTransaction && (
+                  <button onClick={onAddTransaction} className="btn-secondary text-sm">
+                    + Transactie
+                  </button>
+                )}
+                <button onClick={onAddPot} className="btn-accent text-sm">
+                  + Nieuw potje
+                </button>
+              </div>
             )}
           </div>
 
@@ -99,7 +160,7 @@ export function Overview({
                 </button>
               )}
             </div>
-          ) : (
+          ) : !hasGroups ? (
             <div className="grid gap-3 sm:grid-cols-2">
               {pots.map((pot) => (
                 <PotCard
@@ -110,6 +171,55 @@ export function Overview({
                   onSelect={() => onSelect(pot.id)}
                 />
               ))}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {groupSections.map(({ group, pots: groupPots }) => (
+                <section key={group.id}>
+                  <div className="mb-2 flex items-baseline justify-between gap-2">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-navy-500 dark:text-navy-300">
+                      {group.name}
+                    </h3>
+                    <span className="text-sm font-semibold tabular-nums text-navy-700 dark:text-navy-200">
+                      {formatEuro(groupBalance(groupPots))}
+                    </span>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {groupPots.map((pot) => (
+                      <PotCard
+                        key={pot.id}
+                        pot={pot}
+                        owner={memberById.get(pot.ownerId)}
+                        transactions={allTransactions}
+                        onSelect={() => onSelect(pot.id)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
+              {ungrouped.length > 0 && (
+                <section>
+                  <div className="mb-2 flex items-baseline justify-between gap-2">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-navy-400 dark:text-navy-400">
+                      Overige potjes
+                    </h3>
+                    <span className="text-sm font-semibold tabular-nums text-navy-700 dark:text-navy-200">
+                      {formatEuro(groupBalance(ungrouped))}
+                    </span>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {ungrouped.map((pot) => (
+                      <PotCard
+                        key={pot.id}
+                        pot={pot}
+                        owner={memberById.get(pot.ownerId)}
+                        transactions={allTransactions}
+                        onSelect={() => onSelect(pot.id)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
             </div>
           )}
         </div>
@@ -229,7 +339,8 @@ function RecentActivity({
       ) : (
         <ul className="space-y-3">
           {recent.map((tx) => {
-            const pot = potById.get(tx.potId);
+            const pot = tx.potId ? potById.get(tx.potId) : undefined;
+            const potLabel = tx.potId ? pot?.name ?? "—" : "Nog toe te wijzen";
             const positive = tx.direction === "in";
             return (
               <li key={tx.id} className="flex items-start gap-3">
@@ -265,7 +376,7 @@ function RecentActivity({
                     </span>
                   </div>
                   <div className="flex items-baseline justify-between gap-2 text-xs text-navy-400 dark:text-navy-400">
-                    <span className="truncate">{pot?.name ?? "—"}</span>
+                    <span className="truncate">{potLabel}</span>
                     <span className="whitespace-nowrap">{formatDate(tx.occurredOn)}</span>
                   </div>
                 </div>

@@ -13,14 +13,22 @@ export type Pot = {
   ownerId: string;
   color?: string;
   targetAmount?: number;
+  /** Optionele potgroep (tak, ploeg, werkgroep). */
+  groupId?: string | null;
   createdAt: string;
+};
+
+export type PotGroup = {
+  id: string;
+  name: string;
 };
 
 export type TransactionDirection = "in" | "out";
 
 export type Transaction = {
   id: string;
-  potId: string;
+  /** null = onverdeeld, nog toe te wijzen aan een potje. */
+  potId: string | null;
   direction: TransactionDirection;
   amount: number;
   occurredOn: string;

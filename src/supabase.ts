@@ -159,8 +159,18 @@ export interface Pot {
   target_amount: number | null;
   description: string | null;
   archived: boolean;
+  /** Optionele potgroep (tak, ploeg, werkgroep). */
+  group_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface PotGroup {
+  id: string;
+  organisation_id: string;
+  name: string;
+  sort_order: number;
+  created_at: string;
 }
 
 export interface Membership {
@@ -175,7 +185,8 @@ export interface Membership {
 
 export interface Transaction {
   id: string;
-  pot_id: string;
+  /** NULL = onverdeeld geld, nog toe te wijzen aan een potje (admin-only). */
+  pot_id: string | null;
   organisation_id: string;
   amount: number;
   direction: TransactionDirection;
@@ -183,6 +194,8 @@ export interface Transaction {
   memo: string | null;
   counterparty: string | null;
   created_by: string | null;
+  /** Verwijst naar de originele transactie als deze uit een splitsing komt. */
+  split_from: string | null;
   created_at: string;
 }
 
@@ -232,11 +245,12 @@ export interface Database {
       };
       pots: {
         Row: Pot;
-        Insert: Omit<Pot, "id" | "created_at" | "updated_at" | "archived"> & {
+        Insert: Omit<Pot, "id" | "created_at" | "updated_at" | "archived" | "group_id"> & {
           id?: string;
           created_at?: string;
           updated_at?: string;
           archived?: boolean;
+          group_id?: string | null;
         };
         Update: Partial<Pot>;
       };
@@ -250,11 +264,21 @@ export interface Database {
       };
       transactions: {
         Row: Transaction;
-        Insert: Omit<Transaction, "id" | "created_at"> & {
+        Insert: Omit<Transaction, "id" | "created_at" | "split_from"> & {
           id?: string;
           created_at?: string;
+          split_from?: string | null;
         };
         Update: Partial<Transaction>;
+      };
+      pot_groups: {
+        Row: PotGroup;
+        Insert: Omit<PotGroup, "id" | "created_at" | "sort_order"> & {
+          id?: string;
+          created_at?: string;
+          sort_order?: number;
+        };
+        Update: Partial<PotGroup>;
       };
       audit_log: {
         Row: AuditEntry;

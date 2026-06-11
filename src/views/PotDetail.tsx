@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { calcBalance, formatDate, formatEuro } from "../storage";
-import type { Member, Pot, Transaction, TransactionDirection } from "../types";
+import type { Member, Pot, PotGroup, Transaction, TransactionDirection } from "../types";
 import { Modal } from "../components/Modal";
 import { PotForm } from "../components/PotForm";
 import { BalanceChart } from "../components/BalanceChart";
@@ -12,6 +12,11 @@ type Props = {
   transactions: Transaction[];
   members: Member[];
   currentUser: Member;
+  /** Potgroepen voor het bewerk-formulier. */
+  groups?: PotGroup[];
+  onCreateGroup?: (
+    name: string,
+  ) => Promise<{ error: string | null; groupId?: string }>;
   onBack: () => void;
   onAddTransaction: () => void;
   onDeleteTransaction: (id: string) => void;
@@ -20,6 +25,7 @@ type Props = {
     color?: string;
     targetAmount?: number;
     description?: string;
+    groupId?: string | null;
   }) => void | Promise<void>;
   onDeletePot: () => void;
 };
@@ -31,6 +37,8 @@ export function PotDetail({
   transactions,
   members,
   currentUser,
+  groups,
+  onCreateGroup,
   onBack,
   onAddTransaction,
   onDeleteTransaction,
@@ -335,7 +343,10 @@ export function PotDetail({
             name: pot.name,
             color: pot.color ?? "#1D9E75",
             targetAmount: pot.targetAmount,
+            groupId: pot.groupId ?? null,
           }}
+          groups={groups}
+          onCreateGroup={onCreateGroup}
           onSubmit={async (values) => {
             await onUpdatePot(values);
             setEditing(false);

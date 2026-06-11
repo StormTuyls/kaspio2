@@ -11,6 +11,7 @@ import type {
   MemberRole,
   Organisation,
   Pot,
+  PotGroup,
   Transaction,
 } from "./supabase";
 import { supabase } from "./supabase";
@@ -149,6 +150,8 @@ export type PotInput = {
   color: string;
   targetAmount?: number | null;
   description?: string | null;
+  /** Optionele potgroep. null = expliciet geen groep. */
+  groupId?: string | null;
 };
 
 export function usePots(orgId: string | null) {
@@ -190,6 +193,7 @@ export function usePots(orgId: string | null) {
       color: input.color,
       target_amount: input.targetAmount ?? null,
       description: input.description ?? null,
+      group_id: input.groupId ?? null,
     };
     const { error: err } = await supabase
       .from("pots")
@@ -211,6 +215,7 @@ export function usePots(orgId: string | null) {
       updateRow.target_amount = patch.targetAmount;
     if (patch.description !== undefined)
       updateRow.description = patch.description;
+    if (patch.groupId !== undefined) updateRow.group_id = patch.groupId;
     const { error: err } = await (
       supabase.from("pots") as unknown as {
         update: (
@@ -240,12 +245,19 @@ export function usePots(orgId: string | null) {
 // =============================================================================
 
 export type TransactionInput = {
-  potId: string;
+  /** null = onverdeeld, komt in de "Toe te wijzen" inbox (alleen admins). */
+  potId: string | null;
   amount: number;
   direction: "in" | "out";
   occurredOn: string; // YYYY-MM-DD
   memo?: string | null;
   counterparty?: string | null;
+};
+
+/** Eén deel van een toewijzing: bedrag X naar potje Y. */
+export type AssignPart = {
+  potId: string;
+  amount: number;
 };
 
 export function useTransactions(orgId: string | null, potId?: string | null) {
@@ -312,14 +324,146 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
     return { error: null };
   }
 
+  /**
+   * Wijs een onverdeelde transactie toe aan één of meerdere potjes.
+   * Bij splitsen: de originele rij krijgt deel 1 (id blijft stabiel),
+   * de overige delen worden nieuwe rijen met split_from = origineel.
+   * De delen moeten exact optellen tot het originele bedrag.
+   */
+  async function assignTransaction(
+    id: string,
+    parts: AssignPart[],
+  ): Promise<{ error: string | null }> {
+    const original = transactions.find((t) => t.id === id);
+    if (!original) return { error: "Transactie niet gevonden." };
+    if (parts.length === 0) return { error: "Kies minstens één potje." };
+
+    const sum = parts.reduce((s, p) => s + p.amount, 0);
+    // Centen-vergelijking om floating-point ruis te vermijden
+    if (Math.round(sum * 100) !== Math.round(Number(original.amount) * 100)) {
+      return { error: "De delen moeten samen exact het originele bedrag zijn." };
+    }
+    if (parts.some((p) => p.amount <= 0)) {
+      return { error: "Elk deel moet een positief bedrag zijn." };
+    }
+
+    // Deel 1: originele rij bijwerken (audit-trigger logt de wijziging)
+    const first = parts[0];
+    const { error: updErr } = await (
+      supabase.from("transactions") as unknown as {
+        update: (
+          v: Record<string, unknown>,
+        ) => { eq: (k: string, v: string) => Promise<{ error: Error | null }> };
+      }
+    )
+      .update({ pot_id: first.potId, amount: first.amount })
+      .eq("id", id);
+    if (updErr) return { error: updErr.message };
+
+    // Delen 2..n: nieuwe rijen met trace naar het origineel
+    if (parts.length > 1) {
+      const rows = parts.slice(1).map((p) => ({
+        organisation_id: original.organisation_id,
+        pot_id: p.potId,
+        amount: p.amount,
+        direction: original.direction,
+        occurred_on: original.occurred_on,
+        memo: original.memo,
+        counterparty: original.counterparty,
+        split_from: id,
+      }));
+      const { error: insErr } = await supabase
+        .from("transactions")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert(rows as any);
+      if (insErr) {
+        await fetchTransactions();
+        return {
+          error: `Deel 1 is toegewezen, maar de rest faalde: ${insErr.message}`,
+        };
+      }
+    }
+
+    await fetchTransactions();
+    return { error: null };
+  }
+
   return {
     transactions,
     loading,
     error,
     addTransaction,
     deleteTransaction,
+    assignTransaction,
     refresh: fetchTransactions,
   };
+}
+
+// =============================================================================
+// usePotGroups , platte groepen (takken, ploegen) binnen een org
+// =============================================================================
+
+export function usePotGroups(orgId: string | null) {
+  const [groups, setGroups] = useState<PotGroup[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchGroups = useCallback(async () => {
+    if (!orgId) {
+      setGroups([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("pot_groups")
+      .select("*")
+      .eq("organisation_id", orgId)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+    if (!error && data) setGroups(data as PotGroup[]);
+    setLoading(false);
+  }, [orgId]);
+
+  useEffect(() => {
+    fetchGroups();
+  }, [fetchGroups]);
+
+  /** Maak een groep aan en geef het nieuwe id terug. */
+  async function addGroup(
+    name: string,
+  ): Promise<{ error: string | null; groupId?: string }> {
+    if (!orgId) return { error: "Geen organisatie geselecteerd." };
+    const trimmed = name.trim();
+    if (!trimmed) return { error: "Geef de groep een naam." };
+    const { data, error } = await (
+      supabase.from("pot_groups") as unknown as {
+        insert: (v: Record<string, unknown>) => {
+          select: () => {
+            single: () => Promise<{
+              data: { id: string } | null;
+              error: Error | null;
+            }>;
+          };
+        };
+      }
+    )
+      .insert({ organisation_id: orgId, name: trimmed })
+      .select()
+      .single();
+    if (error) return { error: error.message };
+    await fetchGroups();
+    return { error: null, groupId: data?.id };
+  }
+
+  async function deleteGroup(id: string): Promise<{ error: string | null }> {
+    // Potjes in de groep worden groepsloos (FK on delete set null)
+    const { error } = await supabase.from("pot_groups").delete().eq("id", id);
+    if (error) return { error: error.message };
+    await fetchGroups();
+    return { error: null };
+  }
+
+  return { groups, loading, addGroup, deleteGroup, refresh: fetchGroups };
 }
 
 // =============================================================================
@@ -361,12 +505,17 @@ export type InviteInput = {
   role: MemberRole;
   potIds?: string[];
   expiresAt?: string | null;
+  /** Voor de uitnodigingsmail (optioneel, alleen voor weergave in de mail). */
+  orgName?: string;
+  inviterName?: string;
 };
 
 export type InviteResult = {
   error: string | null;
   /** Beta invite code die de admin moet doorsturen aan de uitgenodigde. */
   betaCode?: string;
+  /** True als de uitnodigingsmail automatisch verstuurd is via de Edge Function. */
+  emailSent?: boolean;
 };
 
 export function useOrgInvites(orgId: string | null) {
@@ -426,11 +575,43 @@ export function useOrgInvites(orgId: string | null) {
     await fetchInvites();
     if (codeError) {
       // Org invite is gemaakt, beta code niet. Geen kritieke fout maar wel warnen.
-      // eslint-disable-next-line no-console
+       
       console.warn("[Kaspio] Beta-invite-code niet gegenereerd:", codeError.message);
       return { error: null };
     }
-    return { error: null, betaCode: codeData as string };
+
+    const betaCode = codeData as string;
+
+    // 3. Probeer de uitnodigingsmail automatisch te versturen via de Edge
+    //    Function. ADDITIEF: faalt dit (Resend niet geconfigureerd, functie niet
+    //    gedeployed, etc.), dan blijft de manuele flow werken , de admin krijgt
+    //    nog steeds de betaCode terug om zelf door te sturen.
+    let emailSent = false;
+    try {
+      const { data: mailData, error: mailError } = await supabase.functions.invoke(
+        "send-invite-email",
+        {
+          body: {
+            email,
+            betaCode,
+            role: input.role,
+            orgName: input.orgName ?? "",
+            inviterName: input.inviterName ?? "",
+          },
+        },
+      );
+      if (mailError) {
+         
+        console.warn("[Kaspio] Uitnodigingsmail niet verstuurd:", mailError.message);
+      } else if ((mailData as { ok?: boolean } | null)?.ok) {
+        emailSent = true;
+      }
+    } catch (err) {
+       
+      console.warn("[Kaspio] send-invite-email niet bereikbaar:", err);
+    }
+
+    return { error: null, betaCode, emailSent };
   }
 
   async function revokeInvite(id: string): Promise<{ error: string | null }> {
@@ -456,7 +637,7 @@ export async function acceptPendingInvites(): Promise<number> {
     "accept_pending_invites" as any,
   );
   if (error) {
-    // eslint-disable-next-line no-console
+     
     console.warn("[Kaspio] accept_pending_invites failed:", error.message);
     return 0;
   }

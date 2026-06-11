@@ -1,9 +1,13 @@
 import { useState } from "react";
 import type { FormEvent, ReactNode } from "react";
-import type { TransactionDirection } from "../types";
+import type { Pot, TransactionDirection } from "../types";
+
+/** Sentinel voor de "nog niet toewijzen"-optie in de potkiezer. */
+const UNALLOCATED = "__unallocated__";
 
 type Props = {
   onSubmit: (values: {
+    potId: string | null;
     direction: TransactionDirection;
     amount: number;
     occurredOn: string;
@@ -11,11 +15,26 @@ type Props = {
     memo?: string;
   }) => void | Promise<void>;
   onCancel: () => void;
+  /** Potjes voor de kiezer. */
+  pots: Pot[];
+  /** Vooraf geselecteerd potje (bv. vanuit PotDetail). */
+  initialPotId?: string | null;
+  /** Toon de "Nog toe te wijzen"-optie (alleen voor admins). */
+  allowUnallocated?: boolean;
 };
 
-export function TransactionForm({ onSubmit, onCancel }: Props) {
+export function TransactionForm({
+  onSubmit,
+  onCancel,
+  pots,
+  initialPotId,
+  allowUnallocated = false,
+}: Props) {
   const today = new Date().toISOString().slice(0, 10);
   const [direction, setDirection] = useState<TransactionDirection>("in");
+  const [potId, setPotId] = useState<string>(
+    initialPotId ?? (allowUnallocated ? UNALLOCATED : pots[0]?.id ?? ""),
+  );
   const [amount, setAmount] = useState("");
   const [occurredOn, setOccurredOn] = useState(today);
   const [counterparty, setCounterparty] = useState("");
@@ -36,6 +55,10 @@ export function TransactionForm({ onSubmit, onCancel }: Props) {
       setError("Bedrag lijkt onrealistisch groot. Klopt dat?");
       return;
     }
+    if (!potId) {
+      setError("Kies een potje.");
+      return;
+    }
     if (!counterparty.trim()) {
       setError(direction === "in" ? "Vul in van wie het bedrag komt." : "Vul in aan wie het bedrag gaat.");
       return;
@@ -48,6 +71,7 @@ export function TransactionForm({ onSubmit, onCancel }: Props) {
     setBusy(true);
     try {
       await onSubmit({
+        potId: potId === UNALLOCATED ? null : potId,
         direction,
         amount: value,
         occurredOn,
@@ -86,6 +110,31 @@ export function TransactionForm({ onSubmit, onCancel }: Props) {
           <span className="text-base">↑</span> Uitgaand
         </button>
       </div>
+
+      <Field
+        label="Potje"
+        required
+        hint={
+          allowUnallocated
+            ? "Weet je nog niet waarvoor het is? Kies 'Nog toe te wijzen', dan verdeel je het later."
+            : undefined
+        }
+      >
+        <select
+          value={potId}
+          onChange={(e) => setPotId(e.target.value)}
+          className="input"
+        >
+          {allowUnallocated && (
+            <option value={UNALLOCATED}>Nog toe te wijzen</option>
+          )}
+          {pots.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </Field>
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Bedrag" required>

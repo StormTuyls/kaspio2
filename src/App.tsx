@@ -2,16 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import "./App.css";
-import { useAppState, visiblePots } from "./storage";
+import { useAppState } from "./storage";
 import {
   acceptPendingInvites,
+  groupMembersByUser,
   useAuditLog,
   useMyOrgs,
   useOrgInvites,
   useOrgMembers,
+  usePotGroups,
   usePots,
   useTransactions,
 } from "./data";
+import { UnallocatedInbox } from "./components/UnallocatedInbox";
 import { InviteMemberForm } from "./components/InviteMemberForm";
 import { MembersListView } from "./views/MembersListView";
 import { AuditLogView } from "./views/AuditLogView";
@@ -20,9 +23,9 @@ import { OrgSwitcher } from "./components/OrgSwitcher";
 import { CreateOrgForm } from "./components/CreateOrgForm";
 import type { Organisation } from "./supabase";
 import type { Pot as DbPot, Transaction as DbTransaction } from "./supabase";
-import type { Pot, Transaction } from "./types";
+import type { Pot, PotGroup, Transaction } from "./types";
 import { signOut, supabase, useSession } from "./supabase";
-import { Overview } from "./views/Overview";
+import { Overview, Avatar } from "./views/Overview";
 import { PotDetail } from "./views/PotDetail";
 import { SettingsView } from "./views/SettingsView";
 import { Landing } from "./views/Landing";
@@ -31,7 +34,6 @@ import { PasswordResetView } from "./views/PasswordResetView";
 import { Modal } from "./components/Modal";
 import { PotForm } from "./components/PotForm";
 import { TransactionForm } from "./components/TransactionForm";
-import { UserSwitcher } from "./components/UserSwitcher";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { Mark } from "./components/Logo";
 import { paletteToCssVars } from "./branding";
@@ -160,7 +162,7 @@ function useEnsureOrg(session: Session) {
         .insert(orgInsert as any)
         .then(({ error }) => {
           if (error) {
-            // eslint-disable-next-line no-console
+             
             console.warn(
               "[Kaspio] Kon pending org niet aanmaken:",
               error.message,
@@ -172,7 +174,7 @@ function useEnsureOrg(session: Session) {
     // 2. Accepteer pending org-invites voor deze user (kan 0 of meer zijn)
     acceptPendingInvites().then((accepted) => {
       if (accepted > 0) {
-        // eslint-disable-next-line no-console
+         
         console.info(`[Kaspio] ${accepted} uitnodiging(en) geaccepteerd.`);
       }
     });
@@ -193,11 +195,11 @@ function dbPotToUiPot(p: DbPot, currentUserId: string): Pot {
     id: p.id,
     name: p.name,
     color: p.color,
-    // ownerId mapping: alle Supabase-pots die de user kan zien horen via RLS bij hem.
-    // Tot we members en pot_owner-rollen volledig migreren, doen we alsof de
-    // current user owner is (zo werkt visiblePots() correct in admin-modus).
+    // Placeholder-owner: AuthedApp overschrijft dit met de echte pot_owner
+    // (zie potsWithOwner). RLS filtert op DB-niveau welke pots de user ziet.
     ownerId: currentUserId,
     targetAmount: p.target_amount ?? undefined,
+    groupId: p.group_id ?? null,
     createdAt: p.created_at,
   };
 }
@@ -230,6 +232,7 @@ function useBridgedStore(
     transactions: dbTx,
     addTransaction: addDbTx,
     deleteTransaction: deleteDbTx,
+    assignTransaction: assignDbTx,
   } = useTransactions(orgId);
 
   const pots = useMemo(
@@ -253,12 +256,14 @@ function useBridgedStore(
         color?: string;
         targetAmount?: number;
         description?: string;
+        groupId?: string | null;
       }) => {
         await addDbPot({
           name: input.name,
           color: input.color ?? "#1D9E75",
           targetAmount: input.targetAmount,
           description: input.description,
+          groupId: input.groupId ?? null,
         });
       },
       updatePot: async (
@@ -268,6 +273,7 @@ function useBridgedStore(
           color?: string;
           targetAmount?: number;
           description?: string;
+          groupId?: string | null;
         },
       ) => {
         await updateDbPot(id, patch);
@@ -276,7 +282,7 @@ function useBridgedStore(
         await deleteDbPot(id);
       },
       addTransaction: async (input: {
-        potId: string;
+        potId: string | null;
         direction: "in" | "out";
         amount: number;
         occurredOn: string;
@@ -295,6 +301,7 @@ function useBridgedStore(
       deleteTransaction: async (id: string) => {
         await deleteDbTx(id);
       },
+      assignTransaction: assignDbTx,
     };
   }, [
     localStore,
@@ -305,6 +312,7 @@ function useBridgedStore(
     deleteDbPot,
     addDbTx,
     deleteDbTx,
+    assignDbTx,
   ]);
 }
 
@@ -349,11 +357,13 @@ function AuthedApp({
     removeMember,
   } = useOrgMembers(orgId);
   const { entries: auditEntries, loading: auditLoading } = useAuditLog(orgId);
+  const { groups: dbGroups, addGroup } = usePotGroups(orgId);
   const [selectedPotId, setSelectedPotId] = useState<string | null>(null);
   const [showAddPot, setShowAddPot] = useState(false);
   const [showAddTx, setShowAddTx] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showNewOrg, setShowNewOrg] = useState(false);
+  const [showInbox, setShowInbox] = useState(false);
   const [tab, setTab] = useState<Tab>("potjes");
 
   /** Maak een nieuwe org aan en switch er naartoe (sluit modal). */
@@ -378,9 +388,69 @@ function AuthedApp({
     createdAt: account.createdAt,
   };
 
-  // RLS in Supabase doet pot-filtering al, dus visiblePots() is een no-op voor admins.
-  const potsForUser = visiblePots(store.state.pots, currentUser);
+  // Echte leden uit Supabase, gemapt naar het UI Member-type dat de views
+  // verwachten (id = user_id, name = full_name). Eén rij per unieke user.
+  const uiMembers = useMemo(
+    () =>
+      groupMembersByUser(orgMembers).map((g) => ({
+        id: g.user_id,
+        name: g.full_name,
+        role: g.effectiveRole === "admin" ? ("admin" as const) : ("pot_owner" as const),
+        createdAt: "",
+      })),
+    [orgMembers],
+  );
+
+  // pot_id -> user_id van de (eerste) pot-verantwoordelijke, voor weergave.
+  const ownerByPotId = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const mem of orgMembers) {
+      if (mem.role === "pot_owner" && mem.pot_id && !m.has(mem.pot_id)) {
+        m.set(mem.pot_id, mem.user_id);
+      }
+    }
+    return m;
+  }, [orgMembers]);
+
+  // Pot-IDs waar de ingelogde user verantwoordelijke van is (multi-owner-safe).
+  const myPotIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const mem of orgMembers) {
+      if (mem.user_id === account.id && mem.role === "pot_owner" && mem.pot_id) {
+        s.add(mem.pot_id);
+      }
+    }
+    return s;
+  }, [orgMembers, account.id]);
+
+  // Override de bridge-ownerId met de echte verantwoordelijke voor weergave.
+  const potsWithOwner = useMemo(
+    () =>
+      store.state.pots.map((p) => ({
+        ...p,
+        ownerId: ownerByPotId.get(p.id) ?? "",
+      })),
+    [store.state.pots, ownerByPotId],
+  );
+
+  // RLS filtert al op DB-niveau. Admins zien alles; pot-owners enkel hun potjes
+  // (via echte memberships, niet via single ownerId, zodat multi-owner werkt).
+  const potsForUser = isAdmin
+    ? potsWithOwner
+    : potsWithOwner.filter((p) => myPotIds.has(p.id));
   const selectedPot = potsForUser.find((p) => p.id === selectedPotId) ?? null;
+
+  // Potgroepen (takken/ploegen) voor weergave-groepering.
+  const uiGroups: PotGroup[] = useMemo(
+    () => dbGroups.map((g) => ({ id: g.id, name: g.name })),
+    [dbGroups],
+  );
+
+  // Onverdeeld geld: transacties zonder potje (RLS: alleen admins zien deze).
+  const unallocatedTx = useMemo(
+    () => store.state.transactions.filter((t) => t.potId === null),
+    [store.state.transactions],
+  );
 
   // Wacht maximaal even op de eerste fetch. Daarna: als nog steeds geen org,
   // is dat geen netwerk-issue maar een data-issue (user heeft geen membership).
@@ -426,6 +496,7 @@ function AuthedApp({
           }}
           onCreateOrg={() => setShowNewOrg(true)}
           pots={store.state.pots}
+          groups={uiGroups}
           transactions={store.state.transactions}
           selectedPotId={selectedPotId}
           onSelectPot={(id) => setSelectedPotId(id)}
@@ -440,15 +511,8 @@ function AuthedApp({
         <div className="flex-1 min-w-0">
           <Topbar
             account={account}
-            members={store.state.members}
-            currentUserId={store.state.currentUserId}
             brandName={brandName}
             branding={store.state.branding}
-            onSwitchUser={(id) => {
-              store.setCurrentUser(id);
-              setSelectedPotId(null);
-              setTab("potjes");
-            }}
             onLogout={onLogout}
           />
 
@@ -457,8 +521,10 @@ function AuthedApp({
               <PotDetail
                 pot={selectedPot}
                 transactions={store.state.transactions}
-                members={store.state.members}
+                members={uiMembers}
                 currentUser={currentUser}
+                groups={uiGroups}
+                onCreateGroup={addGroup}
                 onBack={() => setSelectedPotId(null)}
                 onAddTransaction={() => setShowAddTx(true)}
                 onDeleteTransaction={(id) => store.deleteTransaction(id)}
@@ -495,11 +561,14 @@ function AuthedApp({
               <Overview
                 pots={potsForUser}
                 allTransactions={store.state.transactions}
-                members={store.state.members}
+                members={uiMembers}
                 currentUser={currentUser}
                 organizationName={org.name}
+                groups={uiGroups}
                 onSelect={(id) => setSelectedPotId(id)}
                 onAddPot={() => setShowAddPot(true)}
+                onAddTransaction={isAdmin ? () => setShowAddTx(true) : undefined}
+                onOpenInbox={isAdmin ? () => setShowInbox(true) : undefined}
               />
             )}
           </main>
@@ -521,6 +590,8 @@ function AuthedApp({
 
       <Modal open={showAddPot} title="Nieuw potje" onClose={() => setShowAddPot(false)}>
         <PotForm
+          groups={uiGroups}
+          onCreateGroup={addGroup}
           onSubmit={async (values) => {
             await store.addPot(values);
             setShowAddPot(false);
@@ -530,15 +601,31 @@ function AuthedApp({
       </Modal>
 
       <Modal open={showAddTx} title="Nieuwe transactie" onClose={() => setShowAddTx(false)}>
-        {selectedPot && (
+        {showAddTx && (
           <TransactionForm
-            onSubmit={(values) => {
-              store.addTransaction({ ...values, potId: selectedPot.id });
+            pots={potsForUser}
+            initialPotId={selectedPot?.id ?? null}
+            allowUnallocated={!!isAdmin}
+            onSubmit={async (values) => {
+              await store.addTransaction(values);
               setShowAddTx(false);
             }}
             onCancel={() => setShowAddTx(false)}
           />
         )}
+      </Modal>
+
+      <Modal
+        open={showInbox}
+        title="Nog toe te wijzen"
+        onClose={() => setShowInbox(false)}
+      >
+        <UnallocatedInbox
+          transactions={unallocatedTx}
+          pots={potsForUser}
+          onAssign={(txId, parts) => store.assignTransaction(txId, parts)}
+          onDelete={(txId) => store.deleteTransaction(txId)}
+        />
       </Modal>
 
       <Modal
@@ -551,7 +638,13 @@ function AuthedApp({
             orgId={orgId}
             pots={dbPots}
             pendingInvites={invites}
-            onInvite={sendInvite}
+            onInvite={(input) =>
+              sendInvite({
+                ...input,
+                orgName: org.name,
+                inviterName: account.fullName,
+              })
+            }
             onRevoke={revokeInvite}
             onClose={() => setShowInvite(false)}
           />
@@ -588,6 +681,7 @@ function Sidebar({
   brandName,
   branding,
   pots,
+  groups,
   transactions,
   selectedPotId,
   onSelectPot,
@@ -606,6 +700,7 @@ function Sidebar({
   brandName: string;
   branding: Branding;
   pots: Pot[];
+  groups: PotGroup[];
   transactions: Transaction[];
   selectedPotId: string | null;
   onSelectPot: (id: string) => void;
@@ -618,6 +713,22 @@ function Sidebar({
         (sum, t) => sum + (t.direction === "in" ? t.amount : -t.amount),
         0,
       );
+
+  // Potjes per groep voor de sidebar-lijst; groepsloze potjes achteraan.
+  const sidebarSections: { label: string | null; pots: Pot[] }[] = [
+    ...groups
+      .map((g) => ({
+        label: g.name as string | null,
+        pots: pots.filter((p) => p.groupId === g.id),
+      }))
+      .filter((s) => s.pots.length > 0),
+    {
+      label: null,
+      pots: pots.filter(
+        (p) => !p.groupId || !groups.some((g) => g.id === p.groupId),
+      ),
+    },
+  ].filter((s) => s.pots.length > 0);
   return (
     <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-navy-900 bg-navy-900 px-5 py-6 text-navy-100 lg:flex dark:border-navy-800">
       <div className="mb-8">
@@ -677,39 +788,43 @@ function Sidebar({
 
       {pots.length > 0 && (
         <div className="mt-6 border-t border-navy-800 pt-4">
-          <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-navy-400">
-            Potjes
-          </p>
-          <ul className="space-y-0.5 text-sm">
-            {pots.map((p) => {
-              const active = tab === "potjes" && selectedPotId === p.id;
-              return (
-                <li key={p.id}>
-                  <button
-                    onClick={() => {
-                      onTab("potjes");
-                      onSelectPot(p.id);
-                    }}
-                    className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition ${
-                      active
-                        ? "bg-white/10 font-semibold text-white"
-                        : "text-navy-200 hover:bg-white/5 hover:text-white"
-                    }`}
-                  >
-                    <span
-                      aria-hidden
-                      className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                      style={{ backgroundColor: p.color ?? "#1D9E75" }}
-                    />
-                    <span className="truncate">{p.name}</span>
-                    <span className="ml-auto text-[11px] text-navy-400">
-                      €{Math.round(balanceFor(p.id))}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+          {sidebarSections.map((section, si) => (
+            <div key={section.label ?? "__rest__"} className={si > 0 ? "mt-3" : ""}>
+              <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-navy-400">
+                {section.label ?? (sidebarSections.length > 1 ? "Overige" : "Potjes")}
+              </p>
+              <ul className="space-y-0.5 text-sm">
+                {section.pots.map((p) => {
+                  const active = tab === "potjes" && selectedPotId === p.id;
+                  return (
+                    <li key={p.id}>
+                      <button
+                        onClick={() => {
+                          onTab("potjes");
+                          onSelectPot(p.id);
+                        }}
+                        className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition ${
+                          active
+                            ? "bg-white/10 font-semibold text-white"
+                            : "text-navy-200 hover:bg-white/5 hover:text-white"
+                        }`}
+                      >
+                        <span
+                          aria-hidden
+                          className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                          style={{ backgroundColor: p.color ?? "#1D9E75" }}
+                        />
+                        <span className="truncate">{p.name}</span>
+                        <span className="ml-auto text-[11px] text-navy-400">
+                          €{Math.round(balanceFor(p.id))}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
         </div>
       )}
 
@@ -903,19 +1018,13 @@ function NavItem({
 
 function Topbar({
   account,
-  members,
-  currentUserId,
   brandName,
   branding,
-  onSwitchUser,
   onLogout,
 }: {
   account: Account;
-  members: ReturnType<typeof useAppState>["state"]["members"];
-  currentUserId: string | null;
   brandName: string;
   branding: Branding;
-  onSwitchUser: (id: string) => void;
   onLogout: () => void;
 }) {
   return (
@@ -936,13 +1045,9 @@ function Topbar({
 
         <div className="flex flex-shrink-0 items-center gap-1.5 sm:gap-3">
           <ThemeToggle />
-          <UserSwitcher
-            members={members}
-            currentUserId={currentUserId}
-            onChange={onSwitchUser}
-          />
-          <div className="hidden items-center gap-3 border-l border-navy-100 pl-3 dark:border-navy-700 sm:flex">
-            <div className="text-right">
+          <div className="flex items-center gap-2.5 border-l border-navy-100 pl-2.5 dark:border-navy-700 sm:pl-3">
+            <Avatar name={account.fullName} />
+            <div className="hidden text-right sm:block">
               <div className="text-sm font-semibold text-navy-900 dark:text-navy-50">
                 {account.fullName}
               </div>

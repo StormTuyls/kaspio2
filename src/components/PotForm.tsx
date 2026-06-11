@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { FormEvent, ReactNode } from "react";
+import type { PotGroup } from "../types";
 
 // Kaspio kleurpalet — eerste optie is de primary teal.
 const POT_COLORS = [
@@ -13,28 +14,48 @@ const POT_COLORS = [
   { hex: "#84CC16", label: "Limoen" },
 ];
 
+/** Sentinel voor de inline "nieuwe groep"-flow in de dropdown. */
+const NEW_GROUP = "__new__";
+
 export type PotFormValues = {
   name: string;
   color: string;
   targetAmount?: number;
   description?: string;
+  groupId?: string | null;
 };
 
 type Props = {
-  initial?: { name: string; color: string; targetAmount?: number; description?: string };
+  initial?: {
+    name: string;
+    color: string;
+    targetAmount?: number;
+    description?: string;
+    groupId?: string | null;
+  };
   onSubmit: (values: PotFormValues) => void | Promise<void>;
   onCancel: () => void;
+  /** Bestaande potgroepen (takken/ploegen). Leeg = veld blijft tonen, voor de eerste groep. */
+  groups?: PotGroup[];
+  /** Maak een nieuwe groep aan; nodig voor de inline "+ Nieuwe groep" optie. */
+  onCreateGroup?: (
+    name: string,
+  ) => Promise<{ error: string | null; groupId?: string }>;
 };
 
-export function PotForm({ initial, onSubmit, onCancel }: Props) {
+export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: Props) {
   const [name, setName] = useState(initial?.name ?? "");
   const [color, setColor] = useState(initial?.color ?? POT_COLORS[0].hex);
   const [target, setTarget] = useState(
     initial?.targetAmount?.toString() ?? "",
   );
   const [description, setDescription] = useState(initial?.description ?? "");
+  const [groupId, setGroupId] = useState<string>(initial?.groupId ?? "");
+  const [newGroupName, setNewGroupName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const showGroupField = groups !== undefined && onCreateGroup !== undefined;
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -59,11 +80,30 @@ export function PotForm({ initial, onSubmit, onCancel }: Props) {
     }
     setBusy(true);
     try {
+      // Inline nieuwe groep aanmaken indien gekozen
+      let finalGroupId: string | null = groupId || null;
+      if (groupId === NEW_GROUP) {
+        const groupName = newGroupName.trim();
+        if (!groupName) {
+          setError("Geef de nieuwe groep een naam.");
+          setBusy(false);
+          return;
+        }
+        const res = await onCreateGroup!(groupName);
+        if (res.error || !res.groupId) {
+          setError(res.error ?? "Groep aanmaken mislukt.");
+          setBusy(false);
+          return;
+        }
+        finalGroupId = res.groupId;
+      }
+
       await onSubmit({
         name: trimmed,
         color,
         targetAmount,
         description: description.trim() || undefined,
+        ...(showGroupField ? { groupId: finalGroupId } : {}),
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Iets ging mis.");
@@ -114,6 +154,40 @@ export function PotForm({ initial, onSubmit, onCancel }: Props) {
           ))}
         </div>
       </Field>
+
+      {showGroupField && (
+        <Field
+          label="Groep"
+          hint="Optioneel — bv. een tak, ploeg of werkgroep. Potjes in dezelfde groep staan samen in het overzicht."
+        >
+          <div className="space-y-2">
+            <select
+              value={groupId}
+              onChange={(e) => setGroupId(e.target.value)}
+              className="input"
+            >
+              <option value="">Geen groep</option>
+              {groups!.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+              <option value={NEW_GROUP}>+ Nieuwe groep…</option>
+            </select>
+            {groupId === NEW_GROUP && (
+              <input
+                autoFocus
+                type="text"
+                value={newGroupName}
+                onChange={(e) => setNewGroupName(e.target.value)}
+                placeholder="Bijv. Welpen, U12, Werkgroep Kerst"
+                maxLength={80}
+                className="input"
+              />
+            )}
+          </div>
+        </Field>
+      )}
 
       <Field label="Doelbedrag" hint="Optioneel — bv. €500 voor het kamp">
         <div className="relative">

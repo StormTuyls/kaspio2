@@ -27,6 +27,7 @@ export function InviteMemberForm({
   const [success, setSuccess] = useState<{
     email: string;
     code?: string;
+    emailSent?: boolean;
   } | null>(null);
 
   function togglePot(id: string) {
@@ -50,7 +51,11 @@ export function InviteMemberForm({
       setError(res.error);
       return;
     }
-    setSuccess({ email: email.trim(), code: res.betaCode });
+    setSuccess({
+      email: email.trim(),
+      code: res.betaCode,
+      emailSent: res.emailSent,
+    });
     setEmail("");
     setPotIds([]);
   }
@@ -149,7 +154,11 @@ export function InviteMemberForm({
         )}
 
         {success && (
-          <SuccessBox email={success.email} code={success.code} />
+          <SuccessBox
+            email={success.email}
+            code={success.code}
+            emailSent={success.emailSent}
+          />
         )}
 
         <div className="flex gap-2">
@@ -203,7 +212,15 @@ export function InviteMemberForm({
   );
 }
 
-function SuccessBox({ email, code }: { email: string; code?: string }) {
+function SuccessBox({
+  email,
+  code,
+  emailSent,
+}: {
+  email: string;
+  code?: string;
+  emailSent?: boolean;
+}) {
   const [copied, setCopied] = useState(false);
 
   async function copyTemplate() {
@@ -232,23 +249,30 @@ function SuccessBox({ email, code }: { email: string; code?: string }) {
 
   return (
     <div className="rounded-lg border border-teal-200 bg-teal-50 px-4 py-4 text-sm text-teal-800 dark:border-teal-800 dark:bg-teal-900/20 dark:text-teal-200">
-      <div className="mb-2 font-semibold">✓ Uitnodiging klaar voor {email}</div>
+      <div className="mb-2 font-semibold">
+        {emailSent
+          ? `✓ Uitnodigingsmail verstuurd naar ${email}`
+          : `✓ Uitnodiging klaar voor ${email}`}
+      </div>
       {code ? (
         <>
           <p className="mb-3">
-            Stuur deze beta-code mee in je mail. Zonder code kunnen ze geen
-            account aanmaken.
+            {emailSent
+              ? "De beta-code staat al in de mail. Hieronder als backup, voor het geval je 'm zelf wil doorsturen."
+              : "Stuur deze beta-code mee in je mail. Zonder code kunnen ze geen account aanmaken."}
           </p>
           <div className="mb-3 rounded-md bg-white px-3 py-2 font-mono text-base font-bold tracking-wider text-teal-700 dark:bg-navy-900 dark:text-teal-300">
             {code}
           </div>
-          <button
-            type="button"
-            onClick={copyTemplate}
-            className="btn-secondary text-xs"
-          >
-            {copied ? "✓ Gekopieerd" : "Kopieer mail-template"}
-          </button>
+          {!emailSent && (
+            <button
+              type="button"
+              onClick={copyTemplate}
+              className="btn-secondary text-xs"
+            >
+              {copied ? "✓ Gekopieerd" : "Kopieer mail-template"}
+            </button>
+          )}
         </>
       ) : (
         <p>
