@@ -346,12 +346,12 @@ function BetaStatus() {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-500 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-teal-500" />
           </span>
-          <span className="text-sm font-semibold text-[#0F6E56]">Bèta is live</span>
+          <span className="text-sm font-semibold text-[#0F6E56]">Nu in gesloten bèta</span>
         </div>
         <span className="hidden h-4 w-px sm:block" style={{ backgroundColor: LINE }} aria-hidden />
-        <span className="text-sm text-ink-muted">Gratis te starten</span>
+        <span className="text-sm text-ink-muted">Je data blijft exporteerbaar</span>
         <span className="hidden h-4 w-px sm:block" style={{ backgroundColor: LINE }} aria-hidden />
-        <span className="text-sm text-ink-muted">Geen kaart nodig</span>
+        <span className="text-sm text-ink-muted">Geen bank-schrijfrechten</span>
       </div>
     </section>
   );
