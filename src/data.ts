@@ -12,6 +12,8 @@ import type {
   Organisation,
   Pot,
   PotGroup,
+  SubTier,
+  Subscription,
   Transaction,
 } from "./supabase";
 import { supabase } from "./supabase";
@@ -556,6 +558,84 @@ export function usePotGroups(orgId: string | null) {
     deleteGroup,
     refresh: fetchGroups,
   };
+}
+
+// =============================================================================
+// Abonnementen / licenties
+// =============================================================================
+
+/** Limieten per tier. Moeten matchen met de triggers in supabase/subscriptions.sql. */
+export const TIER_LIMITS: Record<SubTier, { pots: number; members: number }> = {
+  free: { pots: 3, members: 2 },
+  pro: { pots: Infinity, members: 5 },
+  team: { pots: Infinity, members: 25 },
+};
+
+export const TIER_LABELS: Record<SubTier, string> = {
+  free: "Gratis",
+  pro: "Pro",
+  team: "Team",
+};
+
+/** Grafieken zijn een Pro+ feature (zoals op de landing). */
+export function chartsEnabled(tier: SubTier): boolean {
+  return tier !== "free";
+}
+
+export function useSubscription(orgId: string | null) {
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchSub = useCallback(async () => {
+    if (!orgId) {
+      setSubscription(null);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const { data } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("organisation_id", orgId)
+      .maybeSingle();
+    setSubscription((data as unknown as Subscription | null) ?? null);
+    setLoading(false);
+  }, [orgId]);
+
+  useEffect(() => {
+    fetchSub();
+  }, [fetchSub]);
+  useRealtimeRefresh("subscriptions", orgId, fetchSub);
+
+  const tier: SubTier = subscription?.tier ?? "free";
+  return { subscription, tier, limits: TIER_LIMITS[tier], loading, refresh: fetchSub };
+}
+
+/**
+ * Start een Stripe Checkout-sessie voor een upgrade. Roept de Edge Function
+ * aan en redirect naar de betaalpagina. Faalt netjes als Stripe nog niet
+ * geconfigureerd is.
+ */
+export async function startCheckout(
+  orgId: string,
+  tier: "pro" | "team",
+  interval: "month" | "year",
+): Promise<{ error: string | null }> {
+  try {
+    const { data, error } = await supabase.functions.invoke(
+      "create-checkout-session",
+      { body: { orgId, tier, interval } },
+    );
+    if (error) return { error: error.message };
+    const url = (data as { url?: string } | null)?.url;
+    if (!url) return { error: "Geen checkout-URL ontvangen." };
+    window.location.href = url;
+    return { error: null };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Betaling niet beschikbaar.",
+    };
+  }
 }
 
 // =============================================================================

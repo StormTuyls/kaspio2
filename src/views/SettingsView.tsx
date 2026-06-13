@@ -1,6 +1,8 @@
 import type { DigestFrequency, NotificationSettings } from "../types";
 import type { Branding } from "../branding";
+import type { SubTier } from "../supabase";
 import { BrandingSection } from "../components/BrandingSection";
+import { SubscriptionCard } from "../components/SubscriptionCard";
 
 type Account = {
   id: string;
@@ -12,6 +14,11 @@ type Account = {
 
 type Props = {
   account: Account;
+  orgId: string;
+  tier: SubTier;
+  potCount: number;
+  memberCount: number;
+  isAdmin: boolean;
   notifications: NotificationSettings;
   branding: Branding;
   onChange: (patch: Partial<NotificationSettings>) => void;
@@ -21,6 +28,11 @@ type Props = {
 
 export function SettingsView({
   account,
+  orgId,
+  tier,
+  potCount,
+  memberCount,
+  isAdmin,
   notifications,
   branding,
   onChange,
@@ -38,6 +50,14 @@ export function SettingsView({
           Beheer je organisatie en hoe je op de hoogte gehouden wordt.
         </p>
       </div>
+
+      <SubscriptionCard
+        orgId={orgId}
+        tier={tier}
+        potCount={potCount}
+        memberCount={memberCount}
+        isAdmin={isAdmin}
+      />
 
       <BrandingSection
         branding={branding}

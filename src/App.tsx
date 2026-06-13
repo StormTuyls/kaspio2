@@ -12,6 +12,7 @@ import {
   useOrgMembers,
   usePotGroups,
   usePots,
+  useSubscription,
   useTransactions,
 } from "./data";
 import { UnallocatedInbox } from "./components/UnallocatedInbox";
@@ -376,6 +377,7 @@ function AuthedApp({
     removeMember,
   } = useOrgMembers(orgId);
   const { entries: auditEntries, loading: auditLoading } = useAuditLog(orgId);
+  const { tier, limits } = useSubscription(orgId);
   const {
     groups: dbGroups,
     addGroup,
@@ -485,6 +487,13 @@ function AuthedApp({
     [dbGroups],
   );
 
+  // Licentie-limiet: kan er nog een potje bij? (server dwingt 't ook af)
+  const canAddPot = store.state.pots.length < limits.pots;
+  const goToUpgrade = () => {
+    setSelectedPotId(null);
+    setTab("instellingen");
+  };
+
   // Onverdeeld geld: transacties zonder potje (RLS: alleen admins zien deze).
   const unallocatedTx = useMemo(
     () => store.state.transactions.filter((t) => t.potId === null),
@@ -581,6 +590,8 @@ function AuthedApp({
                 members={uiMembers}
                 currentUser={currentUser}
                 groups={uiGroups}
+                tier={tier}
+                onUpgrade={goToUpgrade}
                 onCreateGroup={addGroup}
                 onBack={() => setSelectedPotId(null)}
                 onAddTransaction={() => setShowAddTx(true)}
@@ -603,6 +614,9 @@ function AuthedApp({
                 onSelect={(id) => setSelectedPotId(id)}
                 onAddPot={() => setShowAddPot(true)}
                 onAddTransaction={isAdmin ? () => setShowAddTx(true) : undefined}
+                canAddPot={canAddPot}
+                potLimit={limits.pots}
+                onUpgrade={goToUpgrade}
               />
             ) : tab === "groepen" ? (
               <GroupsView
@@ -632,6 +646,11 @@ function AuthedApp({
             ) : tab === "instellingen" && isAdmin ? (
               <SettingsView
                 account={account}
+                orgId={org.id}
+                tier={tier}
+                potCount={store.state.pots.length}
+                memberCount={uiMembers.length}
+                isAdmin={!!isAdmin}
                 notifications={store.state.notifications}
                 branding={store.state.branding}
                 onChange={(patch) => store.updateNotifications(patch)}
@@ -646,6 +665,8 @@ function AuthedApp({
                 currentUser={currentUser}
                 organizationName={org.name}
                 groups={uiGroups}
+                tier={tier}
+                onUpgrade={goToUpgrade}
                 onSelect={(id) => setSelectedPotId(id)}
                 onOpenGroup={(groupId) => {
                   setTab("potjes");

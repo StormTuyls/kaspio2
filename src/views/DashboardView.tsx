@@ -1,6 +1,9 @@
 import { calcBalance, formatEuro } from "../storage";
 import type { Member, Pot, PotGroup, Transaction } from "../types";
+import type { SubTier } from "../supabase";
+import { chartsEnabled } from "../data";
 import { CashflowChart } from "../components/CashflowChart";
+import { UpgradeHint } from "../components/UpgradeHint";
 import { RecentActivity, Stat } from "./Overview";
 
 type Props = {
@@ -10,6 +13,8 @@ type Props = {
   currentUser: Member;
   organizationName: string;
   groups?: PotGroup[];
+  tier: SubTier;
+  onUpgrade: () => void;
   onSelect: (potId: string) => void;
   /** Spring naar de Potjes-pagina, eventueel gefocust op een groep. */
   onOpenGroup: (groupId: string | null) => void;
@@ -24,6 +29,8 @@ export function DashboardView({
   currentUser,
   organizationName,
   groups = [],
+  tier,
+  onUpgrade,
   onSelect,
   onOpenGroup,
   onOpenInbox,
@@ -133,7 +140,16 @@ export function DashboardView({
         </button>
       )}
 
-      {txInScope.length > 0 && <CashflowChart transactions={txInScope} />}
+      {txInScope.length > 0 &&
+        (chartsEnabled(tier) ? (
+          <CashflowChart transactions={txInScope} />
+        ) : (
+          <UpgradeHint
+            title="Cashflow-grafiek"
+            description="Zie inkomsten en uitgaven per maand met het Pro-plan."
+            onUpgrade={onUpgrade}
+          />
+        ))}
 
       {/* Groepen met hun potjes */}
       <div className="grid gap-6 lg:grid-cols-3">
