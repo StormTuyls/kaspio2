@@ -1,30 +1,31 @@
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { Mark } from "../components/Logo";
 import { useForceLight } from "../theme";
+
+// =============================================================================
+// Warm & menselijk landing-palet (verfrist t.o.v. het koele SaaS-grijs).
+// Cream-canvas + zachte randen + diep bosgroen voor donkere vlakken. De teal/
+// amber-merkkleuren blijven, maar in een warmere context. Tailwind-arbitrary
+// waarden zodat de redesign landing-scoped blijft.
+// =============================================================================
+const CREAM = "#FBF6EE"; // warme achtergrond
+const CREAM_SOFT = "#F4ECDF"; // iets dieper voor afwisseling
+const LINE = "#EBE1D2"; // warme rand
+const FOREST = "#0C3A30"; // diep bosgroen voor donkere secties
 
 type Props = {
   onLogin: () => void;
   onSignup: () => void;
-  /** Indien gezet: je bekijkt de site terwijl je ingelogd bent. Toont een
-   *  terug-naar-app balk bovenaan. */
+  /** Toont een terug-naar-app balk wanneer een ingelogde user de site bekijkt. */
   onExitPreview?: () => void;
 };
 
 export function Landing({ onLogin, onSignup, onExitPreview }: Props) {
   useForceLight();
   return (
-    <div className="min-h-screen bg-white text-ink">
-      {onExitPreview && (
-        <div className="sticky top-0 z-40 flex items-center justify-center gap-3 bg-teal-700 px-4 py-2 text-sm text-white">
-          <span>Je bekijkt de Kaspio-website.</span>
-          <button
-            onClick={onExitPreview}
-            className="rounded-md bg-white/15 px-3 py-1 font-semibold transition hover:bg-white/25"
-          >
-            ← Terug naar de app
-          </button>
-        </div>
-      )}
+    <div className="min-h-screen text-ink" style={{ backgroundColor: CREAM }}>
+      {onExitPreview && <PreviewBar onExit={onExitPreview} />}
       <Header onLogin={onLogin} onSignup={onSignup} />
       <Hero onSignup={onSignup} />
       <BetaStatus />
@@ -41,13 +42,27 @@ export function Landing({ onLogin, onSignup, onExitPreview }: Props) {
   );
 }
 
+function PreviewBar({ onExit }: { onExit: () => void }) {
+  return (
+    <div className="sticky top-0 z-50 flex items-center justify-center gap-3 bg-ink px-4 py-2 text-center text-xs text-white">
+      <span className="text-white/70">Je bekijkt de Kaspio-website.</span>
+      <button
+        onClick={onExit}
+        className="rounded-full bg-white/15 px-3 py-1 font-semibold text-white transition hover:bg-white/25"
+      >
+        ← Terug naar de app
+      </button>
+    </div>
+  );
+}
+
 function Logo({ light = false }: { light?: boolean }) {
   return (
     <span className="flex items-center gap-2.5">
       <Mark size={32} variant={light ? "light" : "default"} />
       <span
         className={`text-xl font-extrabold tracking-tight ${
-          light ? "text-white" : "text-teal-700"
+          light ? "text-white" : "text-[#0F6E56]"
         }`}
       >
         Kaspio
@@ -58,27 +73,30 @@ function Logo({ light = false }: { light?: boolean }) {
 
 function Header({ onLogin, onSignup }: Props) {
   return (
-    <header className="sticky top-0 z-30 border-b border-teal-100/70 bg-white/90 backdrop-blur">
+    <header
+      className="sticky top-0 z-30 border-b backdrop-blur"
+      style={{ borderColor: LINE, backgroundColor: "rgba(251,246,238,0.82)" }}
+    >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Logo />
-        <nav className="hidden items-center gap-7 text-sm font-medium text-ink-muted md:flex">
-          <a href="#hoe" className="hover:text-teal-500">Hoe het werkt</a>
-          <a href="#functies" className="hover:text-teal-500">Functies</a>
-          <a href="#prijzen" className="hover:text-teal-500">Prijzen</a>
-          <a href="#faq" className="hover:text-teal-500">FAQ</a>
+        <nav className="hidden items-center gap-8 text-sm font-medium text-ink-muted md:flex">
+          <a href="#hoe" className="transition hover:text-[#0F6E56]">Hoe het werkt</a>
+          <a href="#functies" className="transition hover:text-[#0F6E56]">Functies</a>
+          <a href="#prijzen" className="transition hover:text-[#0F6E56]">Prijzen</a>
+          <a href="#faq" className="transition hover:text-[#0F6E56]">FAQ</a>
         </nav>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={onLogin}
-            className="hidden rounded-lg border border-teal-100 px-4 py-2 text-sm font-medium text-ink-muted transition hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700 sm:inline-flex"
+            className="hidden rounded-full px-4 py-2 text-sm font-semibold text-ink-muted transition hover:bg-black/5 hover:text-ink sm:inline-flex"
           >
             Inloggen
           </button>
           <button
             onClick={onSignup}
-            className="rounded-lg bg-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-teal-700"
+            className="rounded-full bg-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-teal-600"
           >
-            Gratis starten →
+            Gratis starten
           </button>
         </div>
       </div>
@@ -88,153 +106,145 @@ function Header({ onLogin, onSignup }: Props) {
 
 function Hero({ onSignup }: { onSignup: () => void }) {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-teal-50 via-white to-white px-6 pb-20 pt-24 text-center">
+    <section className="relative overflow-hidden px-6 pb-20 pt-20 sm:pt-24">
+      {/* Warme, zachte gloed achter de hero */}
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-[-80px] h-[600px] w-[600px] -translate-x-1/2 rounded-full"
+        className="pointer-events-none absolute left-1/2 top-[-120px] h-[560px] w-[820px] -translate-x-1/2 rounded-full opacity-70 blur-3xl"
         style={{
           background:
-            "radial-gradient(circle, rgba(29,158,117,0.10) 0%, transparent 70%)",
+            "radial-gradient(closest-side, rgba(239,159,39,0.18), rgba(29,158,117,0.10) 55%, transparent 80%)",
         }}
       />
-      <div className="relative mx-auto max-w-4xl">
-        <div className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-teal-300 bg-teal-100 px-3.5 py-1.5 text-xs font-semibold text-teal-700">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-500 opacity-75" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-teal-500" />
-          </span>
-          Nu in bèta, gratis starten
+      <div className="relative mx-auto max-w-3xl text-center">
+        <div
+          className="mb-6 inline-flex items-center gap-2 rounded-full border bg-white/70 px-4 py-1.5 text-xs font-semibold text-[#0F6E56]"
+          style={{ borderColor: LINE }}
+        >
+          <span aria-hidden>🇧🇪</span>
+          Gemaakt in België voor clubs, verenigingen en teams
         </div>
-        <h1 className="mx-auto mb-5 max-w-3xl text-4xl font-extrabold leading-tight tracking-tight text-ink sm:text-5xl lg:text-6xl">
-          Eén rekening.
-          <br />
-          <span className="text-teal-500">Meerdere potjes.</span>
-          <br />
-          Volledige controle.
+
+        <h1 className="mx-auto max-w-2xl text-4xl font-extrabold leading-[1.08] tracking-tight text-ink sm:text-5xl lg:text-6xl">
+          Eén rekening, overzicht voor{" "}
+          <span className="relative whitespace-nowrap text-teal-600">
+            iedereen
+            <Squiggle />
+          </span>
         </h1>
-        <p className="mx-auto mb-9 max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg">
-          Kaspio verdeelt inkomsten op jouw bankrekening in virtuele potjes, per persoon, per team of per doel. Zonder extra rekeningen. Zonder
-          boekhoudsoftware.
+
+        <p className="mx-auto mb-9 mt-6 max-w-xl text-lg leading-relaxed text-ink-muted">
+          Kaspio verdeelt het geld op jullie bankrekening in virtuele potjes,
+          per persoon, per ploeg of per doel. Geen extra rekeningen, geen
+          Excel-gepuzzel, gewoon rust in de kas.
         </p>
-        <div className="mb-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+
+        <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
           <button
             onClick={onSignup}
-            className="w-full rounded-xl bg-teal-500 px-7 py-3.5 text-base font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-teal-700 sm:w-auto"
+            className="w-full rounded-full bg-teal-500 px-7 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_-8px_rgba(29,158,117,0.6)] transition hover:-translate-y-0.5 hover:bg-teal-600 sm:w-auto"
           >
             Gratis starten →
           </button>
           <a
             href="#hoe"
-            className="w-full rounded-xl border-2 border-teal-200 px-7 py-3 text-base font-semibold text-teal-700 transition hover:border-teal-300 hover:bg-teal-50 sm:w-auto"
+            className="w-full rounded-full border bg-white px-7 py-3.5 text-base font-semibold text-ink transition hover:-translate-y-0.5 hover:border-teal-300 sm:w-auto"
+            style={{ borderColor: LINE }}
           >
             Bekijk hoe het werkt
           </a>
         </div>
-        <p className="mb-14 text-sm text-ink-muted">
-          Gratis starten, geen kaart nodig.
+        <p className="mt-4 text-sm text-ink-light">
+          Gratis starten · geen kaart nodig · klaar in een paar minuten
         </p>
+      </div>
 
+      <div className="relative mx-auto mt-16 max-w-4xl">
         <HeroMockup />
       </div>
     </section>
   );
 }
 
+/** Handgetekende onderstreping, geeft de hero een menselijke toets. */
+function Squiggle() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 200 12"
+      className="absolute -bottom-2 left-0 h-3 w-full"
+      preserveAspectRatio="none"
+    >
+      <path
+        d="M2 8 C 40 2, 70 2, 100 6 S 170 12, 198 4"
+        fill="none"
+        stroke="#EF9F27"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function HeroMockup() {
   const pots = [
     { name: "Alle potjes", amount: "€8.240", color: "bg-teal-500", active: true },
-    { name: "Marketing", amount: "€1.800", color: "bg-azure-500" },
-    { name: "Salarissen", amount: "€3.200", color: "bg-[#8b5cf6]" },
-    { name: "Events", amount: "€920", color: "bg-amber-500" },
+    { name: "Kamp 2026", amount: "€3.200", color: "bg-[#8b5cf6]" },
+    { name: "Materiaal", amount: "€1.800", color: "bg-teal-500" },
+    { name: "Kantine", amount: "€920", color: "bg-amber-500" },
+    { name: "Sponsoring", amount: "€1.980", color: "bg-[#2289f5]" },
     { name: "Onkosten", amount: "€340", color: "bg-rose-500" },
-    { name: "Reserve", amount: "€1.980", color: "bg-teal-500" },
   ];
 
   return (
-    <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-teal-100 bg-white shadow-[0_8px_48px_rgba(0,0,0,0.10),0_2px_8px_rgba(0,0,0,0.05)]">
-      <div className="flex items-center gap-2 border-b border-teal-100 bg-[#f8f9fa] px-4 py-3">
+    <div
+      className="overflow-hidden rounded-3xl border bg-white shadow-[0_24px_70px_-24px_rgba(12,58,48,0.35)]"
+      style={{ borderColor: LINE }}
+    >
+      <div
+        className="flex items-center gap-2 border-b px-4 py-3"
+        style={{ borderColor: LINE, backgroundColor: CREAM }}
+      >
         <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
         <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
         <span className="h-3 w-3 rounded-full bg-[#28c840]" />
-        <span className="mx-auto rounded-md bg-teal-100/60 px-3 py-0.5 text-xs text-ink-light">
+        <span
+          className="mx-auto rounded-md px-3 py-0.5 text-xs text-ink-light"
+          style={{ backgroundColor: CREAM_SOFT }}
+        >
           app.kaspio.be/dashboard
         </span>
       </div>
-
-      <div className="grid min-h-[380px] grid-cols-1 md:grid-cols-[220px_1fr]">
-        <aside className="hidden border-r border-teal-100 bg-teal-50/60 py-5 text-left md:block">
+      <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr]">
+        <aside
+          className="hidden flex-col border-r py-3 sm:flex"
+          style={{ borderColor: LINE, backgroundColor: CREAM }}
+        >
           <div className="px-4 pb-2 text-[10px] font-bold uppercase tracking-wider text-ink-light">
-            Overzicht
+            Potjes
           </div>
-          {pots.slice(0, 1).map((p) => (
+          {pots.map((p) => (
             <SidebarRow key={p.name} {...p} />
           ))}
-          <div className="px-4 pb-2 pt-4 text-[10px] font-bold uppercase tracking-wider text-ink-light">
-            Mijn potjes
-          </div>
-          {pots.slice(1).map((p) => (
-            <SidebarRow key={p.name} {...p} />
-          ))}
-          <div className="px-4 pb-2 pt-4 text-[10px] font-bold uppercase tracking-wider text-ink-light">
-            Instellingen
-          </div>
-          <div className="px-4 py-2 text-xs text-ink-muted">Beheer potjes</div>
-          <div className="px-4 py-2 text-xs text-ink-muted">Teamleden</div>
         </aside>
-
-        <main className="p-6 text-left">
-          <div className="mb-5 flex items-center justify-between">
-            <div>
-              <div className="text-base font-bold text-ink">
-                Alle potjes · mei 2026
-              </div>
-              <div className="mt-0.5 text-xs text-ink-muted">
-                Beheerd door: Thomas V. · 3 teamleden actief
-              </div>
+        <div className="p-5">
+          <div className="mb-4 grid grid-cols-3 gap-3">
+            <StatCard label="Totaal saldo" value="€8.240" />
+            <StatCard label="Deze maand in" value="€2.150" />
+            <StatCard label="Deze maand uit" value="€870" amber />
+          </div>
+          <div
+            className="rounded-2xl border p-4"
+            style={{ borderColor: LINE }}
+          >
+            <div className="mb-3 text-xs font-bold uppercase tracking-wider text-ink-light">
+              Recente activiteit
             </div>
-            <button className="flex-shrink-0 whitespace-nowrap rounded-md bg-teal-500 px-3.5 py-1.5 text-xs font-semibold text-white">
-              + Toevoegen
-            </button>
+            <Txn initials="OP" initialsBg="bg-teal-100 text-teal-700" title="Ouders kamp" from="Kamp 2026" tag="inkomst" amount="+€450" amountClass="text-teal-700" />
+            <Txn initials="DC" initialsBg="bg-amber-100 text-amber-700" title="Decathlon" from="Materiaal" tag="uitgave" amount="−€120" amountClass="text-amber-700" />
+            <Txn initials="SP" initialsBg="bg-teal-100 text-teal-700" title="Sponsor Bouwbedrijf" from="Sponsoring" tag="inkomst" amount="+€500" amountClass="text-teal-700" last />
           </div>
-
-          <div className="mb-5 grid grid-cols-3 gap-3">
-            <StatCard label="Totaal beheerd" value="€8.240" />
-            <StatCard label="Inkomsten mei" value="€2.150" />
-            <StatCard label="Openstaand" value="€430" amber />
-          </div>
-
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-            Recente transacties
-          </div>
-          <Txn
-            initials="S"
-            initialsBg="bg-[#ede9fe] text-[#6d28d9]"
-            title="Salarisbetaling Tom"
-            from="Van: Werkgever NV"
-            tag="Salarissen"
-            amount="+€2.400"
-            amountClass="text-teal-500"
-          />
-          <Txn
-            initials="E"
-            initialsBg="bg-amber-50 text-amber-700"
-            title="Zomerfeest budget"
-            from="Van: HQ Finance"
-            tag="Events"
-            amount="+€500"
-            amountClass="text-teal-500"
-          />
-          <Txn
-            initials="M"
-            initialsBg="bg-azure-100 text-azure-700"
-            title="Google Ads mei"
-            from="Uit: Marketing"
-            tag="Marketing"
-            amount="−€320"
-            amountClass="text-rose-500"
-            last
-          />
-        </main>
+        </div>
       </div>
     </div>
   );
@@ -253,10 +263,8 @@ function SidebarRow({
 }) {
   return (
     <div
-      className={`flex cursor-pointer items-center gap-2.5 px-4 py-2 text-xs transition ${
-        active
-          ? "bg-teal-100 font-semibold text-teal-700"
-          : "text-ink hover:bg-teal-100/60"
+      className={`mx-2 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs transition ${
+        active ? "bg-white font-semibold text-[#0F6E56] shadow-sm" : "text-ink hover:bg-white/60"
       }`}
     >
       <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${color}`} />
@@ -276,13 +284,11 @@ function StatCard({
   amber?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-teal-100 bg-teal-50/60 p-3">
+    <div className="rounded-2xl border p-3" style={{ borderColor: LINE, backgroundColor: CREAM }}>
       <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-ink-muted">
         {label}
       </div>
-      <div
-        className={`text-lg font-bold ${amber ? "text-amber-700" : "text-teal-700"}`}
-      >
+      <div className={`text-lg font-bold tabular-nums ${amber ? "text-amber-700" : "text-[#0F6E56]"}`}>
         {value}
       </div>
     </div>
@@ -310,48 +316,42 @@ function Txn({
 }) {
   return (
     <div
-      className={`flex items-center gap-3 py-2.5 text-xs ${
-        last ? "" : "border-b border-teal-100"
-      }`}
+      className={`flex items-center gap-3 py-2.5 text-xs ${last ? "" : "border-b"}`}
+      style={last ? undefined : { borderColor: LINE }}
     >
-      <span
-        className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-[11px] font-bold ${initialsBg}`}
-      >
+      <span className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-[11px] font-bold ${initialsBg}`}>
         {initials}
       </span>
       <div className="min-w-0 flex-1">
         <div className="truncate font-medium text-ink">{title}</div>
         <div className="text-[11px] text-ink-muted">{from}</div>
       </div>
-      <span className="hidden rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-medium text-teal-700 sm:inline-block">
+      <span className="hidden rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 sm:inline-block">
         {tag}
       </span>
-      <span className={`text-sm font-semibold ${amountClass}`}>{amount}</span>
+      <span className={`text-sm font-semibold tabular-nums ${amountClass}`}>{amount}</span>
     </div>
   );
 }
 
 function BetaStatus() {
   return (
-    <section className="border-y border-teal-100 bg-teal-50/40 py-7 text-center">
-      <div className="mx-auto flex max-w-3xl flex-col items-center justify-center gap-4 px-6 sm:flex-row sm:gap-8">
+    <section className="px-6">
+      <div
+        className="mx-auto flex max-w-3xl flex-col items-center justify-center gap-4 rounded-2xl border px-6 py-5 text-center sm:flex-row sm:gap-8"
+        style={{ borderColor: LINE, backgroundColor: "#fff" }}
+      >
         <div className="flex items-center gap-2.5">
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-500 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-teal-500" />
           </span>
-          <span className="text-sm font-semibold text-teal-700">
-            Bèta is live
-          </span>
+          <span className="text-sm font-semibold text-[#0F6E56]">Bèta is live</span>
         </div>
-        <span className="hidden h-4 w-px bg-teal-200 sm:block" aria-hidden />
-        <span className="text-sm text-ink-muted">
-          Gratis te starten
-        </span>
-        <span className="hidden h-4 w-px bg-teal-200 sm:block" aria-hidden />
-        <span className="text-sm text-ink-muted">
-          Geen kaart nodig
-        </span>
+        <span className="hidden h-4 w-px sm:block" style={{ backgroundColor: LINE }} aria-hidden />
+        <span className="text-sm text-ink-muted">Gratis te starten</span>
+        <span className="hidden h-4 w-px sm:block" style={{ backgroundColor: LINE }} aria-hidden />
+        <span className="text-sm text-ink-muted">Geen kaart nodig</span>
       </div>
     </section>
   );
@@ -406,15 +406,18 @@ function Problem() {
   ];
 
   return (
-    <section className="bg-teal-900 px-6 py-24" style={{ backgroundColor: "#04342C" }}>
-      <div className="mx-auto max-w-6xl">
-        <p className="mb-3 text-xs font-bold uppercase tracking-wider text-teal-300">
+    <section className="px-6 py-24">
+      <div
+        className="mx-auto max-w-6xl rounded-[2rem] px-6 py-16 sm:px-12"
+        style={{ backgroundColor: FOREST }}
+      >
+        <p className="mb-3 text-xs font-bold uppercase tracking-wider text-amber-300">
           Het probleem
         </p>
         <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
           Herken je dit?
         </h2>
-        <p className="max-w-xl text-base leading-relaxed text-white/60 sm:text-lg">
+        <p className="max-w-xl text-base leading-relaxed text-white/65 sm:text-lg">
           Alles komt op één rekening binnen, maar niemand weet van wie, voor
           wie, of hoeveel er nog over is.
         </p>
@@ -422,15 +425,15 @@ function Problem() {
           {issues.map((it) => (
             <div
               key={it.title}
-              className="rounded-xl border border-white/10 bg-white/5 p-4 sm:p-6"
+              className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:bg-white/[0.07] sm:p-6"
             >
-              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5">
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-amber-400/15">
                 <svg
                   width="20"
                   height="20"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#9FE1CB"
+                  stroke="#F0C36B"
                   strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -438,17 +441,41 @@ function Problem() {
                   {it.icon}
                 </svg>
               </div>
-              <h3 className="mb-2 text-base font-bold text-white">
-                {it.title}
-              </h3>
-              <p className="text-sm leading-relaxed text-white/55">
-                {it.desc}
-              </p>
+              <h3 className="mb-2 text-base font-bold text-white">{it.title}</h3>
+              <p className="text-sm leading-relaxed text-white/55">{it.desc}</p>
             </div>
           ))}
         </div>
       </div>
     </section>
+  );
+}
+
+function SectionHeading({
+  eyebrow,
+  title,
+  sub,
+  center = true,
+}: {
+  eyebrow: string;
+  title: ReactNode;
+  sub?: string;
+  center?: boolean;
+}) {
+  return (
+    <div className={center ? "text-center" : ""}>
+      <p className="mb-3 text-xs font-bold uppercase tracking-wider text-teal-600">
+        {eyebrow}
+      </p>
+      <h2 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
+        {title}
+      </h2>
+      {sub && (
+        <p className={`mt-3 max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg ${center ? "mx-auto" : ""}`}>
+          {sub}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -472,29 +499,25 @@ function HowItWorks() {
   ];
 
   return (
-    <section id="hoe" className="scroll-mt-20 bg-white px-6 py-24">
+    <section id="hoe" className="scroll-mt-20 px-6 py-24">
       <div className="mx-auto max-w-6xl">
-        <div className="text-center">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-teal-500">
-            Hoe het werkt
-          </p>
-          <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-            In 3 stappen geregeld
-          </h2>
-          <p className="mx-auto max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg">
-            Kaspio is geen boekhoudprogramma. Het is een simpele tool die
-            overzicht geeft waar jij dat wil.
-          </p>
-        </div>
+        <SectionHeading
+          eyebrow="Hoe het werkt"
+          title="In 3 stappen geregeld"
+          sub="Kaspio is geen boekhoudprogramma. Het is een simpele tool die overzicht geeft waar jij dat wil."
+        />
         <div className="mt-14 grid gap-8 md:grid-cols-3">
           {steps.map((s, i) => (
             <div key={s.n} className="relative">
               {i < steps.length - 1 && (
-                <div className="absolute left-12 top-5 hidden h-0.5 w-full bg-gradient-to-r from-teal-300 to-transparent md:block" />
+                <div
+                  className="absolute left-12 top-6 hidden h-0.5 w-full md:block"
+                  style={{ background: "linear-gradient(to right, #EF9F27, transparent)" }}
+                />
               )}
               <div
-                className="relative mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-teal-500 text-lg font-extrabold text-white"
-                style={{ boxShadow: "0 0 0 8px #E1F5EE" }}
+                className="relative mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-500 text-lg font-extrabold text-white"
+                style={{ boxShadow: "0 0 0 8px rgba(29,158,117,0.12)" }}
               >
                 {s.n}
               </div>
@@ -612,42 +635,54 @@ function Features() {
   ];
 
   return (
-    <section id="functies" className="scroll-mt-20 bg-teal-50/50 px-6 py-24">
+    <section
+      id="functies"
+      className="scroll-mt-20 px-6 py-24"
+      style={{ backgroundColor: CREAM_SOFT }}
+    >
       <div className="mx-auto max-w-6xl">
-        <div className="text-center">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-teal-500">
-            Functies
-          </p>
-          <h2 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-            Alles wat je nodig hebt,
-            <br />
-            niets wat je niet nodig hebt
-          </h2>
-        </div>
-        <div className="mt-14 grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {features.map((f) => (
-            <div
-              key={f.title}
-              className="rounded-xl border border-teal-100 bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.06)] transition hover:-translate-y-1 hover:border-teal-300 hover:shadow-[0_2px_8px_rgba(15,110,86,0.08),0_8px_32px_rgba(15,110,86,0.06)] sm:p-7"
-            >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-teal-100">
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#0F6E56"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+        <SectionHeading
+          eyebrow="Functies"
+          title={
+            <>
+              Alles wat je nodig hebt,
+              <br />
+              niets wat je niet nodig hebt
+            </>
+          }
+        />
+        <div className="mt-14 grid gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {features.map((f, i) => {
+            const warm = i % 3 === 1;
+            return (
+              <div
+                key={f.title}
+                className="rounded-2xl border bg-white p-6 transition duration-200 hover:-translate-y-1 hover:shadow-[0_16px_40px_-20px_rgba(12,58,48,0.3)]"
+                style={{ borderColor: LINE }}
+              >
+                <div
+                  className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${
+                    warm ? "bg-amber-100" : "bg-teal-100"
+                  }`}
                 >
-                  {f.icon}
-                </svg>
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke={warm ? "#BA7517" : "#0F6E56"}
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    {f.icon}
+                  </svg>
+                </div>
+                <h3 className="mb-2 text-base font-bold text-ink">{f.title}</h3>
+                <p className="text-sm leading-relaxed text-ink-muted">{f.desc}</p>
               </div>
-              <h3 className="mb-2 text-base font-bold text-ink">{f.title}</h3>
-              <p className="text-sm leading-relaxed text-ink-muted">{f.desc}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
@@ -656,59 +691,33 @@ function Features() {
 
 function UseCases() {
   const cases = [
-    {
-      initials: "AB",
-      title: "Artiestenbureau's",
-      desc: "Beheer honoraria en royalties per artiest op één rekening",
-    },
-    {
-      initials: "SC",
-      title: "Sportclubs",
-      desc: "Ledenbijdragen, sponsoring en kantine, elk in eigen potje",
-    },
-    {
-      initials: "JB",
-      title: "Jeugdbewegingen",
-      desc: "Kamp, werking en materiaal transparant bijhouden",
-    },
-    {
-      initials: "VZ",
-      title: "VZW's",
-      desc: "Subsidies en donaties direct koppelen aan projecten",
-    },
-    {
-      initials: "CT",
-      title: "Creatieve teams",
-      desc: "Film, muziek en events, budgetbeheer zonder boekhouder",
-    },
-    {
-      initials: "KB",
-      title: "Kleine bedrijven",
-      desc: "Inkomsten per project of divisie bijhouden zonder extra rekening",
-    },
+    { initials: "AB", title: "Artiestenbureau's", desc: "Beheer honoraria en royalties per artiest op één rekening" },
+    { initials: "SC", title: "Sportclubs", desc: "Ledenbijdragen, sponsoring en kantine, elk in eigen potje" },
+    { initials: "JB", title: "Jeugdbewegingen", desc: "Kamp, werking en materiaal transparant bijhouden" },
+    { initials: "VZ", title: "VZW's", desc: "Subsidies en donaties direct koppelen aan projecten" },
+    { initials: "CT", title: "Creatieve teams", desc: "Film, muziek en events, budgetbeheer zonder boekhouder" },
+    { initials: "KB", title: "Kleine bedrijven", desc: "Inkomsten per project of divisie bijhouden zonder extra rekening" },
   ];
   return (
-    <section className="bg-white px-6 py-24">
+    <section className="px-6 py-24">
       <div className="mx-auto max-w-6xl">
-        <div className="text-center">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-teal-500">
-            Voor wie
-          </p>
-          <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-            Kaspio werkt voor elk type organisatie
-          </h2>
-          <p className="mx-auto max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg">
-            Van jeugdbeweging tot managementbureau, als je inkomsten beheert
-            voor meerdere mensen of doelen, is Kaspio voor jou.
-          </p>
-        </div>
+        <SectionHeading
+          eyebrow="Voor wie"
+          title="Voor elk type organisatie"
+          sub="Van jeugdbeweging tot managementbureau, als je inkomsten beheert voor meerdere mensen of doelen, is Kaspio voor jou."
+        />
         <div className="mt-12 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-6">
-          {cases.map((c) => (
+          {cases.map((c, i) => (
             <div
               key={c.title}
-              className="rounded-xl border border-teal-100 bg-white p-4 text-center transition hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50/50 sm:p-7"
+              className="rounded-2xl border bg-white p-5 text-center transition hover:-translate-y-1"
+              style={{ borderColor: LINE }}
             >
-              <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-teal-100 text-sm font-extrabold text-teal-700">
+              <div
+                className={`mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full text-sm font-extrabold ${
+                  i % 2 === 0 ? "bg-teal-100 text-teal-700" : "bg-amber-100 text-amber-700"
+                }`}
+              >
                 {c.initials}
               </div>
               <h3 className="mb-1.5 text-sm font-bold text-ink">{c.title}</h3>
@@ -725,45 +734,42 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
   const [yearly, setYearly] = useState(false);
 
   return (
-    <section id="prijzen" className="scroll-mt-20 bg-teal-50/50 px-6 py-24">
+    <section
+      id="prijzen"
+      className="scroll-mt-20 px-6 py-24"
+      style={{ backgroundColor: CREAM_SOFT }}
+    >
       <div className="mx-auto max-w-6xl">
-        <div className="text-center">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-teal-500">
-            Prijzen
-          </p>
-          <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-            Simpel. Eerlijk. Schaalbaar.
-          </h2>
-          <p className="mx-auto max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg">
-            Start gratis. Betaal enkel als je meer nodig hebt. Geen verborgen
-            kosten.
-          </p>
+        <SectionHeading
+          eyebrow="Prijzen"
+          title="Eerlijk en simpel"
+          sub="Start gratis. Betaal pas als je meer nodig hebt. Geen verborgen kosten."
+        />
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm text-ink-muted">
-            <span>Maandelijks</span>
-            <button
-              onClick={() => setYearly((v) => !v)}
-              className="relative h-6 w-11 rounded-full bg-teal-500 transition"
-              aria-pressed={yearly}
-              aria-label="Wissel maandelijks/jaarlijks"
-            >
-              <span
-                className={`absolute top-[3px] h-[18px] w-[18px] rounded-full bg-white shadow transition-all ${
-                  yearly ? "left-[23px]" : "left-[3px]"
-                }`}
-              />
-            </button>
-            <span>Jaarlijks</span>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm text-ink-muted">
+          <span>Maandelijks</span>
+          <button
+            onClick={() => setYearly((v) => !v)}
+            className="relative h-6 w-11 rounded-full bg-teal-500 transition"
+            aria-pressed={yearly}
+            aria-label="Wissel maandelijks/jaarlijks"
+          >
             <span
-              className={`whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-bold ${
-                yearly
-                  ? "border-teal-300 bg-teal-100 text-teal-700"
-                  : "border-amber-200 bg-amber-50 text-amber-700"
+              className={`absolute top-[3px] h-[18px] w-[18px] rounded-full bg-white shadow transition-all ${
+                yearly ? "left-[23px]" : "left-[3px]"
               }`}
-            >
-              {yearly ? "✓ −20% actief" : "Bespaar 20%"}
-            </span>
-          </div>
+            />
+          </button>
+          <span>Jaarlijks</span>
+          <span
+            className={`whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-bold ${
+              yearly
+                ? "border-teal-300 bg-teal-100 text-teal-700"
+                : "border-amber-200 bg-amber-50 text-amber-700"
+            }`}
+          >
+            {yearly ? "✓ −20% actief" : "Bespaar 20%"}
+          </span>
         </div>
 
         <div className="mt-10 grid items-start gap-6 md:grid-cols-3">
@@ -867,19 +873,19 @@ function Plan({
   featured?: boolean;
 }) {
   const ctaClass = {
-    outline:
-      "border border-teal-100 bg-white text-ink hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700",
-    fill: "bg-teal-500 text-white hover:bg-teal-700",
-    amber: "bg-amber-500 text-white hover:bg-amber-700",
+    outline: "border bg-white text-ink hover:border-teal-500 hover:text-teal-700",
+    fill: "bg-teal-500 text-white hover:bg-teal-600",
+    amber: "bg-amber-500 text-white hover:bg-amber-600",
   }[ctaStyle];
 
   return (
     <div
-      className={`relative rounded-xl bg-white p-6 sm:p-8 ${
-        featured
-          ? "border-2 border-teal-500 shadow-[0_8px_40px_rgba(29,158,117,0.15)]"
-          : "border border-teal-100"
+      className={`relative rounded-3xl bg-white p-6 sm:p-8 ${
+        featured ? "shadow-[0_20px_60px_-24px_rgba(29,158,117,0.45)]" : ""
       }`}
+      style={{
+        border: featured ? "2px solid #1D9E75" : `1px solid ${LINE}`,
+      }}
     >
       {featured && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-teal-500 px-3.5 py-1 text-xs font-bold text-white">
@@ -892,26 +898,18 @@ function Plan({
       <div className="mb-1 text-4xl font-extrabold tracking-tight text-ink">
         {price}
         {priceSuffix && (
-          <span className="ml-1 text-base font-medium text-ink-muted">
-            {priceSuffix}
-          </span>
+          <span className="ml-1 text-base font-medium text-ink-muted">{priceSuffix}</span>
         )}
       </div>
       <p className="mb-5 text-sm leading-snug text-ink-muted">{desc}</p>
-      <hr className="mb-5 border-t border-teal-100" />
+      <hr className="mb-5" style={{ borderColor: LINE }} />
       <ul className="space-y-3">
         {features.map((f) => (
           <li
             key={f.text}
-            className={`flex items-start gap-2.5 text-sm ${
-              f.no ? "text-ink-light" : "text-ink"
-            }`}
+            className={`flex items-start gap-2.5 text-sm ${f.no ? "text-ink-light" : "text-ink"}`}
           >
-            <span
-              className={`mt-0.5 flex-shrink-0 font-bold ${
-                f.no ? "text-ink-light" : "text-teal-500"
-              }`}
-            >
+            <span className={`mt-0.5 flex-shrink-0 font-bold ${f.no ? "text-ink-light" : "text-teal-500"}`}>
               {f.no ? "·" : "✓"}
             </span>
             <span>{f.text}</span>
@@ -920,7 +918,8 @@ function Plan({
       </ul>
       <button
         onClick={onClick}
-        className={`mt-6 w-full rounded-lg py-3 text-sm font-bold transition ${ctaClass}`}
+        className={`mt-6 w-full rounded-full py-3 text-sm font-bold transition ${ctaClass}`}
+        style={ctaStyle === "outline" ? { borderColor: LINE } : undefined}
       >
         {cta}
       </button>
@@ -947,27 +946,25 @@ function BuildInPublic() {
     },
   ];
   return (
-    <section className="bg-white px-6 py-24">
+    <section className="px-6 py-24">
       <div className="mx-auto max-w-5xl">
-        <div className="text-center">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-teal-500">
-            Build in public
-          </p>
-          <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-            Waar staan we nu?
-          </h2>
-          <p className="mx-auto max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg">
-            Kaspio is jong en eerlijk daarover. Hier is precies wat we doen, wat
-            er komt en wanneer je iets kunt verwachten.
-          </p>
-        </div>
+        <SectionHeading
+          eyebrow="Build in public"
+          title="Waar staan we nu?"
+          sub="Kaspio is jong en eerlijk daarover. Hier is precies wat we doen, wat er komt en wanneer je iets kunt verwachten."
+        />
         <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {status.map((s) => (
+          {status.map((s, i) => (
             <div
               key={s.title}
-              className="rounded-xl border border-teal-100 bg-white p-7 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.06)]"
+              className="rounded-2xl border bg-white p-7"
+              style={{ borderColor: LINE }}
             >
-              <span className="mb-3 inline-block rounded-full bg-teal-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-teal-700">
+              <span
+                className={`mb-3 inline-block rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${
+                  i === 0 ? "bg-teal-100 text-teal-700" : "bg-amber-50 text-amber-700"
+                }`}
+              >
                 {s.label}
               </span>
               <h3 className="mb-2 text-lg font-bold text-ink">{s.title}</h3>
@@ -1015,28 +1012,25 @@ function Faq() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="scroll-mt-20 bg-teal-50/50 px-6 py-24">
-      <div className="mx-auto max-w-6xl">
-        <div className="text-center">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-teal-500">
-            Veelgestelde vragen
-          </p>
-          <h2 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-            Alles wat je wil weten
-          </h2>
-        </div>
-        <div className="mx-auto mt-12 max-w-3xl">
+    <section id="faq" className="scroll-mt-20 px-6 py-24" style={{ backgroundColor: CREAM_SOFT }}>
+      <div className="mx-auto max-w-3xl">
+        <SectionHeading eyebrow="Veelgestelde vragen" title="Alles wat je wil weten" />
+        <div className="mt-12 space-y-3">
           {items.map((it, i) => {
             const isOpen = open === i;
             return (
-              <div key={it.q} className="border-b border-teal-100">
+              <div
+                key={it.q}
+                className="overflow-hidden rounded-2xl border bg-white"
+                style={{ borderColor: LINE }}
+              >
                 <button
                   onClick={() => setOpen(isOpen ? null : i)}
-                  className="flex w-full items-center justify-between gap-4 py-5 text-left text-base font-semibold text-ink transition hover:text-teal-500"
+                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-base font-semibold text-ink transition hover:text-teal-700"
                 >
                   <span>{it.q}</span>
                   <span
-                    className={`text-xl text-teal-500 transition-transform ${
+                    className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-teal-100 text-lg text-teal-700 transition-transform ${
                       isOpen ? "rotate-45" : ""
                     }`}
                   >
@@ -1044,9 +1038,7 @@ function Faq() {
                   </span>
                 </button>
                 {isOpen && (
-                  <p className="pb-5 text-sm leading-relaxed text-ink-muted">
-                    {it.a}
-                  </p>
+                  <p className="px-5 pb-5 text-sm leading-relaxed text-ink-muted">{it.a}</p>
                 )}
               </div>
             );
@@ -1059,24 +1051,32 @@ function Faq() {
 
 function FinalCta({ onSignup }: { onSignup: () => void }) {
   return (
-    <section className="px-6 py-20 text-center" style={{ backgroundColor: "#0F6E56" }}>
-      <div className="mx-auto max-w-3xl">
-        <h2 className="mb-4 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+    <section className="px-6 py-24">
+      <div
+        className="relative mx-auto max-w-4xl overflow-hidden rounded-[2rem] px-6 py-16 text-center sm:px-12"
+        style={{ backgroundColor: FOREST }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute right-[-80px] top-[-80px] h-72 w-72 rounded-full opacity-40 blur-3xl"
+          style={{ background: "radial-gradient(closest-side, rgba(239,159,39,0.45), transparent)" }}
+        />
+        <h2 className="relative mb-4 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
           Klaar om orde te scheppen
           <br />
-          in jouw geldstromen?
+          in jullie kas?
         </h2>
-        <p className="mx-auto mb-8 max-w-xl text-lg text-teal-300">
+        <p className="relative mx-auto mb-8 max-w-xl text-lg text-white/70">
           Maak gratis een account aan en zet je eerste potjes op in een paar
           minuten.
         </p>
         <button
           onClick={onSignup}
-          className="rounded-xl border-2 border-amber-500 bg-amber-500 px-8 py-3.5 text-base font-bold text-ink shadow transition hover:-translate-y-0.5 hover:bg-amber-400"
+          className="relative rounded-full bg-amber-500 px-8 py-3.5 text-base font-bold text-ink shadow-[0_12px_30px_-10px_rgba(239,159,39,0.7)] transition hover:-translate-y-0.5 hover:bg-amber-400"
         >
           Gratis starten →
         </button>
-        <p className="mt-4 text-xs text-white/50">
+        <p className="relative mt-4 text-xs text-white/50">
           ✓ Geen kaart nodig &nbsp; ✓ Klaar in minuten &nbsp; ✓ Elk moment opzegbaar
         </p>
       </div>
@@ -1086,10 +1086,7 @@ function FinalCta({ onSignup }: { onSignup: () => void }) {
 
 function Footer() {
   return (
-    <footer
-      className="px-6 pb-8 pt-14 text-sm text-white/60"
-      style={{ backgroundColor: "#1a1a18" }}
-    >
+    <footer className="px-6 pb-8 pt-14 text-sm text-white/60" style={{ backgroundColor: "#1a1714" }}>
       <div className="mx-auto max-w-6xl">
         <div className="grid gap-10 pb-12 sm:grid-cols-2 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
           <div>
@@ -1099,31 +1096,19 @@ function Footer() {
               transparant wil verdelen. Gemaakt in België.
             </p>
           </div>
-          <FooterCol
-            title="Product"
-            links={["Functies", "Prijzen", "Demo", "Roadmap", "Changelog"]}
-          />
+          <FooterCol title="Product" links={["Functies", "Prijzen", "Demo", "Roadmap", "Changelog"]} />
           <FooterCol
             title="Gebruik"
-            links={[
-              "Sportclubs",
-              "Jeugdbewegingen",
-              "Artiestenbureaus",
-              "VZW's",
-              "Enterprise",
-            ]}
+            links={["Sportclubs", "Jeugdbewegingen", "Artiestenbureaus", "VZW's", "Enterprise"]}
           />
-          <FooterCol
-            title="Bedrijf"
-            links={["Over ons", "Blog", "Contact", "Pers", "Vacatures"]}
-          />
+          <FooterCol title="Bedrijf" links={["Over ons", "Blog", "Contact", "Pers", "Vacatures"]} />
         </div>
         <div className="flex flex-col items-start justify-between gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center">
           <span>© {new Date().getFullYear()} Kaspio BV. Alle rechten voorbehouden.</span>
           <div className="flex gap-5">
-            <a className="hover:text-teal-300" href="#">Privacybeleid</a>
-            <a className="hover:text-teal-300" href="#">Gebruiksvoorwaarden</a>
-            <a className="hover:text-teal-300" href="#">Cookies</a>
+            <a className="transition hover:text-amber-300" href="#">Privacybeleid</a>
+            <a className="transition hover:text-amber-300" href="#">Gebruiksvoorwaarden</a>
+            <a className="transition hover:text-amber-300" href="#">Cookies</a>
           </div>
         </div>
       </div>
@@ -1134,13 +1119,11 @@ function Footer() {
 function FooterCol({ title, links }: { title: string; links: string[] }) {
   return (
     <div>
-      <h4 className="mb-4 text-xs font-bold uppercase tracking-wider text-white">
-        {title}
-      </h4>
+      <h4 className="mb-4 text-xs font-bold uppercase tracking-wider text-white">{title}</h4>
       <ul className="space-y-2.5">
         {links.map((l) => (
           <li key={l}>
-            <a className="text-sm text-white/55 hover:text-teal-300" href="#">
+            <a className="text-sm text-white/55 transition hover:text-amber-300" href="#">
               {l}
             </a>
           </li>
