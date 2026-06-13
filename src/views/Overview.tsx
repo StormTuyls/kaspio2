@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { calcBalance, formatDate, formatEuro } from "../storage";
 import type { Member, Pot, PotGroup, Transaction } from "../types";
 import { CashflowChart } from "../components/CashflowChart";
@@ -10,6 +11,10 @@ type Props = {
   organizationName: string;
   /** Potgroepen (takken/ploegen) voor visuele groepering. */
   groups?: PotGroup[];
+  /** Groep waar de sidebar naartoe wil scrollen (id, of null = ongegroepeerde). */
+  focusGroupId?: string | null;
+  /** Aangeroepen nadat er gescrolld is, zodat het focus-signaal gereset wordt. */
+  onFocusConsumed?: () => void;
   onSelect: (id: string) => void;
   onAddPot: () => void;
   /** Org-brede transactie toevoegen (admin). */
@@ -18,6 +23,8 @@ type Props = {
   onOpenInbox?: () => void;
 };
 
+const NONE_KEY = "__none__";
+
 export function Overview({
   pots,
   allTransactions,
@@ -25,6 +32,8 @@ export function Overview({
   currentUser,
   organizationName,
   groups = [],
+  focusGroupId,
+  onFocusConsumed,
   onSelect,
   onAddPot,
   onAddTransaction,
@@ -72,6 +81,31 @@ export function Overview({
 
   const groupBalance = (groupPots: Pot[]) =>
     groupPots.reduce((sum, p) => sum + calcBalance(allTransactions, p.id), 0);
+
+  // Inklapbare groep-secties: ingeklapte ids in een Set.
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const toggle = (key: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  // Sidebar-navigatie: scroll naar de gekozen groep + klap 'm open.
+  useEffect(() => {
+    if (focusGroupId === undefined) return;
+    const key = focusGroupId === null ? NONE_KEY : focusGroupId;
+    setCollapsed((prev) => {
+      if (!prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+    const el = document.getElementById(`grp-${key}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    onFocusConsumed?.();
+  }, [focusGroupId, onFocusConsumed]);
 
   return (
     <div className="space-y-6">
@@ -180,53 +214,80 @@ export function Overview({
               ))}
             </div>
           ) : (
-            <div className="space-y-6">
-              {groupSections.map(({ group, pots: groupPots }) => (
-                <section key={group.id}>
-                  <div className="mb-2 flex items-baseline justify-between gap-2">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-navy-500 dark:text-navy-300">
-                      {group.name}
-                    </h3>
-                    <span className="text-sm font-semibold tabular-nums text-navy-700 dark:text-navy-200">
-                      {formatEuro(groupBalance(groupPots))}
-                    </span>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {groupPots.map((pot) => (
-                      <PotCard
-                        key={pot.id}
-                        pot={pot}
-                        owner={memberById.get(pot.ownerId)}
-                        transactions={allTransactions}
-                        onSelect={() => onSelect(pot.id)}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ))}
-              {ungrouped.length > 0 && (
-                <section>
-                  <div className="mb-2 flex items-baseline justify-between gap-2">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-navy-400 dark:text-navy-400">
-                      Overige potjes
-                    </h3>
-                    <span className="text-sm font-semibold tabular-nums text-navy-700 dark:text-navy-200">
-                      {formatEuro(groupBalance(ungrouped))}
-                    </span>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {ungrouped.map((pot) => (
-                      <PotCard
-                        key={pot.id}
-                        pot={pot}
-                        owner={memberById.get(pot.ownerId)}
-                        transactions={allTransactions}
-                        onSelect={() => onSelect(pot.id)}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
+            <div className="space-y-3">
+              {[
+                ...groupSections.map((s) => ({
+                  key: s.group.id,
+                  label: s.group.name,
+                  secPots: s.pots,
+                  muted: false,
+                })),
+                ...(ungrouped.length > 0
+                  ? [{ key: NONE_KEY, label: "Overige potjes", secPots: ungrouped, muted: true }]
+                  : []),
+              ].map(({ key, label, secPots, muted }) => {
+                const isCollapsed = collapsed.has(key);
+                return (
+                  <section
+                    key={key}
+                    id={`grp-${key}`}
+                    className="scroll-mt-24 rounded-2xl border border-navy-100 bg-white/40 p-2 dark:border-navy-700/60 dark:bg-navy-900/30"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggle(key)}
+                      className="flex w-full items-center justify-between gap-2 rounded-xl px-2 py-1.5 text-left transition hover:bg-navy-50 dark:hover:bg-navy-800/50"
+                      aria-expanded={!isCollapsed}
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className={`flex-shrink-0 text-navy-400 transition-transform ${
+                            isCollapsed ? "" : "rotate-90"
+                          }`}
+                        >
+                          <polyline points="9 18 15 12 9 6" />
+                        </svg>
+                        <h3
+                          className={`truncate text-sm font-bold uppercase tracking-wider ${
+                            muted
+                              ? "text-navy-400 dark:text-navy-400"
+                              : "text-navy-600 dark:text-navy-200"
+                          }`}
+                        >
+                          {label}
+                        </h3>
+                        <span className="rounded-full bg-navy-100 px-1.5 text-[11px] font-semibold text-navy-500 dark:bg-navy-800 dark:text-navy-300">
+                          {secPots.length}
+                        </span>
+                      </span>
+                      <span className="flex-shrink-0 text-sm font-semibold tabular-nums text-navy-700 dark:text-navy-200">
+                        {formatEuro(groupBalance(secPots))}
+                      </span>
+                    </button>
+                    {!isCollapsed && (
+                      <div className="mt-2 grid gap-3 px-0.5 pb-0.5 sm:grid-cols-2">
+                        {secPots.map((pot) => (
+                          <PotCard
+                            key={pot.id}
+                            pot={pot}
+                            owner={memberById.get(pot.ownerId)}
+                            transactions={allTransactions}
+                            onSelect={() => onSelect(pot.id)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                );
+              })}
             </div>
           )}
         </div>

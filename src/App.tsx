@@ -382,6 +382,8 @@ function AuthedApp({
   const [showNewOrg, setShowNewOrg] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
   const [tab, setTab] = useState<Tab>("potjes");
+  // Groep-sectie waar het dashboard naartoe scrollt (gezet vanuit de sidebar).
+  const [focusGroup, setFocusGroup] = useState<string | null | undefined>(undefined);
 
   /** Maak een nieuwe org aan en switch er naartoe (sluit modal). */
   async function handleCreateOrg(name: string): Promise<{ error: string | null }> {
@@ -405,7 +407,6 @@ function AuthedApp({
       ? "pot_owner"
       : "reader";
   const isReader = myRole === "reader";
-  const adminCount = orgMembers.filter((m) => m.role === "admin").length;
 
   // Synthetische currentUser, altijd gedefinieerd zolang session bestaat.
   const currentUser = {
@@ -516,7 +517,6 @@ function AuthedApp({
           isAdmin={!!isAdmin}
           membersCount={orgMembers.length}
           potsCount={store.state.pots.length}
-          adminCount={adminCount}
           auditCount={auditEntries.length}
           orgs={orgs}
           currentOrg={org}
@@ -531,6 +531,11 @@ function AuthedApp({
           transactions={store.state.transactions}
           selectedPotId={selectedPotId}
           onSelectPot={(id) => setSelectedPotId(id)}
+          onSelectGroup={(groupId) => {
+            setTab("potjes");
+            setSelectedPotId(null);
+            setFocusGroup(groupId);
+          }}
           brandName={brandName}
           branding={store.state.branding}
           onTab={(t) => {
@@ -596,6 +601,8 @@ function AuthedApp({
                 currentUser={currentUser}
                 organizationName={org.name}
                 groups={uiGroups}
+                focusGroupId={focusGroup}
+                onFocusConsumed={() => setFocusGroup(undefined)}
                 onSelect={(id) => setSelectedPotId(id)}
                 onAddPot={() => setShowAddPot(true)}
                 onAddTransaction={isAdmin ? () => setShowAddTx(true) : undefined}
@@ -703,7 +710,6 @@ function Sidebar({
   isAdmin,
   membersCount,
   potsCount,
-  adminCount,
   auditCount,
   orgs,
   currentOrg,
@@ -717,13 +723,13 @@ function Sidebar({
   transactions,
   selectedPotId,
   onSelectPot,
+  onSelectGroup,
   onTab,
 }: {
   tab: Tab;
   isAdmin: boolean;
   membersCount: number;
   potsCount: number;
-  adminCount: number;
   auditCount: number;
   orgs: Organisation[];
   currentOrg: Organisation;
@@ -737,6 +743,8 @@ function Sidebar({
   transactions: Transaction[];
   selectedPotId: string | null;
   onSelectPot: (id: string) => void;
+  /** Spring naar een groep-sectie op het dashboard (null = ongegroepeerde). */
+  onSelectGroup: (groupId: string | null) => void;
   onTab: (t: Tab) => void;
 }) {
   const balanceFor = (potId: string) =>
@@ -748,14 +756,16 @@ function Sidebar({
       );
 
   // Potjes per groep voor de sidebar-lijst; groepsloze potjes achteraan.
-  const sidebarSections: { label: string | null; pots: Pot[] }[] = [
+  const sidebarSections: { id: string | null; label: string | null; pots: Pot[] }[] = [
     ...groups
       .map((g) => ({
+        id: g.id as string | null,
         label: g.name as string | null,
         pots: pots.filter((p) => p.groupId === g.id),
       }))
       .filter((s) => s.pots.length > 0),
     {
+      id: null,
       label: null,
       pots: pots.filter(
         (p) => !p.groupId || !groups.some((g) => g.id === p.groupId),
@@ -821,12 +831,23 @@ function Sidebar({
       </nav>
 
       {pots.length > 0 && (
-        <div className="mt-6 border-t border-navy-800 pt-4">
-          {sidebarSections.map((section, si) => (
-            <div key={section.label ?? "__rest__"} className={si > 0 ? "mt-3" : ""}>
-              <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-navy-400">
-                {section.label ?? (sidebarSections.length > 1 ? "Overige" : "Potjes")}
-              </p>
+        <div className="mt-6 flex-1 overflow-y-auto border-t border-navy-800 pt-4">
+          {sidebarSections.map((section, si) => {
+            const headerLabel =
+              section.label ?? (sidebarSections.length > 1 ? "Overige" : "Potjes");
+            return (
+            <div key={section.id ?? "__rest__"} className={si > 0 ? "mt-3" : ""}>
+              <button
+                type="button"
+                onClick={() => onSelectGroup(section.id)}
+                className="mb-1 flex w-full items-center justify-between gap-2 rounded-md px-2 py-1 text-left text-[10px] font-bold uppercase tracking-wider text-navy-400 transition hover:bg-white/5 hover:text-navy-200"
+                title="Toon in dashboard"
+              >
+                <span className="truncate">{headerLabel}</span>
+                <span className="font-normal normal-case text-navy-500">
+                  {section.pots.length}
+                </span>
+              </button>
               <ul className="space-y-0.5 text-sm">
                 {section.pots.map((p) => {
                   const active = tab === "potjes" && selectedPotId === p.id;
@@ -858,23 +879,10 @@ function Sidebar({
                 })}
               </ul>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
-
-      <div className="mt-auto rounded-2xl border border-navy-700 bg-navy-800/60 p-4 text-xs text-navy-200">
-        {adminCount > 1 ? (
-          <>
-            <p className="mb-1 font-semibold text-white">{adminCount} admins</p>
-            <p>Meerdere mensen kunnen volledige toegang hebben tot de organisatie.</p>
-          </>
-        ) : (
-          <>
-            <p className="mb-1 font-semibold text-white">💡 Tip</p>
-            <p>Schakel rechtsboven van rol om te zien wat een potjesbeheerder ziet.</p>
-          </>
-        )}
-      </div>
     </aside>
   );
 }
