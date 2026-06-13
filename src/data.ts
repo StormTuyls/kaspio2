@@ -17,6 +17,42 @@ import type {
 import { supabase } from "./supabase";
 
 // =============================================================================
+// useRealtimeRefresh , live sync via Supabase Realtime
+// =============================================================================
+// Abonneert op postgres_changes voor één tabel binnen één org en roept refetch
+// aan bij elke wijziging (insert/update/delete). Zo zien alle tabbladen en
+// gebruikers elkaars wijzigingen zonder handmatig verversen. RLS blijft gelden:
+// we vertrouwen de event-payload niet, we refetchen via de normale query.
+// Vereist dat de tabel in de supabase_realtime publicatie zit (zie
+// supabase/realtime.sql).
+function useRealtimeRefresh(
+  table: string,
+  orgId: string | null,
+  refetch: () => void,
+) {
+  useEffect(() => {
+    if (!orgId) return;
+    const channel = supabase
+      .channel(`rt:${table}:${orgId}`)
+      .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        "postgres_changes" as any,
+        {
+          event: "*",
+          schema: "public",
+          table,
+          filter: `organisation_id=eq.${orgId}`,
+        },
+        () => refetch(),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [table, orgId, refetch]);
+}
+
+// =============================================================================
 // useMyOrgs , alle organisaties waar huidige user lid van is + welke geselecteerd
 // =============================================================================
 
@@ -184,6 +220,7 @@ export function usePots(orgId: string | null) {
   useEffect(() => {
     fetchPots();
   }, [fetchPots]);
+  useRealtimeRefresh("pots", orgId, fetchPots);
 
   async function addPot(input: PotInput): Promise<{ error: string | null }> {
     if (!orgId) return { error: "Geen organisatie geselecteerd." };
@@ -289,6 +326,7 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
+  useRealtimeRefresh("transactions", orgId, fetchTransactions);
 
   async function addTransaction(
     input: TransactionInput,
@@ -427,6 +465,7 @@ export function usePotGroups(orgId: string | null) {
   useEffect(() => {
     fetchGroups();
   }, [fetchGroups]);
+  useRealtimeRefresh("pot_groups", orgId, fetchGroups);
 
   /** Maak een groep aan en geef het nieuwe id terug. */
   async function addGroup(
@@ -541,6 +580,7 @@ export function useOrgInvites(orgId: string | null) {
   useEffect(() => {
     fetchInvites();
   }, [fetchInvites]);
+  useRealtimeRefresh("org_invites", orgId, fetchInvites);
 
   async function sendInvite(input: InviteInput): Promise<InviteResult> {
     if (!orgId) return { error: "Geen organisatie geselecteerd." };
@@ -709,6 +749,7 @@ export function useOrgMembers(orgId: string | null) {
   useEffect(() => {
     fetchMembers();
   }, [fetchMembers]);
+  useRealtimeRefresh("memberships", orgId, fetchMembers);
 
   /** Set all permissions atomically: replaces existing memberships for this user. */
   async function setMemberPermissions(
@@ -863,6 +904,7 @@ export function useAuditLog(orgId: string | null, limit = 100) {
   useEffect(() => {
     fetchLog();
   }, [fetchLog]);
+  useRealtimeRefresh("audit_log", orgId, fetchLog);
 
   return { entries, loading, refresh: fetchLog };
 }
