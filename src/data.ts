@@ -25,6 +25,12 @@ import { supabase } from "./supabase";
 // we vertrouwen de event-payload niet, we refetchen via de normale query.
 // Vereist dat de tabel in de supabase_realtime publicatie zit (zie
 // supabase/realtime.sql).
+//
+// Elk abonnement krijgt een UNIEK channel-topic (via rtSeq). Sommige hooks
+// (bv. usePots) worden meerdere keren met dezelfde orgId aangeroepen; zonder
+// uniek topic hergebruikt supabase-js het al-gesubscribede channel-object en
+// gooit ".on() after subscribe()". Uniek topic = altijd een vers channel.
+let rtSeq = 0;
 function useRealtimeRefresh(
   table: string,
   orgId: string | null,
@@ -33,7 +39,7 @@ function useRealtimeRefresh(
   useEffect(() => {
     if (!orgId) return;
     const channel = supabase
-      .channel(`rt:${table}:${orgId}`)
+      .channel(`rt:${table}:${orgId}:${(rtSeq += 1)}`)
       .on(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         "postgres_changes" as any,
