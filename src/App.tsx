@@ -25,7 +25,9 @@ import type { Organisation } from "./supabase";
 import type { Pot as DbPot, Transaction as DbTransaction } from "./supabase";
 import type { Pot, PotGroup, Role, Transaction } from "./types";
 import { signOut, supabase, useSession } from "./supabase";
-import { Overview, Avatar } from "./views/Overview";
+import { PotsView, Avatar } from "./views/Overview";
+import { DashboardView } from "./views/DashboardView";
+import { GroupsView } from "./views/GroupsView";
 import { PotDetail } from "./views/PotDetail";
 import { SettingsView } from "./views/SettingsView";
 import { Landing } from "./views/Landing";
@@ -39,7 +41,7 @@ import { Mark } from "./components/Logo";
 import { paletteToCssVars } from "./branding";
 import type { Branding } from "./branding";
 
-type Tab = "potjes" | "leden" | "activiteit" | "instellingen";
+type Tab = "dashboard" | "potjes" | "groepen" | "leden" | "activiteit" | "instellingen";
 type PublicView = "landing" | "login" | "signup";
 
 // Lokale Account-shape (bridge tussen Supabase user en de oude localStorage-laag).
@@ -374,15 +376,22 @@ function AuthedApp({
     removeMember,
   } = useOrgMembers(orgId);
   const { entries: auditEntries, loading: auditLoading } = useAuditLog(orgId);
-  const { groups: dbGroups, addGroup } = usePotGroups(orgId);
+  const {
+    groups: dbGroups,
+    addGroup,
+    renameGroup,
+    deleteGroup,
+  } = usePotGroups(orgId);
   const [selectedPotId, setSelectedPotId] = useState<string | null>(null);
   const [showAddPot, setShowAddPot] = useState(false);
   const [showAddTx, setShowAddTx] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showNewOrg, setShowNewOrg] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
-  const [tab, setTab] = useState<Tab>("potjes");
-  // Groep-sectie waar het dashboard naartoe scrollt (gezet vanuit de sidebar).
+  const [tab, setTab] = useState<Tab>("dashboard");
+  // Toon de publieke website (landing) terwijl je ingelogd bent.
+  const [viewSite, setViewSite] = useState(false);
+  // Groep-sectie waar de Potjes-pagina naartoe scrollt (gezet vanuit sidebar/dashboard).
   const [focusGroup, setFocusGroup] = useState<string | null | undefined>(undefined);
 
   /** Maak een nieuwe org aan en switch er naartoe (sluit modal). */
@@ -506,6 +515,17 @@ function AuthedApp({
     );
   }
 
+  // Publieke website bekijken terwijl je ingelogd bent (vanuit de sidebar).
+  if (viewSite) {
+    return (
+      <Landing
+        onLogin={() => setViewSite(false)}
+        onSignup={() => setViewSite(false)}
+        onExitPreview={() => setViewSite(false)}
+      />
+    );
+  }
+
   const brandName = store.state.branding.brandName ?? "Kaspio";
   const brandStyle = paletteToCssVars(store.state.branding.accent) as CSSProperties;
 
@@ -536,6 +556,7 @@ function AuthedApp({
             setSelectedPotId(null);
             setFocusGroup(groupId);
           }}
+          onViewSite={() => setViewSite(true)}
           brandName={brandName}
           branding={store.state.branding}
           onTab={(t) => {
@@ -570,6 +591,30 @@ function AuthedApp({
                   setSelectedPotId(null);
                 }}
               />
+            ) : tab === "potjes" ? (
+              <PotsView
+                pots={potsForUser}
+                allTransactions={store.state.transactions}
+                members={uiMembers}
+                currentUser={currentUser}
+                groups={uiGroups}
+                focusGroupId={focusGroup}
+                onFocusConsumed={() => setFocusGroup(undefined)}
+                onSelect={(id) => setSelectedPotId(id)}
+                onAddPot={() => setShowAddPot(true)}
+                onAddTransaction={isAdmin ? () => setShowAddTx(true) : undefined}
+              />
+            ) : tab === "groepen" ? (
+              <GroupsView
+                groups={uiGroups}
+                pots={potsForUser}
+                allTransactions={store.state.transactions}
+                isAdmin={!!isAdmin}
+                onCreateGroup={addGroup}
+                onRenameGroup={renameGroup}
+                onDeleteGroup={deleteGroup}
+                onSelectPot={(id) => setSelectedPotId(id)}
+              />
             ) : tab === "leden" && isAdmin ? (
               <MembersListView
                 orgId={org.id}
@@ -594,18 +639,19 @@ function AuthedApp({
                 onBrandingReset={() => store.resetBranding()}
               />
             ) : (
-              <Overview
+              <DashboardView
                 pots={potsForUser}
                 allTransactions={store.state.transactions}
                 members={uiMembers}
                 currentUser={currentUser}
                 organizationName={org.name}
                 groups={uiGroups}
-                focusGroupId={focusGroup}
-                onFocusConsumed={() => setFocusGroup(undefined)}
                 onSelect={(id) => setSelectedPotId(id)}
-                onAddPot={() => setShowAddPot(true)}
-                onAddTransaction={isAdmin ? () => setShowAddTx(true) : undefined}
+                onOpenGroup={(groupId) => {
+                  setTab("potjes");
+                  setSelectedPotId(null);
+                  setFocusGroup(groupId);
+                }}
                 onOpenInbox={isAdmin ? () => setShowInbox(true) : undefined}
               />
             )}
@@ -613,18 +659,16 @@ function AuthedApp({
         </div>
       </div>
 
-      {isAdmin && (
-        <BottomNav
-          tab={tab}
-          potsCount={store.state.pots.length}
-          membersCount={orgMembers.length}
-          auditCount={auditEntries.length}
-          onTab={(t) => {
-            setTab(t);
-            setSelectedPotId(null);
-          }}
-        />
-      )}
+      <BottomNav
+        tab={tab}
+        isAdmin={!!isAdmin}
+        potsCount={store.state.pots.length}
+        membersCount={orgMembers.length}
+        onTab={(t) => {
+          setTab(t);
+          setSelectedPotId(null);
+        }}
+      />
 
       <Modal open={showAddPot} title="Nieuw potje" onClose={() => setShowAddPot(false)}>
         <PotForm
@@ -724,6 +768,7 @@ function Sidebar({
   selectedPotId,
   onSelectPot,
   onSelectGroup,
+  onViewSite,
   onTab,
 }: {
   tab: Tab;
@@ -743,8 +788,10 @@ function Sidebar({
   transactions: Transaction[];
   selectedPotId: string | null;
   onSelectPot: (id: string) => void;
-  /** Spring naar een groep-sectie op het dashboard (null = ongegroepeerde). */
+  /** Spring naar een groep-sectie op de Potjes-pagina (null = ongegroepeerde). */
   onSelectGroup: (groupId: string | null) => void;
+  /** Toon de publieke website (landing). */
+  onViewSite: () => void;
   onTab: (t: Tab) => void;
 }) {
   const balanceFor = (potId: string) =>
@@ -773,12 +820,16 @@ function Sidebar({
     },
   ].filter((s) => s.pots.length > 0);
   return (
-    <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-navy-900 bg-navy-900 px-5 py-6 text-navy-100 lg:flex dark:border-navy-800">
+    <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-navy-900 bg-navy-900 px-5 py-6 text-navy-100 lg:sticky lg:top-0 lg:flex lg:h-screen dark:border-navy-800">
       <div className="mb-8">
-        <div className="mb-2 flex items-center gap-2.5">
+        <button
+          onClick={() => onTab("dashboard")}
+          className="mb-2 flex w-full items-center gap-2.5 rounded-lg px-1 py-1 text-left transition hover:bg-white/5"
+          title="Naar dashboard"
+        >
           <BrandLogo branding={branding} variant="light" />
           <div className="text-sm font-bold text-white">{brandName}</div>
-        </div>
+        </button>
         <OrgSwitcher
           orgs={orgs}
           selected={currentOrg}
@@ -790,13 +841,29 @@ function Sidebar({
 
       <nav className="space-y-1 text-sm">
         <NavItem
-          active={tab === "potjes"}
-          onClick={() => onTab("potjes")}
+          active={tab === "dashboard"}
+          onClick={() => onTab("dashboard")}
           icon={
             <path d="M3 12l9-9 9 9M5 10v10a1 1 0 0 0 1 1h4v-7h4v7h4a1 1 0 0 0 1-1V10" />
           }
           label="Dashboard"
+        />
+        <NavItem
+          active={tab === "potjes"}
+          onClick={() => onTab("potjes")}
+          icon={
+            <path d="M3 7h18v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7zM3 7l2-3h14l2 3M9 12h6" />
+          }
+          label="Potjes"
           badge={potsCount > 0 ? String(potsCount) : undefined}
+        />
+        <NavItem
+          active={tab === "groepen"}
+          onClick={() => onTab("groepen")}
+          icon={
+            <path d="M4 5h7v7H4zM13 5h7v4h-7zM13 11h7v8h-7zM4 14h7v5H4z" />
+          }
+          label="Groepen"
         />
         {isAdmin && (
           <>
@@ -883,49 +950,68 @@ function Sidebar({
           })}
         </div>
       )}
+
+      <button
+        onClick={onViewSite}
+        className="mt-auto flex flex-shrink-0 items-center gap-2 rounded-lg px-2 py-2 pt-4 text-xs font-medium text-navy-400 transition hover:text-navy-100"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" />
+        </svg>
+        Bekijk website
+      </button>
     </aside>
   );
 }
 
 function BottomNav({
   tab,
+  isAdmin,
   potsCount,
   membersCount,
-  auditCount,
   onTab,
 }: {
   tab: Tab;
+  isAdmin: boolean;
   potsCount: number;
   membersCount: number;
-  auditCount: number;
   onTab: (t: Tab) => void;
 }) {
   const items: { tab: Tab; label: string; icon: ReactNode; badge?: string }[] = [
     {
-      tab: "potjes",
+      tab: "dashboard",
       label: "Dashboard",
-      badge: potsCount > 0 ? String(potsCount) : undefined,
       icon: <path d="M3 12l9-9 9 9M5 10v10a1 1 0 0 0 1 1h4v-7h4v7h4a1 1 0 0 0 1-1V10" />,
     },
     {
-      tab: "leden",
-      label: "Leden",
-      badge: membersCount > 1 ? String(membersCount) : undefined,
-      icon: (
-        <path d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM12 14c-4.4 0-8 2.7-8 6v1h16v-1c0-3.3-3.6-6-8-6z" />
-      ),
+      tab: "potjes",
+      label: "Potjes",
+      badge: potsCount > 0 ? String(potsCount) : undefined,
+      icon: <path d="M3 7h18v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7zM3 7l2-3h14l2 3M9 12h6" />,
     },
     {
-      tab: "activiteit",
-      label: "Activiteit",
-      badge: auditCount > 0 ? String(Math.min(auditCount, 99)) : undefined,
-      icon: <path d="M12 8v4l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />,
+      tab: "groepen",
+      label: "Groepen",
+      icon: <path d="M4 5h7v7H4zM13 5h7v4h-7zM13 11h7v8h-7zM4 14h7v5H4z" />,
     },
-    {
-      tab: "instellingen",
-      label: "Instellingen",
-      icon: <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />,
-    },
+    ...(isAdmin
+      ? [
+          {
+            tab: "leden" as Tab,
+            label: "Leden",
+            badge: membersCount > 1 ? String(membersCount) : undefined,
+            icon: (
+              <path d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM12 14c-4.4 0-8 2.7-8 6v1h16v-1c0-3.3-3.6-6-8-6z" />
+            ),
+          },
+          {
+            tab: "instellingen" as Tab,
+            label: "Meer",
+            icon: <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />,
+          },
+        ]
+      : []),
   ];
 
   return (

@@ -5,12 +5,26 @@ import { useForceLight } from "../theme";
 type Props = {
   onLogin: () => void;
   onSignup: () => void;
+  /** Indien gezet: je bekijkt de site terwijl je ingelogd bent. Toont een
+   *  terug-naar-app balk bovenaan. */
+  onExitPreview?: () => void;
 };
 
-export function Landing({ onLogin, onSignup }: Props) {
+export function Landing({ onLogin, onSignup, onExitPreview }: Props) {
   useForceLight();
   return (
     <div className="min-h-screen bg-white text-ink">
+      {onExitPreview && (
+        <div className="sticky top-0 z-40 flex items-center justify-center gap-3 bg-teal-700 px-4 py-2 text-sm text-white">
+          <span>Je bekijkt de Kaspio-website.</span>
+          <button
+            onClick={onExitPreview}
+            className="rounded-md bg-white/15 px-3 py-1 font-semibold transition hover:bg-white/25"
+          >
+            ← Terug naar de app
+          </button>
+        </div>
+      )}
       <Header onLogin={onLogin} onSignup={onSignup} />
       <Hero onSignup={onSignup} />
       <BetaStatus />

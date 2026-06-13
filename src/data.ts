@@ -520,6 +520,26 @@ export function usePotGroups(orgId: string | null) {
     return { error: null, groupId: data?.id };
   }
 
+  async function renameGroup(
+    id: string,
+    name: string,
+  ): Promise<{ error: string | null }> {
+    const trimmed = name.trim();
+    if (!trimmed) return { error: "Geef de groep een naam." };
+    const { error } = await (
+      supabase.from("pot_groups") as unknown as {
+        update: (v: Record<string, unknown>) => {
+          eq: (k: string, v: string) => Promise<{ error: Error | null }>;
+        };
+      }
+    )
+      .update({ name: trimmed })
+      .eq("id", id);
+    if (error) return { error: error.message };
+    await fetchGroups();
+    return { error: null };
+  }
+
   async function deleteGroup(id: string): Promise<{ error: string | null }> {
     // Potjes in de groep worden groepsloos (FK on delete set null)
     const { error } = await supabase.from("pot_groups").delete().eq("id", id);
@@ -528,7 +548,14 @@ export function usePotGroups(orgId: string | null) {
     return { error: null };
   }
 
-  return { groups, loading, addGroup, deleteGroup, refresh: fetchGroups };
+  return {
+    groups,
+    loading,
+    addGroup,
+    renameGroup,
+    deleteGroup,
+    refresh: fetchGroups,
+  };
 }
 
 // =============================================================================
