@@ -358,6 +358,7 @@ function AuthedApp({
     loading: orgLoading,
     setSelected: selectOrg,
     createOrg,
+    leaveOrg,
     refresh: refreshOrgs,
   } = useMyOrgs();
   // Accepteer openstaande org-invites bij eerste login en refetch de orgs zodra
@@ -524,6 +525,7 @@ function AuthedApp({
             setSelectedPotId(null);
           }}
           onCreateOrg={() => setShowNewOrg(true)}
+          onLeaveOrg={leaveOrg}
           pots={store.state.pots}
           groups={uiGroups}
           transactions={store.state.transactions}
@@ -707,6 +709,7 @@ function Sidebar({
   currentOrg,
   onSelectOrg,
   onCreateOrg,
+  onLeaveOrg,
   brandName,
   branding,
   pots,
@@ -726,6 +729,7 @@ function Sidebar({
   currentOrg: Organisation;
   onSelectOrg: (id: string) => void;
   onCreateOrg: () => void;
+  onLeaveOrg: (id: string) => Promise<{ error: string | null }>;
   brandName: string;
   branding: Branding;
   pots: Pot[];
@@ -770,6 +774,7 @@ function Sidebar({
           selected={currentOrg}
           onSelect={onSelectOrg}
           onCreateNew={onCreateOrg}
+          onLeave={onLeaveOrg}
         />
       </div>
 

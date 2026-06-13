@@ -6,6 +6,8 @@ type Props = {
   selected: Organisation;
   onSelect: (id: string) => void;
   onCreateNew: () => void;
+  /** Verlaat de huidige org. Geef een foutmelding terug (bv. enige beheerder). */
+  onLeave?: (id: string) => Promise<{ error: string | null }>;
   /** Donker variant voor donkere sidebar. */
   variant?: "light" | "dark";
 };
@@ -15,9 +17,31 @@ export function OrgSwitcher({
   selected,
   onSelect,
   onCreateNew,
+  onLeave,
   variant = "dark",
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [leaveErr, setLeaveErr] = useState<string | null>(null);
+  const [leaving, setLeaving] = useState(false);
+
+  async function handleLeave() {
+    if (!onLeave || leaving) return;
+    if (
+      !window.confirm(
+        `Wil je "${selected.name}" verlaten? Je verliest je toegang tot deze organisatie.`,
+      )
+    )
+      return;
+    setLeaveErr(null);
+    setLeaving(true);
+    const res = await onLeave(selected.id);
+    setLeaving(false);
+    if (res.error) {
+      setLeaveErr(res.error);
+    } else {
+      setOpen(false);
+    }
+  }
   const containerRef = useRef<HTMLDivElement | null>(null);
   const isDark = variant === "dark";
 
@@ -97,7 +121,7 @@ export function OrgSwitcher({
             >
               <span className="truncate">{o.name}</span>
               {o.id === selected.id && (
-                <span className="text-mint-500" aria-label="Geselecteerd">
+                <span className="text-teal-500" aria-label="Geselecteerd">
                   ✓
                 </span>
               )}
@@ -111,11 +135,29 @@ export function OrgSwitcher({
               onCreateNew();
               setOpen(false);
             }}
-            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-mint-700 transition hover:bg-mint-50 dark:hover:bg-navy-700"
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-teal-700 transition hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-navy-700"
           >
             <span aria-hidden>+</span>
             <span>Nieuwe organisatie</span>
           </button>
+
+          {onLeave && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={handleLeave}
+              disabled={leaving}
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-rose-600 transition hover:bg-rose-50 disabled:opacity-60 dark:text-rose-400 dark:hover:bg-navy-700"
+            >
+              <span aria-hidden>↪</span>
+              <span>{leaving ? "Bezig…" : `"${selected.name}" verlaten`}</span>
+            </button>
+          )}
+          {leaveErr && (
+            <p className="px-3 py-1.5 text-xs text-rose-600 dark:text-rose-400">
+              {leaveErr}
+            </p>
+          )}
         </div>
       )}
     </div>

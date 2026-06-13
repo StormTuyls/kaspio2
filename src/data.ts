@@ -157,6 +157,25 @@ export function useMyOrgs() {
     [],
   );
 
+  /** Verlaat een organisatie. Daarna verdwijnt 'ie uit de lijst (RLS) en
+   *  valt de selectie terug op een andere org (of onboarding als er geen meer is). */
+  const leaveOrg = useCallback(
+    async (leaveId: string): Promise<{ error: string | null }> => {
+      const { error } = await (
+        supabase.rpc as unknown as (
+          fn: string,
+          args: Record<string, unknown>,
+        ) => Promise<{ error: Error | null }>
+      )("leave_organisation", { p_org_id: leaveId });
+      if (error) return { error: error.message };
+      // Selectie wissen als we de actieve org verlaten; effect kiest nieuwe default.
+      setSelectedIdState((cur) => (cur === leaveId ? null : cur));
+      await fetchOrgs();
+      return { error: null };
+    },
+    [fetchOrgs],
+  );
+
   const selected = orgs.find((o) => o.id === selectedId) ?? null;
 
   return {
@@ -166,6 +185,7 @@ export function useMyOrgs() {
     error,
     setSelected,
     createOrg,
+    leaveOrg,
     refresh: fetchOrgs,
   };
 }
