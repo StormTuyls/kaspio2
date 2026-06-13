@@ -1,5 +1,6 @@
 import { calcBalance, formatDate, formatEuro } from "../storage";
 import type { Member, Pot, PotGroup, Transaction } from "../types";
+import { CashflowChart } from "../components/CashflowChart";
 
 type Props = {
   pots: Pot[];
@@ -127,6 +128,8 @@ export function Overview({
           <span className="text-amber-600 dark:text-amber-400">→</span>
         </button>
       )}
+
+      {txInScope.length > 0 && <CashflowChart transactions={txInScope} />}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
