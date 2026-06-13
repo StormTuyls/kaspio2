@@ -1,174 +1,6 @@
-import { useId, useState, type FormEvent } from "react";
+import { useState } from "react";
 import { Mark } from "../components/Logo";
 import { useForceLight } from "../theme";
-
-// MailerLite embed config, uit MailerLite Forms → Embedded forms → form action URL.
-// Pad: https://assets.mailerlite.com/jsonp/{ACCOUNT_ID}/forms/{FORM_ID}/subscribe
-const MAILERLITE_ACTION_URL =
-  "https://assets.mailerlite.com/jsonp/2372401/forms/188204222789977895/subscribe";
-
-function scrollToWaitlist() {
-  const el = document.getElementById("waitlist");
-  if (!el) return;
-  el.scrollIntoView({ behavior: "smooth", block: "center" });
-  const input = el.querySelector<HTMLInputElement>('input[type="email"]');
-  setTimeout(() => input?.focus(), 400);
-}
-
-type WaitlistVariant = "light" | "dark";
-
-type WaitlistResult =
-  | { result: "success"; msg: string }
-  | { result: "error"; msg: string };
-
-type MailerLiteResponse = {
-  success: boolean;
-  errors?: { fields?: Record<string, string[]> };
-};
-
-async function submitWaitlist(email: string): Promise<WaitlistResult> {
-  const body = new URLSearchParams({
-    "fields[email]": email,
-    "ml-submit": "1",
-    anticsrf: "true",
-  });
-
-  const res = await fetch(MAILERLITE_ACTION_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: body.toString(),
-  });
-
-  if (!res.ok) {
-    return { result: "error", msg: `Netwerkfout (${res.status}). Probeer opnieuw.` };
-  }
-
-  const data = (await res.json()) as MailerLiteResponse;
-
-  if (data.success) {
-    return {
-      result: "success",
-      msg: "Je staat op de wachtlijst. Ik stuur je binnen een paar uur een persoonlijke mail.",
-    };
-  }
-
-  // Mailerlite errors zien er zo uit: { errors: { fields: { email: ["..."] } } }
-  const fieldErrors = data.errors?.fields ?? {};
-  const firstError = Object.values(fieldErrors).flat()[0];
-  const translatedError = translateMailerLiteError(firstError);
-  return {
-    result: "error",
-    msg: translatedError || "Iets ging mis. Probeer opnieuw.",
-  };
-}
-
-function translateMailerLiteError(err: string | undefined): string {
-  if (!err) return "";
-  // Engelse MailerLite errors → Nederlandse copy
-  if (err.includes("valid email")) return "Vul een geldig e-mailadres in.";
-  if (err.includes("required")) return "Vul je e-mailadres in.";
-  if (err.toLowerCase().includes("already")) return "Dit adres staat al op de wachtlijst.";
-  return err;
-}
-
-function WaitlistForm({ variant = "light" }: { variant?: WaitlistVariant }) {
-  const inputId = useId();
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
-  const [message, setMessage] = useState("");
-
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!email.trim()) return;
-    setStatus("submitting");
-    setMessage("");
-    try {
-      const res = await submitWaitlist(email.trim());
-      setStatus(res.result);
-      setMessage(res.msg);
-    } catch (err) {
-      setStatus("error");
-      setMessage(err instanceof Error ? err.message : "Iets ging mis.");
-    }
-  }
-
-  const isDark = variant === "dark";
-
-  if (status === "success") {
-    return (
-      <div
-        className={`mx-auto flex max-w-md items-center gap-3 rounded-xl border px-4 py-4 text-left ${
-          isDark
-            ? "border-teal-300/40 bg-white/10 text-white"
-            : "border-teal-300 bg-teal-100 text-teal-700"
-        }`}
-        role="status"
-      >
-        <span
-          className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-lg font-bold ${
-            isDark ? "bg-amber-500 text-ink" : "bg-teal-500 text-white"
-          }`}
-          aria-hidden
-        >
-          ✓
-        </span>
-        <div className="text-sm leading-relaxed">
-          <div className={`font-semibold ${isDark ? "text-white" : "text-teal-700"}`}>
-            Bedankt!
-          </div>
-          <div className={isDark ? "text-white/80" : "text-teal-700/80"}>{message}</div>
-        </div>
-      </div>
-    );
-  }
-
-  const inputClass = isDark
-    ? "w-full rounded-l-xl border-2 border-r-0 border-white/20 bg-white/95 px-4 py-3 text-sm text-ink placeholder:text-ink-light focus:border-amber-500 focus:outline-none sm:rounded-l-xl"
-    : "w-full rounded-l-xl border-2 border-r-0 border-teal-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-ink-light focus:border-teal-500 focus:outline-none";
-
-  const btnClass = isDark
-    ? "rounded-r-xl border-2 border-amber-500 bg-amber-500 px-5 py-3 text-sm font-bold text-ink shadow transition hover:bg-amber-400 disabled:opacity-60"
-    : "rounded-r-xl border-2 border-teal-500 bg-teal-500 px-5 py-3 text-sm font-bold text-white shadow transition hover:bg-teal-700 disabled:opacity-60";
-
-  return (
-    <form onSubmit={onSubmit} className="mx-auto max-w-md text-left" noValidate>
-      <div className="flex">
-        <label htmlFor={inputId} className="sr-only">
-          E-mailadres
-        </label>
-        <input
-          id={inputId}
-          type="email"
-          required
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="naam@voorbeeld.be"
-          className={inputClass}
-          disabled={status === "submitting"}
-        />
-        <button type="submit" className={btnClass} disabled={status === "submitting"}>
-          {status === "submitting" ? "…" : "Wachtlijst"}
-        </button>
-      </div>
-      <p
-        className={`mt-2 text-xs ${
-          status === "error"
-            ? isDark
-              ? "text-amber-300"
-              : "text-rose-600"
-            : isDark
-              ? "text-white/55"
-              : "text-ink-muted"
-        }`}
-      >
-        {status === "error"
-          ? message
-          : "We sturen één mail zodra Kaspio open is, geen spam, opzeggen kan altijd."}
-      </p>
-    </form>
-  );
-}
 
 type Props = {
   onLogin: () => void;
@@ -181,7 +13,7 @@ export function Landing({ onLogin, onSignup }: Props) {
     <div className="min-h-screen bg-white text-ink">
       <Header onLogin={onLogin} onSignup={onSignup} />
       <Hero onSignup={onSignup} />
-      <WaitlistStatus />
+      <BetaStatus />
       <Problem />
       <HowItWorks />
       <Features />
@@ -210,7 +42,7 @@ function Logo({ light = false }: { light?: boolean }) {
   );
 }
 
-function Header({ onLogin }: Props) {
+function Header({ onLogin, onSignup }: Props) {
   return (
     <header className="sticky top-0 z-30 border-b border-teal-100/70 bg-white/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
@@ -229,10 +61,10 @@ function Header({ onLogin }: Props) {
             Inloggen
           </button>
           <button
-            onClick={scrollToWaitlist}
+            onClick={onSignup}
             className="rounded-lg bg-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-teal-700"
           >
-            Op de wachtlijst →
+            Gratis starten →
           </button>
         </div>
       </div>
@@ -240,7 +72,7 @@ function Header({ onLogin }: Props) {
   );
 }
 
-function Hero(_: { onSignup: () => void }) {
+function Hero({ onSignup }: { onSignup: () => void }) {
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-teal-50 via-white to-white px-6 pb-20 pt-24 text-center">
       <div
@@ -270,17 +102,23 @@ function Hero(_: { onSignup: () => void }) {
           Kaspio verdeelt inkomsten op jouw bankrekening in virtuele potjes, per persoon, per team of per doel. Zonder extra rekeningen. Zonder
           boekhoudsoftware.
         </p>
-        <div id="waitlist" className="mb-6 scroll-mt-20">
-          <WaitlistForm variant="light" />
-        </div>
-        <div className="mb-14 flex justify-center">
+        <div className="mb-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <button
+            onClick={onSignup}
+            className="w-full rounded-xl bg-teal-500 px-7 py-3.5 text-base font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-teal-700 sm:w-auto"
+          >
+            Gratis starten →
+          </button>
           <a
             href="#hoe"
-            className="text-sm font-semibold text-teal-700 underline decoration-teal-200 underline-offset-4 transition hover:decoration-teal-500"
+            className="w-full rounded-xl border-2 border-teal-200 px-7 py-3 text-base font-semibold text-teal-700 transition hover:border-teal-300 hover:bg-teal-50 sm:w-auto"
           >
-            Bekijk eerst hoe het werkt ▶
+            Bekijk hoe het werkt
           </a>
         </div>
+        <p className="mb-14 text-sm text-ink-muted">
+          Gratis starten, geen kaart nodig.
+        </p>
 
         <HeroMockup />
       </div>
@@ -479,7 +317,7 @@ function Txn({
   );
 }
 
-function WaitlistStatus() {
+function BetaStatus() {
   return (
     <section className="border-y border-teal-100 bg-teal-50/40 py-7 text-center">
       <div className="mx-auto flex max-w-3xl flex-col items-center justify-center gap-4 px-6 sm:flex-row sm:gap-8">
@@ -489,16 +327,16 @@ function WaitlistStatus() {
             <span className="relative inline-flex h-2 w-2 rounded-full bg-teal-500" />
           </span>
           <span className="text-sm font-semibold text-teal-700">
-            Bèta opent binnenkort
+            Bèta is live
           </span>
         </div>
         <span className="hidden h-4 w-px bg-teal-200 sm:block" aria-hidden />
         <span className="text-sm text-ink-muted">
-          Eerste 20 plekken voor de gesloten beta
+          Gratis te starten
         </span>
         <span className="hidden h-4 w-px bg-teal-200 sm:block" aria-hidden />
         <span className="text-sm text-ink-muted">
-          Wachtlijst is open
+          Geen kaart nodig
         </span>
       </div>
     </section>
@@ -869,7 +707,7 @@ function UseCases() {
   );
 }
 
-function Pricing(_: { onSignup: () => void }) {
+function Pricing({ onSignup }: { onSignup: () => void }) {
   const [yearly, setYearly] = useState(false);
 
   return (
@@ -929,9 +767,9 @@ function Pricing(_: { onSignup: () => void }) {
               { text: "Grafieken & rapportage", no: true },
               { text: "Meldingen", no: true },
             ]}
-            cta="Op de wachtlijst"
+            cta="Gratis starten"
             ctaStyle="outline"
-            onClick={scrollToWaitlist}
+            onClick={onSignup}
           />
           <Plan
             featured
@@ -953,9 +791,9 @@ function Pricing(_: { onSignup: () => void }) {
               { text: "Grafieken & rapportage" },
               { text: "E-mail meldingen" },
             ]}
-            cta="Op de wachtlijst"
+            cta="Kies Pro"
             ctaStyle="fill"
-            onClick={scrollToWaitlist}
+            onClick={onSignup}
           />
           <Plan
             name="Team"
@@ -976,9 +814,9 @@ function Pricing(_: { onSignup: () => void }) {
               { text: "Whitelabel optie (op aanvraag)" },
               { text: "API-toegang (binnenkort)" },
             ]}
-            cta="Op de wachtlijst"
+            cta="Kies Team"
             ctaStyle="amber"
-            onClick={scrollToWaitlist}
+            onClick={onSignup}
           />
         </div>
 
@@ -1080,13 +918,13 @@ function BuildInPublic() {
   const status = [
     {
       label: "Nu",
-      title: "Probleem valideren",
-      desc: "In gesprek met scouts, sportclubs, artiestenbureaus en VZW's over hoe ze vandaag potjes beheren.",
+      title: "Gesloten beta",
+      desc: "Eerste gebruikers zijn binnen. Inkomsten en uitgaven loggen, potjes aanmaken, rolgebaseerd delen. Gratis te starten.",
     },
     {
       label: "Volgende",
-      title: "Gesloten beta",
-      desc: "Eerste 20 mensen van de wachtlijst krijgen toegang. Inkomsten en uitgaven loggen, potjes aanmaken, rolgebaseerd delen.",
+      title: "Feedback verwerken",
+      desc: "In gesprek met scouts, sportclubs, artiestenbureaus en VZW's. Hun feedback bepaalt wat we eerst bouwen.",
     },
     {
       label: "Daarna",
@@ -1124,8 +962,8 @@ function BuildInPublic() {
           ))}
         </div>
         <p className="mt-10 text-center text-sm text-ink-muted">
-          Wil je meebouwen? Schrijf je in op de wachtlijst, ik nodig je graag uit
-          voor een gesprek van 20 minuten.
+          Wil je meebouwen? Maak een account aan, ik neem graag 20 minuten de
+          tijd om te horen hoe jullie het vandaag aanpakken.
         </p>
       </div>
     </section>
@@ -1205,7 +1043,7 @@ function Faq() {
   );
 }
 
-function FinalCta(_: { onSignup: () => void }) {
+function FinalCta({ onSignup }: { onSignup: () => void }) {
   return (
     <section className="px-6 py-20 text-center" style={{ backgroundColor: "#0F6E56" }}>
       <div className="mx-auto max-w-3xl">
@@ -1215,11 +1053,17 @@ function FinalCta(_: { onSignup: () => void }) {
           in jouw geldstromen?
         </h2>
         <p className="mx-auto mb-8 max-w-xl text-lg text-teal-300">
-          Schrijf je in op de wachtlijst, we laten weten zodra Kaspio open is.
+          Maak gratis een account aan en zet je eerste potjes op in een paar
+          minuten.
         </p>
-        <WaitlistForm variant="dark" />
+        <button
+          onClick={onSignup}
+          className="rounded-xl border-2 border-amber-500 bg-amber-500 px-8 py-3.5 text-base font-bold text-ink shadow transition hover:-translate-y-0.5 hover:bg-amber-400"
+        >
+          Gratis starten →
+        </button>
         <p className="mt-4 text-xs text-white/50">
-          ✓ Eén mail bij launch &nbsp; ✓ Geen spam &nbsp; ✓ Opzeggen kan altijd
+          ✓ Geen kaart nodig &nbsp; ✓ Klaar in minuten &nbsp; ✓ Elk moment opzegbaar
         </p>
       </div>
     </section>

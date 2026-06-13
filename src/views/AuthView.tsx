@@ -461,7 +461,7 @@ function SignupForm({ onAuth }: { onAuth: () => void }) {
       </Field>
       <Field
         label="Invite code"
-        hint="Geen code? Schrijf je in op de wachtlijst."
+        hint="Kaspio is in gesloten bèta. Geen code? Mail storm@kaspio.be."
       >
         <input
           type="text"
