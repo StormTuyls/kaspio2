@@ -22,6 +22,9 @@ type Props = {
   onAuth: () => void;
   onBack: () => void;
   onDismissError?: () => void;
+  /** Vooraf ingevuld via invite-link (email + beta-code). */
+  prefillEmail?: string;
+  prefillCode?: string;
 };
 
 export function AuthView({
@@ -30,6 +33,8 @@ export function AuthView({
   onAuth,
   onBack,
   onDismissError,
+  prefillEmail,
+  prefillCode,
 }: Props) {
   const [mode, setMode] = useState<Mode>(initialMode);
 
@@ -89,7 +94,11 @@ export function AuthView({
                   startInForgotMode={authError?.kind === "expired"}
                 />
               ) : (
-                <SignupForm onAuth={onAuth} />
+                <SignupForm
+                  onAuth={onAuth}
+                  prefillEmail={prefillEmail}
+                  prefillCode={prefillCode}
+                />
               )}
             </div>
 
@@ -337,12 +346,19 @@ function LoginForm({
 // SIGNUP FORM
 // =============================================================================
 
-function SignupForm({ onAuth }: { onAuth: () => void }) {
+function SignupForm({
+  onAuth,
+  prefillEmail,
+  prefillCode,
+}: {
+  onAuth: () => void;
+  prefillEmail?: string;
+  prefillCode?: string;
+}) {
   const [fullName, setFullName] = useState("");
-  const [organizationName, setOrganizationName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(prefillEmail ?? "");
   const [password, setPassword] = useState("");
-  const [inviteCode, setInviteCode] = useState("");
+  const [inviteCode, setInviteCode] = useState(prefillCode ?? "");
   const [status, setStatus] = useState<"idle" | "busy" | "confirm-needed">(
     "idle",
   );
@@ -368,7 +384,10 @@ function SignupForm({ onAuth }: { onAuth: () => void }) {
         return;
       }
 
-      // Step 2: create the Supabase Auth user
+      // Step 2: create the Supabase Auth user. We maken hier GEEN organisatie aan.
+      // Was je uitgenodigd voor een bestaande org, dan koppelt accept_pending_invites
+      // je automatisch bij login. Heb je geen org, dan toont de app het
+      // onboarding-scherm om je eerste organisatie aan te maken.
       const { data, error: err } = await signUpWithPassword(
         email,
         password,
@@ -376,22 +395,10 @@ function SignupForm({ onAuth }: { onAuth: () => void }) {
       );
       if (err) throw err;
 
-      // Step 3: if session exists immediately (no email confirm required),
-      // create the organisation. RLS trigger auto-adds owner as admin.
       if (data.session) {
-        const orgInsert = {
-          name: organizationName,
-          owner_id: data.session.user.id,
-        };
-        const { error: orgErr } = await supabase
-          .from("organisations")
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .insert(orgInsert as any);
-        if (orgErr) throw orgErr;
         onAuth();
       } else {
-        // Email confirmation required: org is created on first login (App.tsx handles)
-        sessionStorage.setItem("kaspio.pending_org_name", organizationName);
+        // Email-bevestiging vereist: bij eerste login regelt de app de rest.
         setStatus("confirm-needed");
       }
     } catch (err) {
@@ -402,11 +409,10 @@ function SignupForm({ onAuth }: { onAuth: () => void }) {
 
   if (status === "confirm-needed") {
     return (
-      <div className="rounded-lg border border-mint-200 bg-mint-50 px-4 py-5 text-sm text-mint-800">
+      <div className="rounded-lg border border-teal-200 bg-teal-50 px-4 py-5 text-sm text-teal-800 dark:border-teal-800 dark:bg-teal-900/20 dark:text-teal-200">
         <div className="mb-1 font-semibold">Bevestig je e-mailadres.</div>
         We stuurden een bevestigingslink naar <strong>{email}</strong>. Klik
-        die en je bent ingelogd. Daarna maken we automatisch{" "}
-        <strong>{organizationName}</strong> aan.
+        die en je bent ingelogd.
       </div>
     );
   }
@@ -414,30 +420,18 @@ function SignupForm({ onAuth }: { onAuth: () => void }) {
   return (
     <form onSubmit={submit} className="space-y-4">
       <h2 className="text-xl font-bold text-navy-900 dark:text-white">
-        Maak je organisatie aan
+        Maak je account aan
       </h2>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Jouw naam">
-          <input
-            type="text"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            required
-            placeholder="Storm Tuyls"
-            className="input"
-          />
-        </Field>
-        <Field label="Organisatie">
-          <input
-            type="text"
-            value={organizationName}
-            onChange={(e) => setOrganizationName(e.target.value)}
-            required
-            placeholder="Scouts Berchem"
-            className="input"
-          />
-        </Field>
-      </div>
+      <Field label="Jouw naam">
+        <input
+          type="text"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          required
+          placeholder="Storm Tuyls"
+          className="input"
+        />
+      </Field>
       <Field label="E-mailadres">
         <input
           type="email"

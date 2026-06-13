@@ -49,6 +49,9 @@ export function PotDetail({
   const [search, setSearch] = useState("");
   const [direction, setDirection] = useState<DirectionFilter>("all");
   const isAdmin = currentUser.role === "admin";
+  // Lezers zien alleen; admins en pot-verantwoordelijken mogen transacties
+  // toevoegen. Verwijderen van transacties is admin-only (RLS dwingt dit ook af).
+  const canAddTransaction = currentUser.role !== "reader";
 
   const balance = calcBalance(transactions, pot.id);
   const potTx = useMemo(
@@ -189,9 +192,11 @@ export function PotDetail({
       <div>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-navy-900 dark:text-navy-50">Transacties</h2>
-          <button onClick={onAddTransaction} className="btn-accent text-sm">
-            + Transactie
-          </button>
+          {canAddTransaction && (
+            <button onClick={onAddTransaction} className="btn-accent text-sm">
+              + Transactie
+            </button>
+          )}
         </div>
 
         {potTx.length === 0 ? (
@@ -200,7 +205,9 @@ export function PotDetail({
               Nog geen transacties
             </p>
             <p className="text-sm text-navy-500 dark:text-navy-300">
-              Voeg de eerste in- of uitgaande transactie toe.
+              {canAddTransaction
+                ? "Voeg de eerste in- of uitgaande transactie toe."
+                : "Er zijn nog geen transacties voor dit potje."}
             </p>
           </div>
         ) : (
@@ -264,15 +271,17 @@ export function PotDetail({
                       </div>
                       <div className="flex items-center justify-between gap-3 text-xs text-navy-500 dark:text-navy-300">
                         <span>{formatDate(tx.occurredOn)}</span>
-                        <button
-                          onClick={() => {
-                            if (confirm("Transactie verwijderen?")) onDeleteTransaction(tx.id);
-                          }}
-                          className="rounded-md px-2 py-1 text-navy-300 hover:bg-rose-50 hover:text-rose-600 dark:text-navy-500 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
-                          aria-label="Verwijderen"
-                        >
-                          ✕
-                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => {
+                              if (confirm("Transactie verwijderen?")) onDeleteTransaction(tx.id);
+                            }}
+                            className="rounded-md px-2 py-1 text-navy-300 hover:bg-rose-50 hover:text-rose-600 dark:text-navy-500 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
+                            aria-label="Verwijderen"
+                          >
+                            ✕
+                          </button>
+                        )}
                       </div>
                       {tx.memo && (
                         <p className="mt-1 text-sm text-navy-500 dark:text-navy-400">{tx.memo}</p>
@@ -317,15 +326,17 @@ export function PotDetail({
                           {formatEuro(tx.amount)}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <button
-                            onClick={() => {
-                              if (confirm("Transactie verwijderen?")) onDeleteTransaction(tx.id);
-                            }}
-                            className="text-xs text-navy-300 hover:text-rose-600 dark:text-navy-500 dark:hover:text-rose-400"
-                            aria-label="Verwijderen"
-                          >
-                            ✕
-                          </button>
+                          {isAdmin && (
+                            <button
+                              onClick={() => {
+                                if (confirm("Transactie verwijderen?")) onDeleteTransaction(tx.id);
+                              }}
+                              className="text-xs text-navy-300 hover:text-rose-600 dark:text-navy-500 dark:hover:text-rose-400"
+                              aria-label="Verwijderen"
+                            >
+                              ✕
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}

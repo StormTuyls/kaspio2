@@ -83,6 +83,13 @@ Deno.serve(async (req: Request) => {
     const safeCode = escapeHtml(betaCode);
     const rol = roleLabel(role);
 
+    // Directe signup-link met code + email vooraf ingevuld. De frontend leest
+    // ?invite= en &email= uit de URL en vult het aanmeldformulier in.
+    const signupUrl = betaCode
+      ? `${appUrl}/?invite=${encodeURIComponent(betaCode)}&email=${encodeURIComponent(email)}`
+      : appUrl;
+    const safeSignupUrl = escapeHtml(signupUrl);
+
     const intro = safeInviter
       ? `${safeInviter} heeft je uitgenodigd voor <strong>${safeOrg}</strong> op Kaspio`
       : `Je bent uitgenodigd voor <strong>${safeOrg}</strong> op Kaspio`;
@@ -103,13 +110,13 @@ Deno.serve(async (req: Request) => {
         ${intro} als <strong>${rol}</strong>.
       </p>
       ${codeBlock}
-      <a href="${appUrl}" style="display:inline-block;background:#1D9E75;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 22px;border-radius:10px;">
+      <a href="${safeSignupUrl}" style="display:inline-block;background:#1D9E75;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 22px;border-radius:10px;">
         Account aanmaken
       </a>
       <p style="margin:20px 0 0;color:#647691;font-size:13px;line-height:1.5;">
-        Gebruik hetzelfde e-mailadres als waar je deze mail op kreeg, dan word je
-        automatisch aan ${safeOrg} gekoppeld. Werkt de knop niet, ga dan naar
-        <a href="${appUrl}" style="color:#168566;">${appUrl.replace(/^https?:\/\//, "")}</a>.
+        De knop opent het aanmeldformulier met je e-mailadres en code al
+        ingevuld, en koppelt je automatisch aan ${safeOrg}. Werkt de knop niet,
+        ga dan naar <a href="${escapeHtml(appUrl)}" style="color:#168566;">${appUrl.replace(/^https?:\/\//, "")}</a>.
       </p>
     </div>
     <p style="margin:16px 0 0;text-align:center;color:#95a3b6;font-size:12px;">

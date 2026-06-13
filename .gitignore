@@ -28,3 +28,6 @@ dist-ssr
 *.sln
 *.sw?
 supabase/.env
+
+# Supabase CLI artefacts
+supabase/.temp/

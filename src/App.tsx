@@ -23,7 +23,7 @@ import { OrgSwitcher } from "./components/OrgSwitcher";
 import { CreateOrgForm } from "./components/CreateOrgForm";
 import type { Organisation } from "./supabase";
 import type { Pot as DbPot, Transaction as DbTransaction } from "./supabase";
-import type { Pot, PotGroup, Transaction } from "./types";
+import type { Pot, PotGroup, Role, Transaction } from "./types";
 import { signOut, supabase, useSession } from "./supabase";
 import { Overview, Avatar } from "./views/Overview";
 import { PotDetail } from "./views/PotDetail";
@@ -71,9 +71,25 @@ function parseHashError(): { kind: AuthErrorKind; description: string } | null {
   return { kind, description: desc.replace(/\+/g, " ") };
 }
 
+// Leest een invite-link (?invite=KASP-XXXX&email=...) uit de URL. De
+// uitnodigingsmail linkt hierheen zodat de signup vooraf ingevuld is.
+function parseInviteParams(): { code: string; email: string } | null {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("invite");
+  if (!code) return null;
+  const email = params.get("email") ?? "";
+  // Maak de URL schoon zodat de params niet blijven plakken bij refresh.
+  window.history.replaceState(null, "", window.location.pathname);
+  return { code: code.trim(), email: email.trim() };
+}
+
 function App() {
   const { session, loading } = useSession();
-  const [publicView, setPublicView] = useState<PublicView>("landing");
+  const [invitePrefill] = useState(() => parseInviteParams());
+  const [publicView, setPublicView] = useState<PublicView>(
+    invitePrefill ? "signup" : "landing",
+  );
 
   // Recovery-mode initial state: check de URL hash direct (vóór React rendert).
   const [recoveryMode, setRecoveryMode] = useState<boolean>(() => {
@@ -131,6 +147,8 @@ function App() {
       <AuthView
         initialMode={publicView === "login" ? "login" : "signup"}
         authError={authError}
+        prefillEmail={invitePrefill?.email}
+        prefillCode={invitePrefill?.code}
         onAuth={() => {
           // useSession picks up the new session via onAuthStateChange.
         }}
@@ -146,39 +164,35 @@ function App() {
   return <AuthedApp session={session} onLogout={() => signOut()} />;
 }
 
-// Bridges Supabase auth with the existing localStorage app state.
-// Creates a pending org if signup left one queued in sessionStorage
-// (happens when email-confirmation is enabled and signup-flow was interrupted).
-function useEnsureOrg(session: Session) {
+// Bij eerste login: accepteer eventuele openstaande org-invites voor deze user.
+// Een uitgenodigde gebruiker wordt zo automatisch lid van de bestaande org,
+// zonder zelf een organisatie te hoeven aanmaken. Returnt `processing`: zolang
+// dat true is weten we nog niet of de user een org heeft, dus tonen we laden
+// i.p.v. (te vroeg) het onboarding-scherm.
+function useEnsureOrg(
+  session: Session,
+  onInvitesAccepted: () => void,
+): boolean {
+  const [processing, setProcessing] = useState(true);
   useEffect(() => {
-    // 1. Eventueel pending org aanmaken (uit interrupted signup-flow)
-    const pendingName = sessionStorage.getItem("kaspio.pending_org_name");
-    if (pendingName) {
-      sessionStorage.removeItem("kaspio.pending_org_name");
-      const orgInsert = { name: pendingName, owner_id: session.user.id };
-      supabase
-        .from("organisations")
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .insert(orgInsert as any)
-        .then(({ error }) => {
-          if (error) {
-             
-            console.warn(
-              "[Kaspio] Kon pending org niet aanmaken:",
-              error.message,
-            );
-          }
-        });
-    }
-
-    // 2. Accepteer pending org-invites voor deze user (kan 0 of meer zijn)
-    acceptPendingInvites().then((accepted) => {
-      if (accepted > 0) {
-         
-        console.info(`[Kaspio] ${accepted} uitnodiging(en) geaccepteerd.`);
-      }
-    });
+    let active = true;
+    setProcessing(true);
+    acceptPendingInvites()
+      .then((accepted) => {
+        if (!active) return;
+        if (accepted > 0) onInvitesAccepted();
+      })
+      .finally(() => {
+        if (active) setProcessing(false);
+      });
+    return () => {
+      active = false;
+    };
+    // onInvitesAccepted is stabiel (useCallback in useMyOrgs); session.user.id
+    // is de echte trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.user.id]);
+  return processing;
 }
 
 // =============================================================================
@@ -323,8 +337,6 @@ function AuthedApp({
   session: Session;
   onLogout: () => void;
 }) {
-  useEnsureOrg(session);
-
   // Bridge: existing localStorage layer expects {id, email, fullName, organizationName}.
   // Pull from Supabase user metadata that was set during signup.
   const meta = (session.user.user_metadata ?? {}) as {
@@ -346,7 +358,11 @@ function AuthedApp({
     loading: orgLoading,
     setSelected: selectOrg,
     createOrg,
+    refresh: refreshOrgs,
   } = useMyOrgs();
+  // Accepteer openstaande org-invites bij eerste login en refetch de orgs zodra
+  // er één geaccepteerd is, zodat een uitgenodigde user direct in zijn org belandt.
+  const ensuringInvites = useEnsureOrg(session, refreshOrgs);
   const orgId = org?.id ?? null;
   const store = useBridgedStore(localStore, account.id, orgId);
   const { pots: dbPots } = usePots(orgId);
@@ -373,18 +389,28 @@ function AuthedApp({
     return { error: res.error };
   }
 
-  // Bepaal rol. Fall back op "ben ik owner van de org?" als de memberships-fetch
-  // nog niet klaar is of RLS de query blokkeert. Voorkomt eindeloos hangen.
-  const myMembership = orgMembers.find((m) => m.user_id === account.id) ?? null;
+  // Bepaal effectieve rol uit de (mogelijk meerdere) membership-rijen van deze
+  // user. Voorrang: admin > pot_owner > reader. Fall back op "ben ik owner van
+  // de org?" als de memberships-fetch nog niet klaar is of RLS de query blokkeert
+  // (voorkomt eindeloos hangen). Een non-owner zonder membership valt terug op
+  // reader: read-only is de veilige minimumtoegang.
+  const myMemberships = orgMembers.filter((m) => m.user_id === account.id);
   const isOwner = org?.owner_id === account.id;
-  const isAdmin = myMembership?.role === "admin" || isOwner;
+  const isAdmin = isOwner || myMemberships.some((m) => m.role === "admin");
+  const isPotOwner = myMemberships.some((m) => m.role === "pot_owner");
+  const myRole: Role = isAdmin
+    ? "admin"
+    : isPotOwner
+      ? "pot_owner"
+      : "reader";
+  const isReader = myRole === "reader";
   const adminCount = orgMembers.filter((m) => m.role === "admin").length;
 
   // Synthetische currentUser, altijd gedefinieerd zolang session bestaat.
   const currentUser = {
     id: account.id,
     name: account.fullName,
-    role: isAdmin ? ("admin" as const) : ("pot_owner" as const),
+    role: myRole,
     createdAt: account.createdAt,
   };
 
@@ -395,7 +421,7 @@ function AuthedApp({
       groupMembersByUser(orgMembers).map((g) => ({
         id: g.user_id,
         name: g.full_name,
-        role: g.effectiveRole === "admin" ? ("admin" as const) : ("pot_owner" as const),
+        role: g.effectiveRole,
         createdAt: "",
       })),
     [orgMembers],
@@ -433,11 +459,13 @@ function AuthedApp({
     [store.state.pots, ownerByPotId],
   );
 
-  // RLS filtert al op DB-niveau. Admins zien alles; pot-owners enkel hun potjes
-  // (via echte memberships, niet via single ownerId, zodat multi-owner werkt).
-  const potsForUser = isAdmin
-    ? potsWithOwner
-    : potsWithOwner.filter((p) => myPotIds.has(p.id));
+  // RLS filtert al op DB-niveau. Admins én lezers zien alle potjes; pot-owners
+  // enkel hun eigen potjes (via echte memberships, multi-owner-safe). De vroegere
+  // bug: lezers vielen onder de pot-owner-filter en zagen daardoor niets.
+  const potsForUser =
+    isAdmin || isReader
+      ? potsWithOwner
+      : potsWithOwner.filter((p) => myPotIds.has(p.id));
   const selectedPot = potsForUser.find((p) => p.id === selectedPotId) ?? null;
 
   // Potgroepen (takken/ploegen) voor weergave-groepering.
@@ -452,9 +480,10 @@ function AuthedApp({
     [store.state.transactions],
   );
 
-  // Wacht maximaal even op de eerste fetch. Daarna: als nog steeds geen org,
-  // is dat geen netwerk-issue maar een data-issue (user heeft geen membership).
-  if (orgLoading) {
+  // Wacht op de eerste org-fetch én op het afhandelen van openstaande invites,
+  // zodat een net-uitgenodigde user niet kortstondig het onboarding-scherm ziet
+  // voordat accepteren + refetch klaar zijn.
+  if (orgLoading || ensuringInvites) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-canvas text-navy-500 dark:bg-navy-950 dark:text-navy-300">
         Organisatie aan het laden…

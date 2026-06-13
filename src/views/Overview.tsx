@@ -30,8 +30,12 @@ export function Overview({
   onOpenInbox,
 }: Props) {
   const isAdmin = currentUser.role === "admin";
+  const isReader = currentUser.role === "reader";
+  // Admins en lezers zien het volledige org-overzicht; pot-owners hun eigen potjes.
+  const seesAll = isAdmin || isReader;
   const visibleIds = new Set(pots.map((p) => p.id));
-  // Admins tellen onverdeeld geld (potId null) mee: som potjes + onverdeeld = bank.
+  // Alleen admins tellen onverdeeld geld (potId null) mee: zij kunnen het zien en
+  // toewijzen (RLS verbergt het voor lezers en pot-owners).
   const txInScope = allTransactions.filter((t) =>
     t.potId ? visibleIds.has(t.potId) : isAdmin,
   );
@@ -75,13 +79,13 @@ export function Overview({
           {organizationName}
         </p>
         <h1 className="text-2xl font-bold text-navy-900 dark:text-white">
-          {isAdmin ? "Dashboard" : "Mijn potjes"}
+          {isAdmin ? "Dashboard" : seesAll ? "Alle potjes" : "Mijn potjes"}
         </h1>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Stat
-          label={isAdmin ? "Totaal saldo" : "Mijn saldo"}
+          label={seesAll ? "Totaal saldo" : "Mijn saldo"}
           value={formatEuro(total)}
           accent="teal-bold"
           big
@@ -128,7 +132,7 @@ export function Overview({
         <div className="lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-navy-900 dark:text-navy-50">
-              {isAdmin ? "Alle potjes" : "Mijn potjes"}
+              {seesAll ? "Alle potjes" : "Mijn potjes"}
             </h2>
             {isAdmin && (
               <div className="flex gap-2">
