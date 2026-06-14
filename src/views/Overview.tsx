@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { calcBalance, formatDate, formatEuro } from "../storage";
 import type { Member, Pot, PotGroup, Transaction } from "../types";
+import { UpgradeHint } from "../components/UpgradeHint";
 
 type PotsViewProps = {
   pots: Pot[];
@@ -17,6 +18,10 @@ type PotsViewProps = {
   onAddPot: () => void;
   /** Org-brede transactie toevoegen (admin). */
   onAddTransaction?: () => void;
+  /** Licentie: kan er nog een potje bij? Anders upgrade-prompt. */
+  canAddPot?: boolean;
+  potLimit?: number;
+  onUpgrade?: () => void;
 };
 
 export const NONE_KEY = "__none__";
@@ -33,6 +38,9 @@ export function PotsView({
   onSelect,
   onAddPot,
   onAddTransaction,
+  canAddPot = true,
+  potLimit,
+  onUpgrade,
 }: PotsViewProps) {
   const isAdmin = currentUser.role === "admin";
   const isReader = currentUser.role === "reader";
@@ -90,12 +98,27 @@ export function PotsView({
                 + Transactie
               </button>
             )}
-            <button onClick={onAddPot} className="btn-accent text-sm">
-              + Nieuw potje
-            </button>
+            {canAddPot ? (
+              <button onClick={onAddPot} className="btn-accent text-sm">
+                + Nieuw potje
+              </button>
+            ) : (
+              <button onClick={onUpgrade} className="btn-accent text-sm">
+                Upgrade voor meer potjes
+              </button>
+            )}
           </div>
         )}
       </div>
+
+      {isAdmin && !canAddPot && potLimit !== undefined && (
+        <UpgradeHint
+          compact
+          title={`Je hebt het maximum van ${potLimit} potjes bereikt`}
+          description="Upgrade naar Pro voor onbeperkt potjes."
+          onUpgrade={onUpgrade}
+        />
+      )}
 
       {pots.length === 0 ? (
         <div className="card border-dashed py-14 text-center">

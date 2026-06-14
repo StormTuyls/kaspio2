@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react";
 import { calcBalance, formatDate, formatEuro } from "../storage";
 import type { Member, Pot, PotGroup, Transaction, TransactionDirection } from "../types";
+import type { SubTier } from "../supabase";
+import { chartsEnabled } from "../data";
 import { Modal } from "../components/Modal";
 import { PotForm } from "../components/PotForm";
 import { BalanceChart } from "../components/BalanceChart";
+import { UpgradeHint } from "../components/UpgradeHint";
 import { Avatar } from "./Overview";
 import { exportPotCsv } from "../csv";
 
@@ -12,6 +15,9 @@ type Props = {
   transactions: Transaction[];
   members: Member[];
   currentUser: Member;
+  /** Licentie: grafieken zijn Pro+. */
+  tier?: SubTier;
+  onUpgrade?: () => void;
   /** Potgroepen voor het bewerk-formulier. */
   groups?: PotGroup[];
   onCreateGroup?: (
@@ -37,6 +43,8 @@ export function PotDetail({
   transactions,
   members,
   currentUser,
+  tier = "free",
+  onUpgrade,
   groups,
   onCreateGroup,
   onBack,
@@ -187,7 +195,16 @@ export function PotDetail({
         )}
       </div>
 
-      {potTx.length > 0 && <BalanceChart transactions={potTx} />}
+      {potTx.length > 0 &&
+        (chartsEnabled(tier) ? (
+          <BalanceChart transactions={potTx} />
+        ) : (
+          <UpgradeHint
+            title="Saldo-grafiek"
+            description="Bekijk het verloop van dit potje over tijd met Pro."
+            onUpgrade={onUpgrade}
+          />
+        ))}
 
       <div>
         <div className="mb-3 flex items-center justify-between">

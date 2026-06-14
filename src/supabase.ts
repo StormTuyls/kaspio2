@@ -210,6 +210,19 @@ export interface AuditEntry {
   created_at: string;
 }
 
+export type SubTier = "free" | "pro" | "team";
+export type SubStatus = "active" | "trialing" | "past_due" | "canceled";
+
+export interface Subscription {
+  organisation_id: string;
+  tier: SubTier;
+  status: SubStatus;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  current_period_end: string | null;
+  updated_at: string;
+}
+
 export interface NotificationSettings {
   user_id: string;
   email_new_income: boolean;
@@ -279,6 +292,11 @@ export interface Database {
           sort_order?: number;
         };
         Update: Partial<PotGroup>;
+      };
+      subscriptions: {
+        Row: Subscription;
+        Insert: never; // alleen via Stripe-webhook (service role)
+        Update: never;
       };
       audit_log: {
         Row: AuditEntry;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Mark } from "../components/Logo";
 import { useForceLight } from "../theme";
 
@@ -13,9 +13,9 @@ type Props = {
 export function Landing({ onLogin, onSignup, onExitPreview }: Props) {
   useForceLight();
   return (
-    <div className="min-h-screen bg-white text-ink">
+    <div className="min-h-screen bg-white font-display text-slate-900 antialiased">
       {onExitPreview && (
-        <div className="sticky top-0 z-40 flex items-center justify-center gap-3 bg-teal-700 px-4 py-2 text-sm text-white">
+        <div className="sticky top-0 z-50 flex items-center justify-center gap-3 bg-indigo-600 px-4 py-2 text-sm text-white">
           <span>Je bekijkt de Kaspio-website.</span>
           <button
             onClick={onExitPreview}
@@ -27,7 +27,7 @@ export function Landing({ onLogin, onSignup, onExitPreview }: Props) {
       )}
       <Header onLogin={onLogin} onSignup={onSignup} />
       <Hero onSignup={onSignup} />
-      <BetaStatus />
+      <TrustStrip />
       <Problem />
       <HowItWorks />
       <Features />
@@ -41,13 +41,103 @@ export function Landing({ onLogin, onSignup, onExitPreview }: Props) {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Primitives                                                          */
+/* ------------------------------------------------------------------ */
+
+/** Reveal-on-scroll wrapper. Toggles `.is-in` when the element enters the
+ *  viewport. Respects prefers-reduced-motion via CSS. */
+function Reveal({
+  children,
+  className = "",
+  delay = 0,
+}: {
+  children: ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    ) {
+      el.classList.add("is-in");
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            el.classList.add("is-in");
+            io.unobserve(e.target);
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -7% 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div
+      ref={ref}
+      className={`reveal ${className}`}
+      style={delay ? { transitionDelay: `${delay}ms` } : undefined}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Icon({
+  children,
+  className = "h-5 w-5",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      {children}
+    </svg>
+  );
+}
+
+function Eyebrow({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <p
+      className={`font-num text-[11px] font-semibold uppercase tracking-[0.22em] ${className}`}
+    >
+      {children}
+    </p>
+  );
+}
+
 function Logo({ light = false }: { light?: boolean }) {
   return (
     <span className="flex items-center gap-2.5">
       <Mark size={32} variant={light ? "light" : "default"} />
       <span
         className={`text-xl font-extrabold tracking-tight ${
-          light ? "text-white" : "text-teal-700"
+          light ? "text-white" : "text-slate-900"
         }`}
       >
         Kaspio
@@ -56,27 +146,45 @@ function Logo({ light = false }: { light?: boolean }) {
   );
 }
 
-function Header({ onLogin, onSignup }: Props) {
+/* ------------------------------------------------------------------ */
+/* Header                                                              */
+/* ------------------------------------------------------------------ */
+
+function Header({ onLogin, onSignup }: { onLogin: () => void; onSignup: () => void }) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-30 border-b border-teal-100/70 bg-white/90 backdrop-blur">
+    <header
+      className={`sticky top-0 z-40 transition-all duration-300 ${
+        scrolled
+          ? "border-b border-slate-200/80 bg-white/85 backdrop-blur-md"
+          : "border-b border-transparent bg-transparent"
+      }`}
+    >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Logo />
-        <nav className="hidden items-center gap-7 text-sm font-medium text-ink-muted md:flex">
-          <a href="#hoe" className="hover:text-teal-500">Hoe het werkt</a>
-          <a href="#functies" className="hover:text-teal-500">Functies</a>
-          <a href="#prijzen" className="hover:text-teal-500">Prijzen</a>
-          <a href="#faq" className="hover:text-teal-500">FAQ</a>
+        <nav className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex">
+          <a href="#hoe" className="transition hover:text-indigo-600">Hoe het werkt</a>
+          <a href="#functies" className="transition hover:text-indigo-600">Functies</a>
+          <a href="#prijzen" className="transition hover:text-indigo-600">Prijzen</a>
+          <a href="#faq" className="transition hover:text-indigo-600">FAQ</a>
         </nav>
         <div className="flex items-center gap-3">
           <button
             onClick={onLogin}
-            className="hidden rounded-lg border border-teal-100 px-4 py-2 text-sm font-medium text-ink-muted transition hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700 sm:inline-flex"
+            className="hidden rounded-lg px-4 py-2 text-sm font-semibold text-slate-600 transition hover:text-indigo-600 sm:inline-flex"
           >
             Inloggen
           </button>
           <button
             onClick={onSignup}
-            className="rounded-lg bg-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-teal-700"
+            className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-md hover:shadow-indigo-600/25"
           >
             Gratis starten →
           </button>
@@ -86,55 +194,96 @@ function Header({ onLogin, onSignup }: Props) {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Hero                                                                */
+/* ------------------------------------------------------------------ */
+
 function Hero({ onSignup }: { onSignup: () => void }) {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-teal-50 via-white to-white px-6 pb-20 pt-24 text-center">
+    <section className="relative overflow-hidden px-6 pb-20 pt-16 text-center sm:pt-24">
+      {/* soft brand glow + faint grid */}
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-[-80px] h-[600px] w-[600px] -translate-x-1/2 rounded-full"
+        className="kaspio-glow pointer-events-none absolute inset-x-0 top-[-120px] mx-auto h-[560px] w-[920px] max-w-full"
         style={{
           background:
-            "radial-gradient(circle, rgba(29,158,117,0.10) 0%, transparent 70%)",
+            "radial-gradient(ellipse at center, rgba(79,70,229,0.16) 0%, rgba(16,185,129,0.07) 38%, transparent 70%)",
         }}
       />
-      <div className="relative mx-auto max-w-4xl">
-        <div className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-teal-300 bg-teal-100 px-3.5 py-1.5 text-xs font-semibold text-teal-700">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-500 opacity-75" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-teal-500" />
-          </span>
-          Nu in bèta, gratis starten
-        </div>
-        <h1 className="mx-auto mb-5 max-w-3xl text-4xl font-extrabold leading-tight tracking-tight text-ink sm:text-5xl lg:text-6xl">
-          Eén rekening.
-          <br />
-          <span className="text-teal-500">Meerdere potjes.</span>
-          <br />
-          Volledige controle.
-        </h1>
-        <p className="mx-auto mb-9 max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg">
-          Kaspio verdeelt inkomsten op jouw bankrekening in virtuele potjes, per persoon, per team of per doel. Zonder extra rekeningen. Zonder
-          boekhoudsoftware.
-        </p>
-        <div className="mb-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <button
-            onClick={onSignup}
-            className="w-full rounded-xl bg-teal-500 px-7 py-3.5 text-base font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-teal-700 sm:w-auto"
-          >
-            Gratis starten →
-          </button>
-          <a
-            href="#hoe"
-            className="w-full rounded-xl border-2 border-teal-200 px-7 py-3 text-base font-semibold text-teal-700 transition hover:border-teal-300 hover:bg-teal-50 sm:w-auto"
-          >
-            Bekijk hoe het werkt
-          </a>
-        </div>
-        <p className="mb-14 text-sm text-ink-muted">
-          Gratis starten, geen kaart nodig.
-        </p>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.4]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(15,23,42,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.04) 1px, transparent 1px)",
+          backgroundSize: "44px 44px",
+          maskImage:
+            "radial-gradient(ellipse 80% 50% at 50% 0%, #000 40%, transparent 75%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse 80% 50% at 50% 0%, #000 40%, transparent 75%)",
+        }}
+      />
 
-        <HeroMockup />
+      <div className="relative mx-auto max-w-4xl">
+        <Reveal>
+          <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3.5 py-1.5 text-xs font-semibold text-indigo-700">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-500 opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-indigo-500" />
+            </span>
+            Nu in bèta · gratis starten
+          </span>
+        </Reveal>
+
+        <Reveal delay={60}>
+          <h1 className="mx-auto mb-5 max-w-3xl text-4xl font-extrabold leading-[1.05] tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
+            Eén rekening.
+            <br />
+            <span className="bg-gradient-to-r from-indigo-600 to-emerald-500 bg-clip-text text-transparent">
+              Meerdere potjes.
+            </span>
+            <br />
+            Volledige controle.
+          </h1>
+        </Reveal>
+
+        <Reveal delay={120}>
+          <p className="mx-auto mb-9 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+            Kaspio verdeelt inkomsten op jouw bankrekening in virtuele potjes,
+            per persoon, per team of per doel. Zonder extra rekeningen. Zonder
+            boekhoudsoftware.
+          </p>
+        </Reveal>
+
+        <Reveal delay={180}>
+          <div className="mb-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <button
+              onClick={onSignup}
+              className="w-full rounded-xl bg-indigo-600 px-7 py-3.5 text-base font-bold text-white shadow-md shadow-indigo-600/25 transition hover:-translate-y-0.5 hover:bg-indigo-700 sm:w-auto"
+            >
+              Gratis starten →
+            </button>
+            <a
+              href="#hoe"
+              className="w-full rounded-xl border border-slate-200 bg-white px-7 py-3.5 text-base font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 sm:w-auto"
+            >
+              Bekijk hoe het werkt
+            </a>
+          </div>
+        </Reveal>
+
+        <Reveal delay={220}>
+          <p className="mb-14 flex items-center justify-center gap-1.5 text-sm text-slate-500">
+            <Icon className="h-4 w-4 text-emerald-600">
+              <path d="M20 6 9 17l-5-5" />
+            </Icon>
+            Gratis starten, geen kaart nodig.
+          </p>
+        </Reveal>
+
+        <Reveal delay={120}>
+          <HeroMockup />
+        </Reveal>
       </div>
     </section>
   );
@@ -142,96 +291,119 @@ function Hero({ onSignup }: { onSignup: () => void }) {
 
 function HeroMockup() {
   const pots = [
-    { name: "Alle potjes", amount: "€8.240", color: "bg-teal-500", active: true },
-    { name: "Marketing", amount: "€1.800", color: "bg-azure-500" },
-    { name: "Salarissen", amount: "€3.200", color: "bg-[#8b5cf6]" },
-    { name: "Events", amount: "€920", color: "bg-amber-500" },
-    { name: "Onkosten", amount: "€340", color: "bg-rose-500" },
-    { name: "Reserve", amount: "€1.980", color: "bg-teal-500" },
+    { name: "Salarissen", amount: "€3.200", pct: 78, color: "bg-indigo-500" },
+    { name: "Marketing", amount: "€1.800", pct: 44, color: "bg-emerald-500" },
+    { name: "Events", amount: "€920", pct: 31, color: "bg-amber-500" },
+    { name: "Reserve", amount: "€1.980", pct: 66, color: "bg-violet-500" },
   ];
 
   return (
-    <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-teal-100 bg-white shadow-[0_8px_48px_rgba(0,0,0,0.10),0_2px_8px_rgba(0,0,0,0.05)]">
-      <div className="flex items-center gap-2 border-b border-teal-100 bg-[#f8f9fa] px-4 py-3">
+    <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_-24px_rgba(49,46,129,0.35),0_8px_24px_-12px_rgba(15,23,42,0.12)]">
+      {/* browser chrome */}
+      <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-4 py-3">
         <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
         <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
         <span className="h-3 w-3 rounded-full bg-[#28c840]" />
-        <span className="mx-auto rounded-md bg-teal-100/60 px-3 py-0.5 text-xs text-ink-light">
+        <span className="mx-auto rounded-md bg-white px-3 py-0.5 font-num text-xs text-slate-400 ring-1 ring-slate-200">
           app.kaspio.be/dashboard
         </span>
       </div>
 
-      <div className="grid min-h-[380px] grid-cols-1 md:grid-cols-[220px_1fr]">
-        <aside className="hidden border-r border-teal-100 bg-teal-50/60 py-5 text-left md:block">
-          <div className="px-4 pb-2 text-[10px] font-bold uppercase tracking-wider text-ink-light">
+      <div className="grid min-h-[400px] grid-cols-1 md:grid-cols-[230px_1fr]">
+        {/* sidebar */}
+        <aside className="hidden flex-col gap-1 border-r border-slate-100 bg-slate-50/70 p-4 text-left md:flex">
+          <div className="px-2 pb-1.5 font-num text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
             Overzicht
           </div>
-          {pots.slice(0, 1).map((p) => (
-            <SidebarRow key={p.name} {...p} />
-          ))}
-          <div className="px-4 pb-2 pt-4 text-[10px] font-bold uppercase tracking-wider text-ink-light">
+          <div className="flex items-center gap-2.5 rounded-lg bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700">
+            <span className="h-2.5 w-2.5 rounded-full bg-indigo-500" />
+            Alle potjes
+            <span className="ml-auto font-num text-xs tabular-nums text-indigo-500">€8.240</span>
+          </div>
+          <div className="px-2 pb-1.5 pt-3 font-num text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
             Mijn potjes
           </div>
-          {pots.slice(1).map((p) => (
-            <SidebarRow key={p.name} {...p} />
+          {pots.map((p) => (
+            <div
+              key={p.name}
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-600 transition hover:bg-white"
+            >
+              <span className={`h-2.5 w-2.5 rounded-full ${p.color}`} />
+              <span className="truncate">{p.name}</span>
+              <span className="ml-auto font-num text-xs tabular-nums text-slate-400">
+                {p.amount}
+              </span>
+            </div>
           ))}
-          <div className="px-4 pb-2 pt-4 text-[10px] font-bold uppercase tracking-wider text-ink-light">
-            Instellingen
-          </div>
-          <div className="px-4 py-2 text-xs text-ink-muted">Beheer potjes</div>
-          <div className="px-4 py-2 text-xs text-ink-muted">Teamleden</div>
         </aside>
 
-        <main className="p-6 text-left">
+        {/* main */}
+        <main className="p-5 text-left sm:p-6">
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <div className="text-base font-bold text-ink">
+              <div className="text-base font-bold text-slate-900">
                 Alle potjes · mei 2026
               </div>
-              <div className="mt-0.5 text-xs text-ink-muted">
-                Beheerd door: Thomas V. · 3 teamleden actief
+              <div className="mt-0.5 text-xs text-slate-500">
+                Beheerd door Thomas V. · 3 teamleden actief
               </div>
             </div>
-            <button className="flex-shrink-0 whitespace-nowrap rounded-md bg-teal-500 px-3.5 py-1.5 text-xs font-semibold text-white">
+            <button className="flex-shrink-0 whitespace-nowrap rounded-lg bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white">
               + Toevoegen
             </button>
           </div>
 
-          <div className="mb-5 grid grid-cols-3 gap-3">
-            <StatCard label="Totaal beheerd" value="€8.240" />
-            <StatCard label="Inkomsten mei" value="€2.150" />
-            <StatCard label="Openstaand" value="€430" amber />
+          {/* pots with progress */}
+          <div className="mb-5 grid grid-cols-2 gap-3">
+            {pots.slice(0, 2).map((p) => (
+              <div key={p.name} className="rounded-xl border border-slate-100 bg-white p-3.5">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                    <span className={`h-2.5 w-2.5 rounded-full ${p.color}`} />
+                    {p.name}
+                  </span>
+                  <span className="font-num text-[11px] tabular-nums text-slate-400">
+                    {p.pct}%
+                  </span>
+                </div>
+                <div className="mb-2 font-num text-lg font-bold tabular-nums text-slate-900">
+                  {p.amount}
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div className={`h-full rounded-full ${p.color}`} style={{ width: `${p.pct}%` }} />
+                </div>
+              </div>
+            ))}
           </div>
 
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+          <div className="mb-2 font-num text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
             Recente transacties
           </div>
           <Txn
             initials="S"
-            initialsBg="bg-[#ede9fe] text-[#6d28d9]"
+            tone="emerald"
             title="Salarisbetaling Tom"
             from="Van: Werkgever NV"
             tag="Salarissen"
             amount="+€2.400"
-            amountClass="text-teal-500"
+            positive
           />
           <Txn
             initials="E"
-            initialsBg="bg-amber-50 text-amber-700"
+            tone="amber"
             title="Zomerfeest budget"
             from="Van: HQ Finance"
             tag="Events"
             amount="+€500"
-            amountClass="text-teal-500"
+            positive
           />
           <Txn
             initials="M"
-            initialsBg="bg-azure-100 text-azure-700"
+            tone="indigo"
             title="Google Ads mei"
             from="Uit: Marketing"
             tag="Marketing"
             amount="−€320"
-            amountClass="text-rose-500"
             last
           />
         </main>
@@ -240,128 +412,94 @@ function HeroMockup() {
   );
 }
 
-function SidebarRow({
-  name,
-  amount,
-  color,
-  active,
-}: {
-  name: string;
-  amount: string;
-  color: string;
-  active?: boolean;
-}) {
-  return (
-    <div
-      className={`flex cursor-pointer items-center gap-2.5 px-4 py-2 text-xs transition ${
-        active
-          ? "bg-teal-100 font-semibold text-teal-700"
-          : "text-ink hover:bg-teal-100/60"
-      }`}
-    >
-      <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${color}`} />
-      <span className="truncate">{name}</span>
-      <span className="ml-auto text-[11px] text-ink-muted">{amount}</span>
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  amber,
-}: {
-  label: string;
-  value: string;
-  amber?: boolean;
-}) {
-  return (
-    <div className="rounded-lg border border-teal-100 bg-teal-50/60 p-3">
-      <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-ink-muted">
-        {label}
-      </div>
-      <div
-        className={`text-lg font-bold ${amber ? "text-amber-700" : "text-teal-700"}`}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
 function Txn({
   initials,
-  initialsBg,
+  tone,
   title,
   from,
   tag,
   amount,
-  amountClass,
+  positive,
   last,
 }: {
   initials: string;
-  initialsBg: string;
+  tone: "emerald" | "amber" | "indigo";
   title: string;
   from: string;
   tag: string;
   amount: string;
-  amountClass: string;
+  positive?: boolean;
   last?: boolean;
 }) {
+  const toneClass = {
+    emerald: "bg-emerald-100 text-emerald-700",
+    amber: "bg-amber-100 text-amber-700",
+    indigo: "bg-indigo-100 text-indigo-700",
+  }[tone];
+
   return (
     <div
       className={`flex items-center gap-3 py-2.5 text-xs ${
-        last ? "" : "border-b border-teal-100"
+        last ? "" : "border-b border-slate-100"
       }`}
     >
       <span
-        className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-[11px] font-bold ${initialsBg}`}
+        className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-[11px] font-bold ${toneClass}`}
       >
         {initials}
       </span>
       <div className="min-w-0 flex-1">
-        <div className="truncate font-medium text-ink">{title}</div>
-        <div className="text-[11px] text-ink-muted">{from}</div>
+        <div className="truncate font-medium text-slate-900">{title}</div>
+        <div className="text-[11px] text-slate-500">{from}</div>
       </div>
-      <span className="hidden rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-medium text-teal-700 sm:inline-block">
+      <span className="hidden rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 sm:inline-block">
         {tag}
       </span>
-      <span className={`text-sm font-semibold ${amountClass}`}>{amount}</span>
+      <span
+        className={`font-num text-sm font-semibold tabular-nums ${
+          positive ? "text-emerald-600" : "text-rose-500"
+        }`}
+      >
+        {amount}
+      </span>
     </div>
   );
 }
 
-function BetaStatus() {
+/* ------------------------------------------------------------------ */
+/* Trust strip                                                         */
+/* ------------------------------------------------------------------ */
+
+function TrustStrip() {
+  const items = ["Bèta is live", "Gratis te starten", "Geen kaart nodig", "Data exporteerbaar"];
   return (
-    <section className="border-y border-teal-100 bg-teal-50/40 py-7 text-center">
-      <div className="mx-auto flex max-w-3xl flex-col items-center justify-center gap-4 px-6 sm:flex-row sm:gap-8">
-        <div className="flex items-center gap-2.5">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-500 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-teal-500" />
+    <section className="border-y border-slate-100 bg-slate-50/60 py-6">
+      <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-center gap-x-8 gap-y-3 px-6">
+        {items.map((t, i) => (
+          <span key={t} className="flex items-center gap-2 text-sm font-medium text-slate-600">
+            <span className="relative flex h-2 w-2">
+              {i === 0 && (
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+              )}
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            {t}
           </span>
-          <span className="text-sm font-semibold text-teal-700">
-            Bèta is live
-          </span>
-        </div>
-        <span className="hidden h-4 w-px bg-teal-200 sm:block" aria-hidden />
-        <span className="text-sm text-ink-muted">
-          Gratis te starten
-        </span>
-        <span className="hidden h-4 w-px bg-teal-200 sm:block" aria-hidden />
-        <span className="text-sm text-ink-muted">
-          Geen kaart nodig
-        </span>
+        ))}
       </div>
     </section>
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Problem                                                             */
+/* ------------------------------------------------------------------ */
+
 function Problem() {
   const issues = [
     {
       title: "Geen overzicht per persoon",
-      desc: "Meerdere mensen of teams delen één rekening, niemand weet wat van hem/haar is.",
+      desc: "Meerdere mensen of teams delen één rekening, niemand weet wat van hem of haar is.",
       icon: (
         <>
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -406,51 +544,39 @@ function Problem() {
   ];
 
   return (
-    <section className="bg-teal-900 px-6 py-24" style={{ backgroundColor: "#04342C" }}>
+    <section className="px-6 py-24" style={{ backgroundColor: "#161529" }}>
       <div className="mx-auto max-w-6xl">
-        <p className="mb-3 text-xs font-bold uppercase tracking-wider text-teal-300">
-          Het probleem
-        </p>
-        <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-          Herken je dit?
-        </h2>
-        <p className="max-w-xl text-base leading-relaxed text-white/60 sm:text-lg">
-          Alles komt op één rekening binnen, maar niemand weet van wie, voor
-          wie, of hoeveel er nog over is.
-        </p>
+        <Reveal>
+          <Eyebrow className="mb-3 text-indigo-300">Het probleem</Eyebrow>
+          <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            Herken je dit?
+          </h2>
+          <p className="max-w-xl text-base leading-relaxed text-slate-400 sm:text-lg">
+            Alles komt op één rekening binnen, maar niemand weet van wie, voor
+            wie, of hoeveel er nog over is.
+          </p>
+        </Reveal>
         <div className="mt-12 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
-          {issues.map((it) => (
-            <div
-              key={it.title}
-              className="rounded-xl border border-white/10 bg-white/5 p-4 sm:p-6"
-            >
-              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#9FE1CB"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  {it.icon}
-                </svg>
+          {issues.map((it, i) => (
+            <Reveal key={it.title} delay={i * 70}>
+              <div className="h-full rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:border-white/20 hover:bg-white/[0.07] sm:p-6">
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-emerald-300">
+                  <Icon className="h-5 w-5">{it.icon}</Icon>
+                </div>
+                <h3 className="mb-2 text-base font-bold text-white">{it.title}</h3>
+                <p className="text-sm leading-relaxed text-slate-400">{it.desc}</p>
               </div>
-              <h3 className="mb-2 text-base font-bold text-white">
-                {it.title}
-              </h3>
-              <p className="text-sm leading-relaxed text-white/55">
-                {it.desc}
-              </p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
     </section>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* How it works                                                        */
+/* ------------------------------------------------------------------ */
 
 function HowItWorks() {
   const steps = [
@@ -467,40 +593,39 @@ function HowItWorks() {
     {
       n: 3,
       title: "Iedereen volgt mee",
-      desc: "Elk teamlid ziet enkel zijn/haar eigen potje. De beheerder heeft het volledige overzicht.",
+      desc: "Elk teamlid ziet enkel zijn of haar eigen potje. De beheerder heeft het volledige overzicht.",
     },
   ];
 
   return (
     <section id="hoe" className="scroll-mt-20 bg-white px-6 py-24">
       <div className="mx-auto max-w-6xl">
-        <div className="text-center">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-teal-500">
-            Hoe het werkt
-          </p>
-          <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-            In 3 stappen geregeld
-          </h2>
-          <p className="mx-auto max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg">
-            Kaspio is geen boekhoudprogramma. Het is een simpele tool die
-            overzicht geeft waar jij dat wil.
-          </p>
-        </div>
+        <Reveal>
+          <div className="text-center">
+            <Eyebrow className="mb-3 text-indigo-600">Hoe het werkt</Eyebrow>
+            <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+              In 3 stappen geregeld
+            </h2>
+            <p className="mx-auto max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+              Kaspio is geen boekhoudprogramma. Het is een simpele tool die
+              overzicht geeft waar jij dat wil.
+            </p>
+          </div>
+        </Reveal>
         <div className="mt-14 grid gap-8 md:grid-cols-3">
           {steps.map((s, i) => (
-            <div key={s.n} className="relative">
-              {i < steps.length - 1 && (
-                <div className="absolute left-12 top-5 hidden h-0.5 w-full bg-gradient-to-r from-teal-300 to-transparent md:block" />
-              )}
-              <div
-                className="relative mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-teal-500 text-lg font-extrabold text-white"
-                style={{ boxShadow: "0 0 0 8px #E1F5EE" }}
-              >
-                {s.n}
+            <Reveal key={s.n} delay={i * 90}>
+              <div className="relative">
+                {i < steps.length - 1 && (
+                  <div className="absolute left-12 top-5 hidden h-0.5 w-full bg-gradient-to-r from-indigo-200 to-transparent md:block" />
+                )}
+                <div className="relative mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 font-num text-lg font-bold text-white ring-8 ring-indigo-50">
+                  {s.n}
+                </div>
+                <h3 className="mb-2 text-xl font-bold text-slate-900">{s.title}</h3>
+                <p className="text-base leading-relaxed text-slate-600">{s.desc}</p>
               </div>
-              <h3 className="mb-2 text-xl font-bold text-ink">{s.title}</h3>
-              <p className="text-base leading-relaxed text-ink-muted">{s.desc}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -508,19 +633,12 @@ function HowItWorks() {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Features (bento)                                                    */
+/* ------------------------------------------------------------------ */
+
 function Features() {
-  const features = [
-    {
-      title: "Virtuele potjes",
-      desc: "Maak onbeperkt potjes per persoon, team of doel, allemaal op dezelfde bankrekening.",
-      icon: (
-        <>
-          <path d="M2 8l10-5 10 5-10 5z" />
-          <path d="M2 17l10 5 10-5" />
-          <path d="M2 12l10 5 10-5" />
-        </>
-      ),
-    },
+  const rest = [
     {
       title: "Slim labelen",
       desc: 'Elke transactie krijgt een label: "van wie" en "voor wie". Zo is alles herleidbaar.',
@@ -533,7 +651,7 @@ function Features() {
     },
     {
       title: "Rolgebaseerde toegang",
-      desc: "Beheerders zien alles. Potverantwoordelijken zien enkel hun eigen potje. Volledig privaat.",
+      desc: "Beheerders zien alles. Potverantwoordelijken enkel hun eigen potje. Volledig privaat.",
       icon: (
         <>
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
@@ -554,7 +672,7 @@ function Features() {
     },
     {
       title: "Meldingen",
-      desc: "Ontvang een melding bij nieuwe inkomsten, lage saldo's of bestedingslimieten die bereikt worden.",
+      desc: "Een melding bij nieuwe inkomsten, lage saldo's of bestedingslimieten die bereikt worden.",
       icon: (
         <>
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -577,6 +695,16 @@ function Features() {
       ),
     },
     {
+      title: "Goedkeuringsflow",
+      desc: "Grote uitgaven vereisen eerst goedkeuring van de beheerder. Geen verrassingen.",
+      icon: (
+        <>
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </>
+      ),
+    },
+    {
       title: "Memo's & bijlagen",
       desc: "Voeg notities of facturen toe aan elke transactie voor een volledig auditspoor.",
       icon: (
@@ -589,18 +717,8 @@ function Features() {
       ),
     },
     {
-      title: "Goedkeuringsflow",
-      desc: "Grote uitgaven vereisen eerst goedkeuring van de beheerder. Geen verrassingen.",
-      icon: (
-        <>
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-          <polyline points="22 4 12 14.01 9 11.01" />
-        </>
-      ),
-    },
-    {
-      title: "Export naar Excel/PDF",
-      desc: "Export elk potje of het volledig overzicht voor je boekhouder of jaarverslag.",
+      title: "Export naar Excel & PDF",
+      desc: "Exporteer elk potje of het volledig overzicht voor je boekhouder of jaarverslag.",
       icon: (
         <>
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -612,41 +730,67 @@ function Features() {
   ];
 
   return (
-    <section id="functies" className="scroll-mt-20 bg-teal-50/50 px-6 py-24">
+    <section id="functies" className="scroll-mt-20 bg-slate-50/70 px-6 py-24">
       <div className="mx-auto max-w-6xl">
-        <div className="text-center">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-teal-500">
-            Functies
-          </p>
-          <h2 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-            Alles wat je nodig hebt,
-            <br />
-            niets wat je niet nodig hebt
-          </h2>
-        </div>
-        <div className="mt-14 grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {features.map((f) => (
-            <div
-              key={f.title}
-              className="rounded-xl border border-teal-100 bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.06)] transition hover:-translate-y-1 hover:border-teal-300 hover:shadow-[0_2px_8px_rgba(15,110,86,0.08),0_8px_32px_rgba(15,110,86,0.06)] sm:p-7"
-            >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-teal-100">
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#0F6E56"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  {f.icon}
-                </svg>
+        <Reveal>
+          <div className="text-center">
+            <Eyebrow className="mb-3 text-indigo-600">Functies</Eyebrow>
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+              Alles wat je nodig hebt,
+              <br className="hidden sm:block" /> niets wat je niet nodig hebt
+            </h2>
+          </div>
+        </Reveal>
+
+        <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:auto-rows-[minmax(0,210px)]">
+          {/* hero feature tile */}
+          <Reveal className="h-full sm:col-span-2 sm:row-span-2">
+            <div className="flex h-full flex-col justify-between overflow-hidden rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-600 to-indigo-700 p-7 text-white shadow-lg shadow-indigo-600/20">
+              <div>
+                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-white backdrop-blur">
+                  <Icon className="h-6 w-6">
+                    <path d="M2 8l10-5 10 5-10 5z" />
+                    <path d="M2 17l10 5 10-5" />
+                    <path d="M2 12l10 5 10-5" />
+                  </Icon>
+                </div>
+                <h3 className="mb-2 text-2xl font-bold">Virtuele potjes</h3>
+                <p className="max-w-md text-[15px] leading-relaxed text-indigo-100">
+                  Maak onbeperkt potjes per persoon, team of doel, allemaal op
+                  dezelfde bankrekening. Geen extra IBAN, geen gedoe.
+                </p>
               </div>
-              <h3 className="mb-2 text-base font-bold text-ink">{f.title}</h3>
-              <p className="text-sm leading-relaxed text-ink-muted">{f.desc}</p>
+              {/* mini stacked pots */}
+              <div className="mt-7 space-y-2.5">
+                {[
+                  { n: "Salarissen", a: "€3.200", w: "78%", c: "bg-white" },
+                  { n: "Marketing", a: "€1.800", w: "44%", c: "bg-emerald-300" },
+                  { n: "Events", a: "€920", w: "31%", c: "bg-amber-300" },
+                ].map((p) => (
+                  <div key={p.n} className="rounded-xl bg-white/10 p-3 backdrop-blur">
+                    <div className="mb-1.5 flex items-center justify-between text-xs">
+                      <span className="font-medium text-white">{p.n}</span>
+                      <span className="font-num tabular-nums text-indigo-100">{p.a}</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/15">
+                      <div className={`h-full rounded-full ${p.c}`} style={{ width: p.w }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
+          </Reveal>
+
+          {rest.map((f, i) => (
+            <Reveal key={f.title} delay={i * 50} className="h-full">
+              <div className="group flex h-full flex-col rounded-3xl border border-slate-200/80 bg-white p-6 transition duration-200 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-600/5">
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 transition group-hover:bg-indigo-600 group-hover:text-white">
+                  <Icon className="h-5 w-5">{f.icon}</Icon>
+                </div>
+                <h3 className="mb-1.5 text-base font-bold text-slate-900">{f.title}</h3>
+                <p className="text-sm leading-relaxed text-slate-600">{f.desc}</p>
+              </div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -654,187 +798,176 @@ function Features() {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Use cases                                                           */
+/* ------------------------------------------------------------------ */
+
 function UseCases() {
   const cases = [
-    {
-      initials: "AB",
-      title: "Artiestenbureau's",
-      desc: "Beheer honoraria en royalties per artiest op één rekening",
-    },
-    {
-      initials: "SC",
-      title: "Sportclubs",
-      desc: "Ledenbijdragen, sponsoring en kantine, elk in eigen potje",
-    },
-    {
-      initials: "JB",
-      title: "Jeugdbewegingen",
-      desc: "Kamp, werking en materiaal transparant bijhouden",
-    },
-    {
-      initials: "VZ",
-      title: "VZW's",
-      desc: "Subsidies en donaties direct koppelen aan projecten",
-    },
-    {
-      initials: "CT",
-      title: "Creatieve teams",
-      desc: "Film, muziek en events, budgetbeheer zonder boekhouder",
-    },
-    {
-      initials: "KB",
-      title: "Kleine bedrijven",
-      desc: "Inkomsten per project of divisie bijhouden zonder extra rekening",
-    },
+    { initials: "AB", title: "Artiestenbureau's", desc: "Honoraria en royalties per artiest op één rekening" },
+    { initials: "SC", title: "Sportclubs", desc: "Ledenbijdragen, sponsoring en kantine, elk in eigen potje" },
+    { initials: "JB", title: "Jeugdbewegingen", desc: "Kamp, werking en materiaal transparant bijhouden" },
+    { initials: "VZ", title: "VZW's", desc: "Subsidies en donaties direct koppelen aan projecten" },
+    { initials: "CT", title: "Creatieve teams", desc: "Film, muziek en events, budgetbeheer zonder boekhouder" },
+    { initials: "KB", title: "Kleine bedrijven", desc: "Inkomsten per project of divisie zonder extra rekening" },
   ];
   return (
     <section className="bg-white px-6 py-24">
       <div className="mx-auto max-w-6xl">
-        <div className="text-center">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-teal-500">
-            Voor wie
-          </p>
-          <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-            Kaspio werkt voor elk type organisatie
-          </h2>
-          <p className="mx-auto max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg">
-            Van jeugdbeweging tot managementbureau, als je inkomsten beheert
-            voor meerdere mensen of doelen, is Kaspio voor jou.
-          </p>
-        </div>
+        <Reveal>
+          <div className="text-center">
+            <Eyebrow className="mb-3 text-indigo-600">Voor wie</Eyebrow>
+            <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+              Kaspio werkt voor elk type organisatie
+            </h2>
+            <p className="mx-auto max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+              Van jeugdbeweging tot managementbureau, als je inkomsten beheert
+              voor meerdere mensen of doelen, is Kaspio voor jou.
+            </p>
+          </div>
+        </Reveal>
         <div className="mt-12 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-6">
-          {cases.map((c) => (
-            <div
-              key={c.title}
-              className="rounded-xl border border-teal-100 bg-white p-4 text-center transition hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50/50 sm:p-7"
-            >
-              <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-teal-100 text-sm font-extrabold text-teal-700">
-                {c.initials}
+          {cases.map((c, i) => (
+            <Reveal key={c.title} delay={i * 45} className="h-full">
+              <div className="h-full rounded-2xl border border-slate-200/80 bg-white p-4 text-center transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50/40 sm:p-6">
+                <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-indigo-100 font-num text-sm font-bold text-indigo-700">
+                  {c.initials}
+                </div>
+                <h3 className="mb-1.5 text-sm font-bold text-slate-900">{c.title}</h3>
+                <p className="text-xs leading-relaxed text-slate-500">{c.desc}</p>
               </div>
-              <h3 className="mb-1.5 text-sm font-bold text-ink">{c.title}</h3>
-              <p className="text-xs leading-relaxed text-ink-muted">{c.desc}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
     </section>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* Pricing                                                             */
+/* ------------------------------------------------------------------ */
 
 function Pricing({ onSignup }: { onSignup: () => void }) {
   const [yearly, setYearly] = useState(false);
 
   return (
-    <section id="prijzen" className="scroll-mt-20 bg-teal-50/50 px-6 py-24">
+    <section id="prijzen" className="scroll-mt-20 bg-slate-50/70 px-6 py-24">
       <div className="mx-auto max-w-6xl">
-        <div className="text-center">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-teal-500">
-            Prijzen
-          </p>
-          <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-            Simpel. Eerlijk. Schaalbaar.
-          </h2>
-          <p className="mx-auto max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg">
-            Start gratis. Betaal enkel als je meer nodig hebt. Geen verborgen
-            kosten.
-          </p>
+        <Reveal>
+          <div className="text-center">
+            <Eyebrow className="mb-3 text-indigo-600">Prijzen</Eyebrow>
+            <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+              Simpel. Eerlijk. Schaalbaar.
+            </h2>
+            <p className="mx-auto max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+              Start gratis. Betaal enkel als je meer nodig hebt. Geen verborgen
+              kosten.
+            </p>
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm text-ink-muted">
-            <span>Maandelijks</span>
-            <button
-              onClick={() => setYearly((v) => !v)}
-              className="relative h-6 w-11 rounded-full bg-teal-500 transition"
-              aria-pressed={yearly}
-              aria-label="Wissel maandelijks/jaarlijks"
-            >
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm text-slate-600">
+              <span>Maandelijks</span>
+              <button
+                onClick={() => setYearly((v) => !v)}
+                className="relative h-6 w-11 rounded-full bg-indigo-600 transition"
+                aria-pressed={yearly}
+                aria-label="Wissel maandelijks of jaarlijks"
+              >
+                <span
+                  className={`absolute top-[3px] h-[18px] w-[18px] rounded-full bg-white shadow transition-all ${
+                    yearly ? "left-[23px]" : "left-[3px]"
+                  }`}
+                />
+              </button>
+              <span>Jaarlijks</span>
               <span
-                className={`absolute top-[3px] h-[18px] w-[18px] rounded-full bg-white shadow transition-all ${
-                  yearly ? "left-[23px]" : "left-[3px]"
+                className={`whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-bold transition ${
+                  yearly
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                    : "border-amber-200 bg-amber-50 text-amber-700"
                 }`}
-              />
-            </button>
-            <span>Jaarlijks</span>
-            <span
-              className={`whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-bold ${
-                yearly
-                  ? "border-teal-300 bg-teal-100 text-teal-700"
-                  : "border-amber-200 bg-amber-50 text-amber-700"
-              }`}
-            >
-              {yearly ? "✓ −20% actief" : "Bespaar 20%"}
-            </span>
+              >
+                {yearly ? "✓ −20% actief" : "Bespaar 20%"}
+              </span>
+            </div>
           </div>
-        </div>
+        </Reveal>
 
         <div className="mt-10 grid items-start gap-6 md:grid-cols-3">
-          <Plan
-            name="Gratis"
-            price="€0"
-            desc="Perfect om te starten. Geen kaart vereist."
-            features={[
-              { text: "Tot 3 virtuele potjes" },
-              { text: "Manuele transacties invoeren" },
-              { text: "2 gebruikers (beheerder + 1 potverantwoordelijke)" },
-              { text: "Basis historiek (30 dagen)" },
-              { text: "CSV-export" },
-              { text: "Bankkoppeling (PSD2)", no: true },
-              { text: "Grafieken & rapportage", no: true },
-              { text: "Meldingen", no: true },
-            ]}
-            cta="Gratis starten"
-            ctaStyle="outline"
-            onClick={onSignup}
-          />
-          <Plan
-            featured
-            name="Pro"
-            price={yearly ? "€3,99" : "€4,99"}
-            priceSuffix="/maand"
-            desc={
-              yearly
-                ? "Je bespaart €12/jaar tov maandelijks. Gefactureerd als €47,88/jaar."
-                : "Voor freelancers en kleine teams. Betaal per maand of bespaar 20% jaarlijks."
-            }
-            features={[
-              { text: "Onbeperkte potjes" },
-              { text: "Manuele + import van transacties" },
-              { text: "Tot 5 gebruikers" },
-              { text: "Volledige historiek" },
-              { text: "Excel & PDF-export" },
-              { text: "Bankkoppeling via PSD2" },
-              { text: "Grafieken & rapportage" },
-              { text: "E-mail meldingen" },
-            ]}
-            cta="Kies Pro"
-            ctaStyle="fill"
-            onClick={onSignup}
-          />
-          <Plan
-            name="Team"
-            price={yearly ? "€16" : "€20"}
-            priceSuffix="/maand"
-            desc={
-              yearly
-                ? "Je bespaart €48/jaar tov maandelijks. Gefactureerd als €192/jaar."
-                : "Voor verenigingen, VZW's en bedrijven. Meerdere beheerders. Meer controle."
-            }
-            features={[
-              { text: "Alles uit Pro" },
-              { text: "Tot 25 gebruikers" },
-              { text: "Meerdere beheerders" },
-              { text: "Goedkeuringsflows" },
-              { text: "Memo's & bijlagen" },
-              { text: "Prioriteitsondersteuning" },
-              { text: "Whitelabel optie (op aanvraag)" },
-              { text: "API-toegang (binnenkort)" },
-            ]}
-            cta="Kies Team"
-            ctaStyle="amber"
-            onClick={onSignup}
-          />
+          <Reveal className="h-full">
+            <Plan
+              name="Gratis"
+              price="€0"
+              desc="Perfect om te starten. Geen kaart vereist."
+              features={[
+                { text: "Tot 3 virtuele potjes" },
+                { text: "Manuele transacties invoeren" },
+                { text: "2 gebruikers (beheerder + 1 potverantwoordelijke)" },
+                { text: "Basis historiek (30 dagen)" },
+                { text: "CSV-export" },
+                { text: "Bankkoppeling (PSD2)", no: true },
+                { text: "Grafieken & rapportage", no: true },
+                { text: "Meldingen", no: true },
+              ]}
+              cta="Gratis starten"
+              ctaStyle="outline"
+              onClick={onSignup}
+            />
+          </Reveal>
+          <Reveal delay={80} className="h-full">
+            <Plan
+              featured
+              name="Pro"
+              price={yearly ? "€3,99" : "€4,99"}
+              priceSuffix="/maand"
+              desc={
+                yearly
+                  ? "Je bespaart €12/jaar tov maandelijks. Gefactureerd als €47,88/jaar."
+                  : "Voor freelancers en kleine teams. Betaal per maand of bespaar 20% jaarlijks."
+              }
+              features={[
+                { text: "Onbeperkte potjes" },
+                { text: "Manuele + import van transacties" },
+                { text: "Tot 5 gebruikers" },
+                { text: "Volledige historiek" },
+                { text: "Excel & PDF-export" },
+                { text: "Bankkoppeling via PSD2" },
+                { text: "Grafieken & rapportage" },
+                { text: "E-mail meldingen" },
+              ]}
+              cta="Kies Pro"
+              ctaStyle="fill"
+              onClick={onSignup}
+            />
+          </Reveal>
+          <Reveal delay={160} className="h-full">
+            <Plan
+              name="Team"
+              price={yearly ? "€16" : "€20"}
+              priceSuffix="/maand"
+              desc={
+                yearly
+                  ? "Je bespaart €48/jaar tov maandelijks. Gefactureerd als €192/jaar."
+                  : "Voor verenigingen, VZW's en bedrijven. Meerdere beheerders. Meer controle."
+              }
+              features={[
+                { text: "Alles uit Pro" },
+                { text: "Tot 25 gebruikers" },
+                { text: "Meerdere beheerders" },
+                { text: "Goedkeuringsflows" },
+                { text: "Memo's & bijlagen" },
+                { text: "Prioriteitsondersteuning" },
+                { text: "Whitelabel optie (op aanvraag)" },
+                { text: "API-toegang (binnenkort)" },
+              ]}
+              cta="Kies Team"
+              ctaStyle="amber"
+              onClick={onSignup}
+            />
+          </Reveal>
         </div>
 
-        <p className="mt-7 text-center text-sm text-ink-muted">
+        <p className="mt-7 text-center text-sm text-slate-500">
           Geen creditcard nodig om te starten · Elk moment opzegbaar · Belgische
           en Nederlandse wetgeving
         </p>
@@ -868,51 +1001,55 @@ function Plan({
 }) {
   const ctaClass = {
     outline:
-      "border border-teal-100 bg-white text-ink hover:border-teal-500 hover:bg-teal-50 hover:text-teal-700",
-    fill: "bg-teal-500 text-white hover:bg-teal-700",
-    amber: "bg-amber-500 text-white hover:bg-amber-700",
+      "border border-slate-200 bg-white text-slate-900 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700",
+    fill: "bg-indigo-600 text-white shadow-md shadow-indigo-600/25 hover:bg-indigo-700",
+    amber: "bg-amber-500 text-white hover:bg-amber-600",
   }[ctaStyle];
 
   return (
     <div
-      className={`relative rounded-xl bg-white p-6 sm:p-8 ${
+      className={`relative flex h-full flex-col rounded-3xl bg-white p-6 sm:p-8 ${
         featured
-          ? "border-2 border-teal-500 shadow-[0_8px_40px_rgba(29,158,117,0.15)]"
-          : "border border-teal-100"
+          ? "border-2 border-indigo-600 shadow-[0_20px_50px_-20px_rgba(79,70,229,0.4)]"
+          : "border border-slate-200"
       }`}
     >
       {featured && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-teal-500 px-3.5 py-1 text-xs font-bold text-white">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-indigo-600 px-3.5 py-1 text-xs font-bold text-white">
           Meest gekozen
         </div>
       )}
-      <div className="mb-2 text-sm font-bold uppercase tracking-wider text-ink-muted">
+      <div className="mb-2 font-num text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
         {name}
       </div>
-      <div className="mb-1 text-4xl font-extrabold tracking-tight text-ink">
+      <div className="mb-1 font-num text-4xl font-extrabold tracking-tight text-slate-900">
         {price}
         {priceSuffix && (
-          <span className="ml-1 text-base font-medium text-ink-muted">
+          <span className="ml-1 font-display text-base font-medium text-slate-500">
             {priceSuffix}
           </span>
         )}
       </div>
-      <p className="mb-5 text-sm leading-snug text-ink-muted">{desc}</p>
-      <hr className="mb-5 border-t border-teal-100" />
-      <ul className="space-y-3">
+      <p className="mb-5 text-sm leading-snug text-slate-500">{desc}</p>
+      <hr className="mb-5 border-t border-slate-100" />
+      <ul className="mb-6 flex-1 space-y-3">
         {features.map((f) => (
           <li
             key={f.text}
             className={`flex items-start gap-2.5 text-sm ${
-              f.no ? "text-ink-light" : "text-ink"
+              f.no ? "text-slate-400" : "text-slate-700"
             }`}
           >
-            <span
-              className={`mt-0.5 flex-shrink-0 font-bold ${
-                f.no ? "text-ink-light" : "text-teal-500"
-              }`}
-            >
-              {f.no ? "·" : "✓"}
+            <span className="mt-0.5 flex-shrink-0">
+              {f.no ? (
+                <Icon className="h-4 w-4 text-slate-300">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </Icon>
+              ) : (
+                <Icon className="h-4 w-4 text-emerald-600">
+                  <path d="M20 6 9 17l-5-5" />
+                </Icon>
+              )}
             </span>
             <span>{f.text}</span>
           </li>
@@ -920,7 +1057,7 @@ function Plan({
       </ul>
       <button
         onClick={onClick}
-        className={`mt-6 w-full rounded-lg py-3 text-sm font-bold transition ${ctaClass}`}
+        className={`w-full rounded-xl py-3 text-sm font-bold transition ${ctaClass}`}
       >
         {cta}
       </button>
@@ -928,12 +1065,17 @@ function Plan({
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Build in public                                                     */
+/* ------------------------------------------------------------------ */
+
 function BuildInPublic() {
   const status = [
     {
       label: "Nu",
       title: "Gesloten beta",
       desc: "Eerste gebruikers zijn binnen. Inkomsten en uitgaven loggen, potjes aanmaken, rolgebaseerd delen. Gratis te starten.",
+      done: true,
     },
     {
       label: "Volgende",
@@ -949,33 +1091,44 @@ function BuildInPublic() {
   return (
     <section className="bg-white px-6 py-24">
       <div className="mx-auto max-w-5xl">
-        <div className="text-center">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-teal-500">
-            Build in public
-          </p>
-          <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-            Waar staan we nu?
-          </h2>
-          <p className="mx-auto max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg">
-            Kaspio is jong en eerlijk daarover. Hier is precies wat we doen, wat
-            er komt en wanneer je iets kunt verwachten.
-          </p>
-        </div>
+        <Reveal>
+          <div className="text-center">
+            <Eyebrow className="mb-3 text-indigo-600">Build in public</Eyebrow>
+            <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+              Waar staan we nu?
+            </h2>
+            <p className="mx-auto max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+              Kaspio is jong en eerlijk daarover. Hier is precies wat we doen, wat
+              er komt en wanneer je iets kunt verwachten.
+            </p>
+          </div>
+        </Reveal>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {status.map((s) => (
-            <div
-              key={s.title}
-              className="rounded-xl border border-teal-100 bg-white p-7 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.06)]"
-            >
-              <span className="mb-3 inline-block rounded-full bg-teal-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-teal-700">
-                {s.label}
-              </span>
-              <h3 className="mb-2 text-lg font-bold text-ink">{s.title}</h3>
-              <p className="text-sm leading-relaxed text-ink-muted">{s.desc}</p>
-            </div>
+          {status.map((s, i) => (
+            <Reveal key={s.title} delay={i * 90} className="h-full">
+              <div className="h-full rounded-3xl border border-slate-200/80 bg-white p-7 shadow-[0_1px_3px_rgba(15,23,42,0.05),0_8px_24px_-12px_rgba(15,23,42,0.08)]">
+                <span
+                  className={`mb-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-num text-[11px] font-bold uppercase tracking-[0.16em] ${
+                    s.done
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-indigo-50 text-indigo-700"
+                  }`}
+                >
+                  {s.done && (
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    </span>
+                  )}
+                  {s.label}
+                </span>
+                <h3 className="mb-2 text-lg font-bold text-slate-900">{s.title}</h3>
+                <p className="text-sm leading-relaxed text-slate-600">{s.desc}</p>
+              </div>
+            </Reveal>
           ))}
         </div>
-        <p className="mt-10 text-center text-sm text-ink-muted">
+        <p className="mt-10 text-center text-sm text-slate-500">
           Wil je meebouwen? Maak een account aan, ik neem graag 20 minuten de
           tijd om te horen hoe jullie het vandaag aanpakken.
         </p>
@@ -983,6 +1136,10 @@ function BuildInPublic() {
     </section>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* FAQ                                                                 */
+/* ------------------------------------------------------------------ */
 
 function Faq() {
   const items = [
@@ -1008,122 +1165,159 @@ function Faq() {
     },
     {
       q: "Kan ik mijn data exporteren als ik stop?",
-      a: "Ja, altijd. Je kunt op elk moment al je data exporteren als Excel of CSV. Je bent nooit vastzittend aan Kaspio.",
+      a: "Ja, altijd. Je kunt op elk moment al je data exporteren als Excel of CSV. Je zit nooit vast aan Kaspio.",
     },
   ];
 
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="scroll-mt-20 bg-teal-50/50 px-6 py-24">
+    <section id="faq" className="scroll-mt-20 bg-slate-50/70 px-6 py-24">
       <div className="mx-auto max-w-6xl">
-        <div className="text-center">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-teal-500">
-            Veelgestelde vragen
-          </p>
-          <h2 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-            Alles wat je wil weten
-          </h2>
-        </div>
-        <div className="mx-auto mt-12 max-w-3xl">
-          {items.map((it, i) => {
-            const isOpen = open === i;
-            return (
-              <div key={it.q} className="border-b border-teal-100">
-                <button
-                  onClick={() => setOpen(isOpen ? null : i)}
-                  className="flex w-full items-center justify-between gap-4 py-5 text-left text-base font-semibold text-ink transition hover:text-teal-500"
-                >
-                  <span>{it.q}</span>
-                  <span
-                    className={`text-xl text-teal-500 transition-transform ${
-                      isOpen ? "rotate-45" : ""
+        <Reveal>
+          <div className="text-center">
+            <Eyebrow className="mb-3 text-indigo-600">Veelgestelde vragen</Eyebrow>
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+              Alles wat je wil weten
+            </h2>
+          </div>
+        </Reveal>
+        <Reveal>
+          <div className="mx-auto mt-12 max-w-3xl overflow-hidden rounded-3xl border border-slate-200/80 bg-white">
+            {items.map((it, i) => {
+              const isOpen = open === i;
+              return (
+                <div key={it.q} className={i > 0 ? "border-t border-slate-100" : ""}>
+                  <button
+                    onClick={() => setOpen(isOpen ? null : i)}
+                    className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left text-base font-semibold text-slate-900 transition hover:text-indigo-600"
+                    aria-expanded={isOpen}
+                  >
+                    <span>{it.q}</span>
+                    <span
+                      className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-indigo-50 text-lg leading-none text-indigo-600 transition-transform duration-200 ${
+                        isOpen ? "rotate-45" : ""
+                      }`}
+                    >
+                      +
+                    </span>
+                  </button>
+                  <div
+                    className={`grid transition-all duration-300 ease-out ${
+                      isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
                     }`}
                   >
-                    +
-                  </span>
-                </button>
-                {isOpen && (
-                  <p className="pb-5 text-sm leading-relaxed text-ink-muted">
-                    {it.a}
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                    <div className="overflow-hidden">
+                      <p className="px-6 pb-5 text-sm leading-relaxed text-slate-600">
+                        {it.a}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Reveal>
       </div>
     </section>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* Final CTA                                                           */
+/* ------------------------------------------------------------------ */
 
 function FinalCta({ onSignup }: { onSignup: () => void }) {
   return (
-    <section className="px-6 py-20 text-center" style={{ backgroundColor: "#0F6E56" }}>
-      <div className="mx-auto max-w-3xl">
-        <h2 className="mb-4 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-          Klaar om orde te scheppen
-          <br />
-          in jouw geldstromen?
-        </h2>
-        <p className="mx-auto mb-8 max-w-xl text-lg text-teal-300">
-          Maak gratis een account aan en zet je eerste potjes op in een paar
-          minuten.
-        </p>
-        <button
-          onClick={onSignup}
-          className="rounded-xl border-2 border-amber-500 bg-amber-500 px-8 py-3.5 text-base font-bold text-ink shadow transition hover:-translate-y-0.5 hover:bg-amber-400"
-        >
-          Gratis starten →
-        </button>
-        <p className="mt-4 text-xs text-white/50">
-          ✓ Geen kaart nodig &nbsp; ✓ Klaar in minuten &nbsp; ✓ Elk moment opzegbaar
-        </p>
+    <section className="px-6 py-24">
+      <div className="mx-auto max-w-5xl">
+        <Reveal>
+          <div
+            className="relative overflow-hidden rounded-[2rem] px-6 py-16 text-center sm:px-12"
+            style={{
+              background:
+                "linear-gradient(135deg, #4f46e5 0%, #4338ca 55%, #312e81 100%)",
+            }}
+          >
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 opacity-30"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle at 20% 20%, rgba(16,185,129,0.35), transparent 45%), radial-gradient(circle at 85% 80%, rgba(255,255,255,0.18), transparent 50%)",
+              }}
+            />
+            <div className="relative mx-auto max-w-2xl">
+              <h2 className="mb-4 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+                Klaar om orde te scheppen in jouw geldstromen?
+              </h2>
+              <p className="mx-auto mb-8 max-w-xl text-lg text-indigo-100">
+                Maak gratis een account aan en zet je eerste potjes op in een
+                paar minuten.
+              </p>
+              <button
+                onClick={onSignup}
+                className="rounded-xl bg-amber-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-amber-400"
+              >
+                Gratis starten →
+              </button>
+              <p className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-indigo-200">
+                <span className="flex items-center gap-1">
+                  <Icon className="h-3.5 w-3.5">
+                    <path d="M20 6 9 17l-5-5" />
+                  </Icon>
+                  Geen kaart nodig
+                </span>
+                <span className="flex items-center gap-1">
+                  <Icon className="h-3.5 w-3.5">
+                    <path d="M20 6 9 17l-5-5" />
+                  </Icon>
+                  Klaar in minuten
+                </span>
+                <span className="flex items-center gap-1">
+                  <Icon className="h-3.5 w-3.5">
+                    <path d="M20 6 9 17l-5-5" />
+                  </Icon>
+                  Elk moment opzegbaar
+                </span>
+              </p>
+            </div>
+          </div>
+        </Reveal>
       </div>
     </section>
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Footer                                                              */
+/* ------------------------------------------------------------------ */
+
 function Footer() {
   return (
-    <footer
-      className="px-6 pb-8 pt-14 text-sm text-white/60"
-      style={{ backgroundColor: "#1a1a18" }}
-    >
+    <footer className="px-6 pb-8 pt-14 text-sm text-slate-400" style={{ backgroundColor: "#0f0f1a" }}>
       <div className="mx-auto max-w-6xl">
         <div className="grid gap-10 pb-12 sm:grid-cols-2 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
           <div>
             <Logo light />
-            <p className="mt-3 max-w-xs text-sm leading-relaxed text-white/55">
+            <p className="mt-3 max-w-xs text-sm leading-relaxed text-slate-400">
               Virtueel potjesbeheer voor iedereen die inkomsten op één rekening
               transparant wil verdelen. Gemaakt in België.
             </p>
           </div>
-          <FooterCol
-            title="Product"
-            links={["Functies", "Prijzen", "Demo", "Roadmap", "Changelog"]}
-          />
+          <FooterCol title="Product" links={["Functies", "Prijzen", "Demo", "Roadmap", "Changelog"]} />
           <FooterCol
             title="Gebruik"
-            links={[
-              "Sportclubs",
-              "Jeugdbewegingen",
-              "Artiestenbureaus",
-              "VZW's",
-              "Enterprise",
-            ]}
+            links={["Sportclubs", "Jeugdbewegingen", "Artiestenbureaus", "VZW's", "Enterprise"]}
           />
-          <FooterCol
-            title="Bedrijf"
-            links={["Over ons", "Blog", "Contact", "Pers", "Vacatures"]}
-          />
+          <FooterCol title="Bedrijf" links={["Over ons", "Blog", "Contact", "Pers", "Vacatures"]} />
         </div>
         <div className="flex flex-col items-start justify-between gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center">
           <span>© {new Date().getFullYear()} Kaspio BV. Alle rechten voorbehouden.</span>
           <div className="flex gap-5">
-            <a className="hover:text-teal-300" href="#">Privacybeleid</a>
-            <a className="hover:text-teal-300" href="#">Gebruiksvoorwaarden</a>
-            <a className="hover:text-teal-300" href="#">Cookies</a>
+            <a className="transition hover:text-indigo-300" href="#">Privacybeleid</a>
+            <a className="transition hover:text-indigo-300" href="#">Gebruiksvoorwaarden</a>
+            <a className="transition hover:text-indigo-300" href="#">Cookies</a>
           </div>
         </div>
       </div>
@@ -1134,13 +1328,13 @@ function Footer() {
 function FooterCol({ title, links }: { title: string; links: string[] }) {
   return (
     <div>
-      <h4 className="mb-4 text-xs font-bold uppercase tracking-wider text-white">
+      <h4 className="mb-4 font-num text-[11px] font-bold uppercase tracking-[0.16em] text-white">
         {title}
       </h4>
       <ul className="space-y-2.5">
         {links.map((l) => (
           <li key={l}>
-            <a className="text-sm text-white/55 hover:text-teal-300" href="#">
+            <a className="text-sm text-slate-400 transition hover:text-indigo-300" href="#">
               {l}
             </a>
           </li>
