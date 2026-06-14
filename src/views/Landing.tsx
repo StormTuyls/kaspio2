@@ -9,10 +9,12 @@ import { useForceLight } from "../theme";
 // amber-merkkleuren blijven, maar in een warmere context. Tailwind-arbitrary
 // waarden zodat de redesign landing-scoped blijft.
 // =============================================================================
-const CREAM = "#FBF6EE"; // warme achtergrond
-const CREAM_SOFT = "#F4ECDF"; // iets dieper voor afwisseling
-const LINE = "#EBE1D2"; // warme rand
-const FOREST = "#0C3A30"; // diep bosgroen voor donkere secties
+// Subtiele warm-white i.p.v. een uitgesproken cream (cream-bg is dé AI-tell).
+// Warmte komt nu uit de serif-typografie + teal/amber accenten, niet de bg.
+const CREAM = "#FCFBF9"; // near-white, vleugje warm
+const CREAM_SOFT = "#F6F4EF"; // subtiele warme tint voor afwisselende secties
+const LINE = "#E8E5DF"; // warm-grijze rand, niet geel
+const FOREST = "#0C3A30"; // diep bosgroen voor ingezette donkere panelen
 
 type Props = {
   onLogin: () => void;
@@ -118,19 +120,16 @@ function Hero({ onSignup }: { onSignup: () => void }) {
       />
       <div className="relative mx-auto max-w-3xl text-center">
         <div
-          className="mb-6 inline-flex items-center gap-2 rounded-full border bg-white/70 px-4 py-1.5 text-xs font-semibold text-[#0F6E56]"
+          className="mb-6 inline-flex items-center gap-2 rounded-full border bg-white px-4 py-1.5 text-xs font-semibold text-[#0F6E56]"
           style={{ borderColor: LINE }}
         >
-          <span aria-hidden>🇧🇪</span>
+          <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-teal-500" />
           Gemaakt in België voor clubs, verenigingen en teams
         </div>
 
-        <h1 className="mx-auto max-w-2xl text-4xl font-extrabold leading-[1.08] tracking-tight text-ink sm:text-5xl lg:text-6xl">
+        <h1 className="font-display mx-auto max-w-2xl text-balance text-4xl font-semibold leading-[1.05] text-ink sm:text-5xl lg:text-6xl">
           Eén rekening, overzicht voor{" "}
-          <span className="relative whitespace-nowrap text-teal-600">
-            iedereen
-            <Squiggle />
-          </span>
+          <span className="text-teal-600">iedereen</span>
         </h1>
 
         <p className="mx-auto mb-9 mt-6 max-w-xl text-lg leading-relaxed text-ink-muted">
@@ -142,7 +141,7 @@ function Hero({ onSignup }: { onSignup: () => void }) {
         <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
           <button
             onClick={onSignup}
-            className="w-full rounded-full bg-teal-500 px-7 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_-8px_rgba(29,158,117,0.6)] transition hover:-translate-y-0.5 hover:bg-teal-600 sm:w-auto"
+            className="w-full rounded-full bg-teal-500 px-7 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_-8px_rgba(29,158,117,0.6)] transition duration-200 hover:-translate-y-0.5 hover:bg-teal-600 active:translate-y-0 active:scale-[0.98] sm:w-auto"
           >
             Gratis starten →
           </button>
@@ -163,26 +162,6 @@ function Hero({ onSignup }: { onSignup: () => void }) {
         <HeroMockup />
       </div>
     </section>
-  );
-}
-
-/** Handgetekende onderstreping, geeft de hero een menselijke toets. */
-function Squiggle() {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 200 12"
-      className="absolute -bottom-2 left-0 h-3 w-full"
-      preserveAspectRatio="none"
-    >
-      <path
-        d="M2 8 C 40 2, 70 2, 100 6 S 170 12, 198 4"
-        fill="none"
-        stroke="#EF9F27"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }
 
@@ -408,16 +387,13 @@ function Problem() {
   return (
     <section className="px-6 py-24">
       <div
-        className="mx-auto max-w-6xl rounded-[2rem] px-6 py-16 sm:px-12"
+        className="mx-auto max-w-6xl rounded-3xl px-6 py-16 sm:px-12"
         style={{ backgroundColor: FOREST }}
       >
-        <p className="mb-3 text-xs font-bold uppercase tracking-wider text-amber-300">
-          Het probleem
-        </p>
-        <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+        <h2 className="font-display text-balance text-3xl font-semibold text-white sm:text-[2.5rem] sm:leading-[1.1]">
           Herken je dit?
         </h2>
-        <p className="max-w-xl text-base leading-relaxed text-white/65 sm:text-lg">
+        <p className="mt-4 max-w-xl text-pretty text-base leading-relaxed text-white/65 sm:text-lg">
           Alles komt op één rekening binnen, maar niemand weet van wie, voor
           wie, of hoeveel er nog over is.
         </p>
@@ -452,26 +428,23 @@ function Problem() {
 }
 
 function SectionHeading({
-  eyebrow,
   title,
   sub,
   center = true,
 }: {
-  eyebrow: string;
+  /** Behouden in de API maar niet meer getoond: eyebrow-op-elke-sectie is een AI-tell. */
+  eyebrow?: string;
   title: ReactNode;
   sub?: string;
   center?: boolean;
 }) {
   return (
     <div className={center ? "text-center" : ""}>
-      <p className="mb-3 text-xs font-bold uppercase tracking-wider text-teal-600">
-        {eyebrow}
-      </p>
-      <h2 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
+      <h2 className="font-display text-balance text-3xl font-semibold text-ink sm:text-[2.5rem] sm:leading-[1.1]">
         {title}
       </h2>
       {sub && (
-        <p className={`mt-3 max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg ${center ? "mx-auto" : ""}`}>
+        <p className={`mt-4 max-w-xl text-pretty text-base leading-relaxed text-ink-muted sm:text-lg ${center ? "mx-auto" : ""}`}>
           {sub}
         </p>
       )}
@@ -1053,7 +1026,7 @@ function FinalCta({ onSignup }: { onSignup: () => void }) {
   return (
     <section className="px-6 py-24">
       <div
-        className="relative mx-auto max-w-4xl overflow-hidden rounded-[2rem] px-6 py-16 text-center sm:px-12"
+        className="relative mx-auto max-w-4xl overflow-hidden rounded-3xl px-6 py-16 text-center sm:px-12"
         style={{ backgroundColor: FOREST }}
       >
         <div
@@ -1061,10 +1034,8 @@ function FinalCta({ onSignup }: { onSignup: () => void }) {
           className="pointer-events-none absolute right-[-80px] top-[-80px] h-72 w-72 rounded-full opacity-40 blur-3xl"
           style={{ background: "radial-gradient(closest-side, rgba(239,159,39,0.45), transparent)" }}
         />
-        <h2 className="relative mb-4 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-          Klaar om orde te scheppen
-          <br />
-          in jullie kas?
+        <h2 className="font-display relative mb-4 text-balance text-3xl font-semibold text-white sm:text-[2.75rem] sm:leading-[1.08]">
+          Klaar om orde te scheppen in jullie kas?
         </h2>
         <p className="relative mx-auto mb-8 max-w-xl text-lg text-white/70">
           Maak gratis een account aan en zet je eerste potjes op in een paar
@@ -1072,7 +1043,7 @@ function FinalCta({ onSignup }: { onSignup: () => void }) {
         </p>
         <button
           onClick={onSignup}
-          className="relative rounded-full bg-amber-500 px-8 py-3.5 text-base font-bold text-ink shadow-[0_12px_30px_-10px_rgba(239,159,39,0.7)] transition hover:-translate-y-0.5 hover:bg-amber-400"
+          className="relative rounded-full bg-amber-500 px-8 py-3.5 text-base font-bold text-ink shadow-[0_12px_30px_-10px_rgba(239,159,39,0.7)] transition duration-200 hover:-translate-y-0.5 hover:bg-amber-400 active:translate-y-0 active:scale-[0.98]"
         >
           Gratis starten →
         </button>
