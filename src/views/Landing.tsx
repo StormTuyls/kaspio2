@@ -200,7 +200,7 @@ function Header({ onLogin, onSignup }: { onLogin: () => void; onSignup: () => vo
 
 function Hero({ onSignup }: { onSignup: () => void }) {
   return (
-    <section className="relative overflow-hidden px-6 pb-20 pt-16 text-center sm:pt-24">
+    <section className="relative overflow-hidden px-6 pb-20 pt-16 sm:pt-24">
       {/* soft brand glow + faint grid */}
       <div
         aria-hidden
@@ -208,6 +208,14 @@ function Hero({ onSignup }: { onSignup: () => void }) {
         style={{
           background:
             "radial-gradient(ellipse at center, rgba(79,70,229,0.16) 0%, rgba(16,185,129,0.07) 38%, transparent 70%)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="kaspio-glow-2 pointer-events-none absolute left-1/2 top-[-40px] h-[420px] w-[420px] -translate-x-[60%] rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle at center, rgba(16,185,129,0.18) 0%, transparent 65%)",
         }}
       />
       <div
@@ -224,64 +232,66 @@ function Hero({ onSignup }: { onSignup: () => void }) {
         }}
       />
 
-      <div className="relative mx-auto max-w-4xl">
-        <Reveal>
-          <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3.5 py-1.5 text-xs font-semibold text-indigo-700">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-500 opacity-75" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-indigo-500" />
+      <div className="relative mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[minmax(0,46%)_minmax(0,54%)] lg:gap-8">
+        <div className="text-left">
+          <Reveal>
+            <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3.5 py-1.5 text-xs font-semibold text-indigo-700">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-500 opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-indigo-500" />
+              </span>
+              Nu in bèta · gratis starten
             </span>
-            Nu in bèta · gratis starten
-          </span>
-        </Reveal>
+          </Reveal>
 
-        <Reveal delay={60}>
-          <h1 className="mx-auto mb-5 max-w-3xl text-4xl font-extrabold leading-[1.05] tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-            Eén rekening.
-            <br />
-            <span className="bg-gradient-to-r from-indigo-600 to-emerald-500 bg-clip-text text-transparent">
-              Meerdere potjes.
-            </span>
-            <br />
-            Volledige controle.
-          </h1>
-        </Reveal>
+          <Reveal delay={60}>
+            <h1 className="mb-5 text-4xl font-extrabold leading-[1.05] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.4rem]">
+              Eén rekening.
+              <br />
+              <span className="bg-gradient-to-r from-indigo-600 to-emerald-500 bg-clip-text text-transparent">
+                Meerdere potjes.
+              </span>
+              <br />
+              Volledige controle.
+            </h1>
+          </Reveal>
 
-        <Reveal delay={120}>
-          <p className="mx-auto mb-9 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
-            Kaspio verdeelt inkomsten op jouw bankrekening in virtuele potjes,
-            per persoon, per team of per doel. Zonder extra rekeningen. Zonder
-            boekhoudsoftware.
-          </p>
-        </Reveal>
+          <Reveal delay={120}>
+            <p className="mb-8 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+              Kaspio verdeelt inkomsten op jouw bankrekening in virtuele potjes,
+              per persoon, per team of per doel. Zonder extra rekeningen. Zonder
+              boekhoudsoftware.
+            </p>
+          </Reveal>
 
-        <Reveal delay={180}>
-          <div className="mb-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <button
-              onClick={onSignup}
-              className="w-full rounded-xl bg-indigo-600 px-7 py-3.5 text-base font-bold text-white shadow-md shadow-indigo-600/25 transition hover:-translate-y-0.5 hover:bg-indigo-700 sm:w-auto"
-            >
-              Gratis starten →
-            </button>
-            <a
-              href="#hoe"
-              className="w-full rounded-xl border border-slate-200 bg-white px-7 py-3.5 text-base font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 sm:w-auto"
-            >
-              Bekijk hoe het werkt
-            </a>
-          </div>
-        </Reveal>
+          <Reveal delay={180}>
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row">
+              <button
+                onClick={onSignup}
+                className="rounded-xl bg-indigo-600 px-7 py-3.5 text-base font-bold text-white shadow-md shadow-indigo-600/25 transition hover:-translate-y-0.5 hover:bg-indigo-700"
+              >
+                Gratis starten →
+              </button>
+              <a
+                href="#hoe"
+                className="rounded-xl border border-slate-200 bg-white px-7 py-3.5 text-center text-base font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+              >
+                Bekijk hoe het werkt
+              </a>
+            </div>
+          </Reveal>
 
-        <Reveal delay={220}>
-          <p className="mb-14 flex items-center justify-center gap-1.5 text-sm text-slate-500">
-            <Icon className="h-4 w-4 text-emerald-600">
-              <path d="M20 6 9 17l-5-5" />
-            </Icon>
-            Gratis starten, geen kaart nodig.
-          </p>
-        </Reveal>
+          <Reveal delay={220}>
+            <p className="flex items-center gap-1.5 text-sm text-slate-500">
+              <Icon className="h-4 w-4 text-emerald-600">
+                <path d="M20 6 9 17l-5-5" />
+              </Icon>
+              Gratis starten, geen kaart nodig.
+            </p>
+          </Reveal>
+        </div>
 
-        <Reveal delay={120}>
+        <Reveal delay={140} className="lg:-mr-6 xl:-mr-20">
           <HeroMockup />
         </Reveal>
       </div>
@@ -298,7 +308,7 @@ function HeroMockup() {
   ];
 
   return (
-    <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_-24px_rgba(49,46,129,0.35),0_8px_24px_-12px_rgba(15,23,42,0.12)]">
+    <div className="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_-24px_rgba(49,46,129,0.35),0_8px_24px_-12px_rgba(15,23,42,0.12)]">
       {/* browser chrome */}
       <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-4 py-3">
         <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
@@ -601,12 +611,12 @@ function HowItWorks() {
     <section id="hoe" className="scroll-mt-20 bg-white px-6 py-24">
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <div className="text-center">
+          <div className="max-w-2xl">
             <Eyebrow className="mb-3 text-indigo-600">Hoe het werkt</Eyebrow>
             <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
               In 3 stappen geregeld
             </h2>
-            <p className="mx-auto max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+            <p className="max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
               Kaspio is geen boekhoudprogramma. Het is een simpele tool die
               overzicht geeft waar jij dat wil.
             </p>
@@ -733,7 +743,7 @@ function Features() {
     <section id="functies" className="scroll-mt-20 bg-slate-50/70 px-6 py-24">
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <div className="text-center">
+          <div className="max-w-2xl">
             <Eyebrow className="mb-3 text-indigo-600">Functies</Eyebrow>
             <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
               Alles wat je nodig hebt,
@@ -815,12 +825,12 @@ function UseCases() {
     <section className="bg-white px-6 py-24">
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <div className="text-center">
+          <div className="max-w-2xl">
             <Eyebrow className="mb-3 text-indigo-600">Voor wie</Eyebrow>
             <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
               Kaspio werkt voor elk type organisatie
             </h2>
-            <p className="mx-auto max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+            <p className="max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
               Van jeugdbeweging tot managementbureau, als je inkomsten beheert
               voor meerdere mensen of doelen, is Kaspio voor jou.
             </p>
@@ -855,17 +865,17 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
     <section id="prijzen" className="scroll-mt-20 bg-slate-50/70 px-6 py-24">
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <div className="text-center">
+          <div className="max-w-2xl">
             <Eyebrow className="mb-3 text-indigo-600">Prijzen</Eyebrow>
             <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
               Simpel. Eerlijk. Schaalbaar.
             </h2>
-            <p className="mx-auto max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+            <p className="max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
               Start gratis. Betaal enkel als je meer nodig hebt. Geen verborgen
               kosten.
             </p>
 
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm text-slate-600">
+            <div className="mt-8 flex flex-wrap items-center justify-start gap-x-3 gap-y-2 text-sm text-slate-600">
               <span>Maandelijks</span>
               <button
                 onClick={() => setYearly((v) => !v)}
@@ -1092,12 +1102,12 @@ function BuildInPublic() {
     <section className="bg-white px-6 py-24">
       <div className="mx-auto max-w-5xl">
         <Reveal>
-          <div className="text-center">
+          <div className="max-w-2xl">
             <Eyebrow className="mb-3 text-indigo-600">Build in public</Eyebrow>
             <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
               Waar staan we nu?
             </h2>
-            <p className="mx-auto max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+            <p className="max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
               Kaspio is jong en eerlijk daarover. Hier is precies wat we doen, wat
               er komt en wanneer je iets kunt verwachten.
             </p>
@@ -1175,7 +1185,7 @@ function Faq() {
     <section id="faq" className="scroll-mt-20 bg-slate-50/70 px-6 py-24">
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <div className="text-center">
+          <div className="max-w-2xl">
             <Eyebrow className="mb-3 text-indigo-600">Veelgestelde vragen</Eyebrow>
             <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
               Alles wat je wil weten
@@ -1183,7 +1193,7 @@ function Faq() {
           </div>
         </Reveal>
         <Reveal>
-          <div className="mx-auto mt-12 max-w-3xl overflow-hidden rounded-3xl border border-slate-200/80 bg-white">
+          <div className="mt-12 max-w-3xl overflow-hidden rounded-3xl border border-slate-200/80 bg-white">
             {items.map((it, i) => {
               const isOpen = open === i;
               return (
