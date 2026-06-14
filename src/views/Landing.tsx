@@ -212,6 +212,14 @@ function Hero({ onSignup }: { onSignup: () => void }) {
       />
       <div
         aria-hidden
+        className="kaspio-glow-2 pointer-events-none absolute left-1/2 top-[-40px] h-[420px] w-[420px] -translate-x-[60%] rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle at center, rgba(16,185,129,0.18) 0%, transparent 65%)",
+        }}
+      />
+      <div
+        aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.4]"
         style={{
           backgroundImage:
