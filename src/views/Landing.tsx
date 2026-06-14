@@ -204,10 +204,10 @@ function Hero({ onSignup }: { onSignup: () => void }) {
       {/* soft brand glow + faint grid */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-[-120px] mx-auto h-[560px] w-[920px] max-w-full -translate-y-10"
+        className="kaspio-glow pointer-events-none absolute inset-x-0 top-[-120px] mx-auto h-[560px] w-[920px] max-w-full"
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(79,70,229,0.14) 0%, rgba(16,185,129,0.06) 38%, transparent 70%)",
+            "radial-gradient(ellipse at center, rgba(79,70,229,0.16) 0%, rgba(16,185,129,0.07) 38%, transparent 70%)",
         }}
       />
       <div
@@ -742,9 +742,9 @@ function Features() {
           </div>
         </Reveal>
 
-        <div className="mt-14 grid auto-rows-[1fr] gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:auto-rows-[minmax(0,210px)]">
           {/* hero feature tile */}
-          <Reveal className="h-full sm:col-span-2 sm:row-span-2" >
+          <Reveal className="h-full sm:col-span-2 sm:row-span-2">
             <div className="flex h-full flex-col justify-between overflow-hidden rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-600 to-indigo-700 p-7 text-white shadow-lg shadow-indigo-600/20">
               <div>
                 <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-white backdrop-blur">
