@@ -1,7 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { Mark } from "../components/Logo";
 import { useForceLight } from "../theme";
+
+// Scroll-reveal: observeert alle .reveal-elementen en zet .is-in zodra ze
+// in beeld komen (eenmalig). Respecteert prefers-reduced-motion via CSS.
+function useScrollReveal() {
+  useEffect(() => {
+    const els = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
+    if (els.length === 0) return;
+    // Pas nu JS draait de hide-default activeren (anders blijft content zichtbaar).
+    document.documentElement.classList.add("reveal-ready");
+    const io = new IntersectionObserver(
+      (entries, obs) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add("is-in");
+            obs.unobserve(e.target);
+          }
+        }
+      },
+      { rootMargin: "0px 0px -10% 0px", threshold: 0.1 },
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+}
 
 // =============================================================================
 // Warm & menselijk landing-palet (verfrist t.o.v. het koele SaaS-grijs).
@@ -25,6 +49,7 @@ type Props = {
 
 export function Landing({ onLogin, onSignup, onExitPreview }: Props) {
   useForceLight();
+  useScrollReveal();
   return (
     <div className="min-h-screen text-ink" style={{ backgroundColor: CREAM }}>
       {onExitPreview && <PreviewBar onExit={onExitPreview} />}
@@ -108,58 +133,63 @@ function Header({ onLogin, onSignup }: Props) {
 
 function Hero({ onSignup }: { onSignup: () => void }) {
   return (
-    <section className="relative overflow-hidden px-6 pb-20 pt-20 sm:pt-24">
-      {/* Warme, zachte gloed achter de hero */}
+    <section className="relative overflow-hidden px-6 pb-24 pt-14 sm:pt-20">
+      {/* Warme, zachte gloed rechtsboven achter het asset */}
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-[-120px] h-[560px] w-[820px] -translate-x-1/2 rounded-full opacity-70 blur-3xl"
+        className="pointer-events-none absolute right-[-160px] top-[-140px] h-[620px] w-[760px] rounded-full opacity-70 blur-3xl"
         style={{
           background:
-            "radial-gradient(closest-side, rgba(239,159,39,0.18), rgba(29,158,117,0.10) 55%, transparent 80%)",
+            "radial-gradient(closest-side, rgba(239,159,39,0.20), rgba(29,158,117,0.10) 55%, transparent 80%)",
         }}
       />
-      <div className="relative mx-auto max-w-3xl text-center">
-        <div
-          className="mb-6 inline-flex items-center gap-2 rounded-full border bg-white px-4 py-1.5 text-xs font-semibold text-[#0F6E56]"
-          style={{ borderColor: LINE }}
-        >
-          <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-teal-500" />
-          Gemaakt in België voor clubs, verenigingen en teams
-        </div>
-
-        <h1 className="font-display mx-auto max-w-2xl text-balance text-4xl font-semibold leading-[1.05] text-ink sm:text-5xl lg:text-6xl">
-          Eén rekening, overzicht voor{" "}
-          <span className="text-teal-600">iedereen</span>
-        </h1>
-
-        <p className="mx-auto mb-9 mt-6 max-w-xl text-lg leading-relaxed text-ink-muted">
-          Kaspio verdeelt het geld op jullie bankrekening in virtuele potjes,
-          per persoon, per ploeg of per doel. Geen extra rekeningen, geen
-          Excel-gepuzzel, gewoon rust in de kas.
-        </p>
-
-        <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <button
-            onClick={onSignup}
-            className="w-full rounded-full bg-teal-500 px-7 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_-8px_rgba(29,158,117,0.6)] transition duration-200 hover:-translate-y-0.5 hover:bg-teal-600 active:translate-y-0 active:scale-[0.98] sm:w-auto"
-          >
-            Gratis starten →
-          </button>
-          <a
-            href="#hoe"
-            className="w-full rounded-full border bg-white px-7 py-3.5 text-base font-semibold text-ink transition hover:-translate-y-0.5 hover:border-teal-300 sm:w-auto"
+      <div className="relative mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.04fr_0.96fr] lg:gap-12">
+        {/* Tekst links (gecentreerd op mobiel) */}
+        <div className="hero-rise text-center lg:text-left">
+          <div
+            className="mb-6 inline-flex items-center gap-2 rounded-full border bg-white px-4 py-1.5 text-xs font-semibold text-[#0F6E56]"
             style={{ borderColor: LINE }}
           >
-            Bekijk hoe het werkt
-          </a>
-        </div>
-        <p className="mt-4 text-sm text-ink-light">
-          Gratis starten · geen kaart nodig · klaar in een paar minuten
-        </p>
-      </div>
+            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-teal-500" />
+            Gemaakt in België voor clubs en verenigingen
+          </div>
 
-      <div className="relative mx-auto mt-16 max-w-4xl">
-        <HeroMockup />
+          <h1 className="font-display text-balance text-[2.75rem] font-semibold leading-[1.02] text-ink sm:text-6xl lg:text-[4.25rem]">
+            Eén rekening,
+            <br />
+            overzicht voor{" "}
+            <span className="text-teal-600">iedereen</span>
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-md text-pretty text-lg leading-relaxed text-ink-muted lg:mx-0">
+            Verdeel het geld op jullie bankrekening in virtuele potjes, per
+            persoon, ploeg of doel. Geen extra rekeningen, geen Excel-gepuzzel.
+          </p>
+
+          <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
+            <button
+              onClick={onSignup}
+              className="w-full rounded-full bg-teal-500 px-7 py-3.5 text-base font-bold text-white shadow-[0_10px_28px_-10px_rgba(29,158,117,0.65)] transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-teal-600 active:translate-y-0 active:scale-[0.98] sm:w-auto"
+            >
+              Gratis starten →
+            </button>
+            <a
+              href="#hoe"
+              className="w-full rounded-full border bg-white px-7 py-3.5 text-base font-semibold text-ink transition duration-200 ease-out hover:-translate-y-0.5 hover:border-teal-300 active:translate-y-0 active:scale-[0.98] sm:w-auto"
+              style={{ borderColor: LINE }}
+            >
+              Bekijk hoe het werkt
+            </a>
+          </div>
+          <p className="mt-5 text-sm text-ink-light">
+            Gratis · geen kaart nodig · klaar in een paar minuten
+          </p>
+        </div>
+
+        {/* Mockup rechts, licht overhangend, eigen entrance */}
+        <div className="hero-rise-asset relative lg:-mr-6 xl:-mr-16">
+          <HeroMockup />
+        </div>
       </div>
     </section>
   );
@@ -439,7 +469,7 @@ function SectionHeading({
   center?: boolean;
 }) {
   return (
-    <div className={center ? "text-center" : ""}>
+    <div className={`reveal ${center ? "text-center" : ""}`}>
       <h2 className="font-display text-balance text-3xl font-semibold text-ink sm:text-[2.5rem] sm:leading-[1.1]">
         {title}
       </h2>

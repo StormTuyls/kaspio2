@@ -71,9 +71,66 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Sterke ease-out curve (emil-design-eng): de ingebouwde CSS-easings missen punch. */
+:root {
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Scroll-reveal: secties stijgen subtiel op bij in-view (IntersectionObserver
+   zet .is-in). Alleen actief NA dat JS de .reveal-ready-klasse zet, zodat
+   content zonder JS / in headless renderers gewoon zichtbaar blijft. */
+.reveal-ready .reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 700ms var(--ease-out-strong),
+    transform 700ms var(--ease-out-strong);
+}
+.reveal-ready .reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Hero entrance-stagger: kinderen rijzen na elkaar op bij load. */
+@keyframes kaspio-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hero-rise > * {
+  animation: kaspio-rise 700ms var(--ease-out-strong) both;
+}
+.hero-rise > *:nth-child(1) { animation-delay: 60ms; }
+.hero-rise > *:nth-child(2) { animation-delay: 130ms; }
+.hero-rise > *:nth-child(3) { animation-delay: 200ms; }
+.hero-rise > *:nth-child(4) { animation-delay: 270ms; }
+.hero-rise > *:nth-child(5) { animation-delay: 340ms; }
+
+/* Hero-asset (mockup) komt iets later op dan de tekst. */
+.hero-rise-asset {
+  animation: kaspio-rise 800ms var(--ease-out-strong) both;
+  animation-delay: 300ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .hero-rise > * {
+    animation: none;
+  }
+  .hero-rise-asset {
+    animation: none;
   }
 }
 
