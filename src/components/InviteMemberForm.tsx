@@ -26,7 +26,7 @@ export function InviteMemberForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{
     email: string;
-    code?: string;
+    inviteLink?: string;
     emailSent?: boolean;
   } | null>(null);
 
@@ -53,7 +53,7 @@ export function InviteMemberForm({
     }
     setSuccess({
       email: email.trim(),
-      code: res.betaCode,
+      inviteLink: res.inviteLink,
       emailSent: res.emailSent,
     });
     setEmail("");
@@ -67,8 +67,8 @@ export function InviteMemberForm({
           Iemand uitnodigen
         </h2>
         <p className="text-sm text-navy-500 dark:text-navy-300">
-          Vul email + rol in. Bij hun eerste login wordt automatisch lid
-          gemaakt met de juiste toegang.
+          Vul email + rol in. Je krijgt een persoonlijke uitnodigingslink om
+          door te sturen, wie hem opent wordt meteen lid met de juiste toegang.
         </p>
 
         <label className="block">
@@ -156,7 +156,7 @@ export function InviteMemberForm({
         {success && (
           <SuccessBox
             email={success.email}
-            code={success.code}
+            inviteLink={success.inviteLink}
             emailSent={success.emailSent}
           />
         )}
@@ -194,13 +194,16 @@ export function InviteMemberForm({
                     </div>
                   </div>
                   {!accepted && (
-                    <button
-                      type="button"
-                      onClick={() => onRevoke(inv.id)}
-                      className="text-xs font-semibold text-rose-600 hover:underline"
-                    >
-                      Intrekken
-                    </button>
+                    <div className="flex flex-shrink-0 items-center gap-3">
+                      {inv.token && <CopyLinkButton token={inv.token} email={inv.email} />}
+                      <button
+                        type="button"
+                        onClick={() => onRevoke(inv.id)}
+                        className="text-xs font-semibold text-rose-600 hover:underline"
+                      >
+                        Intrekken
+                      </button>
+                    </div>
                   )}
                 </li>
               );
@@ -214,38 +217,43 @@ export function InviteMemberForm({
 
 function SuccessBox({
   email,
-  code,
+  inviteLink,
   emailSent,
 }: {
   email: string;
-  code?: string;
+  inviteLink?: string;
   emailSent?: boolean;
 }) {
-  const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedTemplate, setCopiedTemplate] = useState(false);
 
-  async function copyTemplate() {
-    const text = code
-      ? [
-          `Hoi,`,
-          ``,
-          `Ik heb je uitgenodigd voor onze Kaspio-organisatie.`,
-          ``,
-          `Maak je account aan op https://kaspio.be met dit emailadres (${email}).`,
-          ``,
-          `Je beta-toegangscode: ${code}`,
-          ``,
-          `Tot binnenkort!`,
-        ].join("\n")
-      : `Ik heb je uitgenodigd op Kaspio. Maak je account aan op https://kaspio.be met ${email}.`;
-
+  async function copy(text: string, which: "link" | "template") {
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (which === "link") {
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2000);
+      } else {
+        setCopiedTemplate(true);
+        setTimeout(() => setCopiedTemplate(false), 2000);
+      }
     } catch {
       // clipboard blocked
     }
   }
+
+  const template = inviteLink
+    ? [
+        `Hoi,`,
+        ``,
+        `Ik heb je uitgenodigd voor onze Kaspio-organisatie.`,
+        ``,
+        `Klik op deze link om je account aan te maken en meteen lid te worden:`,
+        inviteLink,
+        ``,
+        `Tot binnenkort!`,
+      ].join("\n")
+    : "";
 
   return (
     <div className="rounded-lg border border-teal-200 bg-teal-50 px-4 py-4 text-sm text-teal-800 dark:border-teal-800 dark:bg-teal-900/20 dark:text-teal-200">
@@ -254,33 +262,66 @@ function SuccessBox({
           ? `✓ Uitnodigingsmail verstuurd naar ${email}`
           : `✓ Uitnodiging klaar voor ${email}`}
       </div>
-      {code ? (
+      {inviteLink ? (
         <>
           <p className="mb-3">
             {emailSent
-              ? "De beta-code staat al in de mail. Hieronder als backup, voor het geval je 'm zelf wil doorsturen."
-              : "Stuur deze beta-code mee in je mail. Zonder code kunnen ze geen account aanmaken."}
+              ? "De link staat al in de mail. Hieronder als backup, voor het geval je 'm zelf wil doorsturen."
+              : "Stuur deze persoonlijke link door. Wie hem opent maakt een account aan en wordt meteen lid van deze organisatie. Geen aparte code nodig."}
           </p>
-          <div className="mb-3 rounded-md bg-white px-3 py-2 font-mono text-base font-bold tracking-wider text-teal-700 dark:bg-navy-900 dark:text-teal-300">
-            {code}
+          <div className="mb-3 break-all rounded-md bg-white px-3 py-2 font-mono text-xs text-teal-700 dark:bg-navy-900 dark:text-teal-300">
+            {inviteLink}
           </div>
-          {!emailSent && (
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={copyTemplate}
+              onClick={() => copy(inviteLink, "link")}
               className="btn-secondary text-xs"
             >
-              {copied ? "✓ Gekopieerd" : "Kopieer mail-template"}
+              {copiedLink ? "✓ Gekopieerd" : "Kopieer link"}
             </button>
-          )}
+            <button
+              type="button"
+              onClick={() => copy(template, "template")}
+              className="btn-secondary text-xs"
+            >
+              {copiedTemplate ? "✓ Gekopieerd" : "Kopieer mail-template"}
+            </button>
+          </div>
         </>
       ) : (
         <p>
-          Stuur hen een mailtje met de uitnodiging via{" "}
+          Uitnodiging aangemaakt. Herlaad even om de link op te halen, of stuur
+          hen handmatig naar{" "}
           <code className="rounded bg-teal-100 px-1 dark:bg-teal-900/40">kaspio.be</code>.
         </p>
       )}
     </div>
+  );
+}
+
+function CopyLinkButton({ token, email }: { token: string; email?: string }) {
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    const link =
+      `${window.location.origin}/?invite=${encodeURIComponent(token)}` +
+      (email ? `&email=${encodeURIComponent(email)}` : "");
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard blocked
+    }
+  }
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      className="text-xs font-semibold text-teal-700 hover:underline dark:text-teal-300"
+    >
+      {copied ? "✓ Gekopieerd" : "Kopieer link"}
+    </button>
   );
 }
 
