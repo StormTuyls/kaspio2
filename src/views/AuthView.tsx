@@ -6,7 +6,6 @@ import {
   resetPasswordForEmail,
   signInWithPassword,
   signUpWithPassword,
-  supabase,
 } from "../supabase";
 
 type Mode = "login" | "signup";
@@ -22,11 +21,10 @@ type Props = {
   onAuth: () => void;
   onBack: () => void;
   onDismissError?: () => void;
-  /** Vooraf ingevuld via invite-link (email + beta-code). */
+  /** Vooraf ingevuld via org-invite-link. */
   prefillEmail?: string;
-  prefillCode?: string;
   /** Gezet bij een geldige org-invite-link: naam van de org waar je lid van
-   *  wordt. Schakelt de signup over naar "word lid"-modus (geen beta-code). */
+   *  wordt. Toont een "word lid van X"-banner. */
   orgInviteName?: string;
 };
 
@@ -43,7 +41,6 @@ export function AuthView({
   onBack,
   onDismissError,
   prefillEmail,
-  prefillCode,
   orgInviteName,
 }: Props) {
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -133,12 +130,7 @@ export function AuthView({
                   startInForgotMode={authError?.kind === "expired"}
                 />
               ) : (
-                <SignupForm
-                  onAuth={onAuth}
-                  prefillEmail={prefillEmail}
-                  prefillCode={prefillCode}
-                  orgInviteName={orgInviteName}
-                />
+                <SignupForm onAuth={onAuth} prefillEmail={prefillEmail} />
               )}
             </div>
 
@@ -409,51 +401,24 @@ function LoginForm({
 function SignupForm({
   onAuth,
   prefillEmail,
-  prefillCode,
-  orgInviteName,
 }: {
   onAuth: () => void;
   prefillEmail?: string;
-  prefillCode?: string;
-  orgInviteName?: string;
 }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState(prefillEmail ?? "");
   const [password, setPassword] = useState("");
-  const [inviteCode, setInviteCode] = useState(prefillCode ?? "");
   const [status, setStatus] = useState<"idle" | "busy" | "confirm-needed">(
     "idle",
   );
   const [error, setError] = useState<string | null>(null);
-
-  // Bij een org-invite-link is de token zelf de toegang: geen aparte beta-code,
-  // en de koppeling aan de org gebeurt bij login via redeem_org_invite().
-  const isOrgInvite = Boolean(orgInviteName);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setStatus("busy");
     try {
-      // Beta-code stap: alleen voor niet-uitgenodigde signups. Een geldige
-      // org-invite-link vervangt deze gate volledig.
-      if (!isOrgInvite) {
-        const { data: inviteResult, error: inviteErr } = await supabase.rpc(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          "consume_invite" as any,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          { p_code: inviteCode.trim().toUpperCase(), p_email: email.trim() } as any,
-        );
-        if (inviteErr) throw inviteErr;
-        const inviteStatus = inviteResult as string;
-        if (inviteStatus !== "ok") {
-          setStatus("idle");
-          setError(translateInviteError(inviteStatus));
-          return;
-        }
-      }
-
-      // Step 2: create the Supabase Auth user. We maken hier GEEN organisatie aan.
+      // Maak de Supabase Auth user aan. We maken hier GEEN organisatie aan.
       // Was je uitgenodigd voor een bestaande org, dan koppelt accept_pending_invites
       // je automatisch bij login. Heb je geen org, dan toont de app het
       // onboarding-scherm om je eerste organisatie aan te maken.
@@ -522,24 +487,6 @@ function SignupForm({
           className={inputCls}
         />
       </Field>
-      {!isOrgInvite && (
-        <Field
-          label="Invite code"
-          hint="Kaspio is in gesloten bèta. Geen code? Mail storm@kaspio.be."
-        >
-          <input
-            type="text"
-            value={inviteCode}
-            onChange={(e) => setInviteCode(e.target.value)}
-            required
-            placeholder="KASP-XXXXXX"
-            autoCapitalize="characters"
-            autoComplete="off"
-            spellCheck={false}
-            className={`${inputCls} font-num uppercase tracking-wider`}
-          />
-        </Field>
-      )}
       {error && <ErrorBox>{error}</ErrorBox>}
       <button
         type="submit"
@@ -589,21 +536,6 @@ function ErrorBox({ children }: { children: ReactNode }) {
       {children}
     </div>
   );
-}
-
-function translateInviteError(status: string): string {
-  switch (status) {
-    case "not_found":
-      return "Onbekende invite code. Check je mail of vraag een nieuwe aan.";
-    case "expired":
-      return "Deze invite code is verlopen.";
-    case "exhausted":
-      return "Deze invite code is al gebruikt.";
-    case "email_mismatch":
-      return "Deze invite code is gekoppeld aan een ander e-mailadres.";
-    default:
-      return `Invite code probleem: ${status}`;
-  }
 }
 
 function translateError(err: unknown): string {

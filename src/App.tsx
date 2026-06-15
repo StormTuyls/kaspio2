@@ -186,7 +186,6 @@ function App() {
         initialMode={publicView === "login" ? "login" : "signup"}
         authError={authError}
         prefillEmail={orgInvite?.email ?? invitePrefill?.email}
-        prefillCode={orgInvite ? undefined : invitePrefill?.code}
         orgInviteName={orgInvite?.orgName}
         onAuth={() => {
           // useSession picks up the new session via onAuthStateChange.
