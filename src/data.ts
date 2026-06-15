@@ -748,7 +748,7 @@ export function useOrgInvites(orgId: string | null) {
     if (orgInviteError) return { error: orgInviteError.message };
 
     const token = tokenData as string;
-    const inviteLink = `${window.location.origin}/?invite=${encodeURIComponent(token)}`;
+    const inviteLink = `${window.location.origin}/?invite=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
 
     // 2. Probeer de uitnodigingsmail te versturen via de Edge Function.
     //    Best-effort: faalt dit (Resend/functie nog niet live), dan deelt de

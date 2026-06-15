@@ -195,7 +195,7 @@ export function InviteMemberForm({
                   </div>
                   {!accepted && (
                     <div className="flex flex-shrink-0 items-center gap-3">
-                      {inv.token && <CopyLinkButton token={inv.token} />}
+                      {inv.token && <CopyLinkButton token={inv.token} email={inv.email} />}
                       <button
                         type="button"
                         onClick={() => onRevoke(inv.id)}
@@ -300,10 +300,12 @@ function SuccessBox({
   );
 }
 
-function CopyLinkButton({ token }: { token: string }) {
+function CopyLinkButton({ token, email }: { token: string; email?: string }) {
   const [copied, setCopied] = useState(false);
   async function copy() {
-    const link = `${window.location.origin}/?invite=${encodeURIComponent(token)}`;
+    const link =
+      `${window.location.origin}/?invite=${encodeURIComponent(token)}` +
+      (email ? `&email=${encodeURIComponent(email)}` : "");
     try {
       await navigator.clipboard.writeText(link);
       setCopied(true);
