@@ -1,11 +1,11 @@
 // =============================================================================
 // send-invite-email , Supabase Edge Function
 // =============================================================================
-// Verstuurt een uitnodigingsmail (met beta-code + signup-link) via Resend
-// wanneer een admin iemand uitnodigt voor een organisatie.
+// Verstuurt een uitnodigingsmail (met org-invite-link) via Resend wanneer een
+// admin iemand uitnodigt voor een organisatie.
 //
 // Wordt aangeroepen vanuit de frontend via supabase.functions.invoke(
-//   "send-invite-email", { body: { email, betaCode, orgName, inviterName, role } }
+//   "send-invite-email", { body: { email, inviteLink, orgName, inviterName, role } }
 // ). Edge Functions verifiëren standaard de JWT, dus alleen ingelogde users
 // kunnen 'm aanroepen.
 //
@@ -25,7 +25,7 @@ const corsHeaders = {
 
 type Payload = {
   email?: string;
-  betaCode?: string;
+  inviteLink?: string;
   orgName?: string;
   inviterName?: string;
   role?: string;
@@ -69,7 +69,7 @@ Deno.serve(async (req: Request) => {
 
     const body = (await req.json()) as Payload;
     const email = (body.email ?? "").trim().toLowerCase();
-    const betaCode = (body.betaCode ?? "").trim();
+    const inviteLink = (body.inviteLink ?? "").trim();
     const orgName = (body.orgName ?? "een organisatie").trim();
     const inviterName = (body.inviterName ?? "").trim();
     const role = body.role;
@@ -80,25 +80,16 @@ Deno.serve(async (req: Request) => {
 
     const safeOrg = escapeHtml(orgName);
     const safeInviter = inviterName ? escapeHtml(inviterName) : "";
-    const safeCode = escapeHtml(betaCode);
     const rol = roleLabel(role);
 
-    // Directe signup-link met code + email vooraf ingevuld. De frontend leest
-    // ?invite= en &email= uit de URL en vult het aanmeldformulier in.
-    const signupUrl = betaCode
-      ? `${appUrl}/?invite=${encodeURIComponent(betaCode)}&email=${encodeURIComponent(email)}`
-      : appUrl;
+    // De org-invite-link (token) is de toegang: account aanmaken + meteen lid
+    // worden van precies deze org. Geen aparte code nodig.
+    const signupUrl = inviteLink || appUrl;
     const safeSignupUrl = escapeHtml(signupUrl);
 
     const intro = safeInviter
       ? `${safeInviter} heeft je uitgenodigd voor <strong>${safeOrg}</strong> op Kaspio`
       : `Je bent uitgenodigd voor <strong>${safeOrg}</strong> op Kaspio`;
-
-    const codeBlock = betaCode
-      ? `
-        <p style="margin:0 0 8px;color:#475672;font-size:14px;">Je hebt deze beta-code nodig om een account aan te maken:</p>
-        <div style="margin:0 0 20px;padding:14px 18px;background:#E1F5EE;border-radius:10px;font-family:monospace;font-size:20px;font-weight:700;letter-spacing:2px;color:#0F6E56;text-align:center;">${safeCode}</div>`
-      : "";
 
     const html = `<!doctype html>
 <html lang="nl">
@@ -109,14 +100,13 @@ Deno.serve(async (req: Request) => {
       <p style="margin:0 0 20px;color:#455672;font-size:15px;line-height:1.5;">
         ${intro} als <strong>${rol}</strong>.
       </p>
-      ${codeBlock}
-      <a href="${safeSignupUrl}" style="display:inline-block;background:#1D9E75;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 22px;border-radius:10px;">
-        Account aanmaken
+      <a href="${safeSignupUrl}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 22px;border-radius:10px;">
+        Word lid van ${safeOrg}
       </a>
       <p style="margin:20px 0 0;color:#647691;font-size:13px;line-height:1.5;">
-        De knop opent het aanmeldformulier met je e-mailadres en code al
-        ingevuld, en koppelt je automatisch aan ${safeOrg}. Werkt de knop niet,
-        ga dan naar <a href="${escapeHtml(appUrl)}" style="color:#168566;">${appUrl.replace(/^https?:\/\//, "")}</a>.
+        De knop opent het aanmeldformulier en koppelt je meteen aan ${safeOrg}.
+        Werkt de knop niet, kopieer dan deze link:<br />
+        <a href="${safeSignupUrl}" style="color:#4338ca;word-break:break-all;">${safeSignupUrl}</a>
       </p>
     </div>
     <p style="margin:16px 0 0;text-align:center;color:#95a3b6;font-size:12px;">
