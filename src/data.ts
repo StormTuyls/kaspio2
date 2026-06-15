@@ -665,6 +665,8 @@ export type OrgInvite = {
   pot_id: string | null;
   /** Nieuwe multi-pot toewijzing. */
   pot_ids: string[] | null;
+  /** Org-specifieke invite-token (basis van de deelbare link). */
+  token: string | null;
   invited_by: string | null;
   accepted_at: string | null;
   accepted_by: string | null;
@@ -684,10 +686,18 @@ export type InviteInput = {
 
 export type InviteResult = {
   error: string | null;
-  /** Beta invite code die de admin moet doorsturen aan de uitgenodigde. */
-  betaCode?: string;
+  /** Org-specifieke invite-link die de admin doorstuurt aan de uitgenodigde. */
+  inviteLink?: string;
   /** True als de uitnodigingsmail automatisch verstuurd is via de Edge Function. */
   emailSent?: boolean;
+};
+
+/** Resultaat van lookup_org_invite: validatie + prefill voor het signup-scherm. */
+export type OrgInviteLookup = {
+  status: "ok" | "not_found" | "expired" | "accepted";
+  email?: string;
+  role?: MemberRole;
+  orgName?: string;
 };
 
 export function useOrgInvites(orgId: string | null) {
@@ -719,8 +729,10 @@ export function useOrgInvites(orgId: string | null) {
     if (!orgId) return { error: "Geen organisatie geselecteerd." };
     const email = input.email.trim().toLowerCase();
 
-    // 1. Maak de org-invite (rol + pot-toewijzing)
-    const { error: orgInviteError } = await supabase.rpc(
+    // 1. Maak de org-invite met een unieke token (rol + pot-toewijzing).
+    //    De token IS de uitnodiging: hij koppelt aan precies deze org en
+    //    vervangt de aparte beta-code.
+    const { data: tokenData, error: orgInviteError } = await supabase.rpc(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       "create_org_invite" as any,
       {
@@ -732,33 +744,15 @@ export function useOrgInvites(orgId: string | null) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
     );
+    await fetchInvites();
     if (orgInviteError) return { error: orgInviteError.message };
 
-    // 2. Genereer automatisch een beta-invite-code voor diezelfde email,
-    //    zodat de admin niet apart in SQL Editor hoeft te werken.
-    const { data: codeData, error: codeError } = await supabase.rpc(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      "create_invite" as any,
-      {
-        p_email: email,
-        p_note: `Auto-generated bij org-invite naar ${email}`,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any,
-    );
-    await fetchInvites();
-    if (codeError) {
-      // Org invite is gemaakt, beta code niet. Geen kritieke fout maar wel warnen.
-       
-      console.warn("[Kaspio] Beta-invite-code niet gegenereerd:", codeError.message);
-      return { error: null };
-    }
+    const token = tokenData as string;
+    const inviteLink = `${window.location.origin}/?invite=${encodeURIComponent(token)}`;
 
-    const betaCode = codeData as string;
-
-    // 3. Probeer de uitnodigingsmail automatisch te versturen via de Edge
-    //    Function. ADDITIEF: faalt dit (Resend niet geconfigureerd, functie niet
-    //    gedeployed, etc.), dan blijft de manuele flow werken , de admin krijgt
-    //    nog steeds de betaCode terug om zelf door te sturen.
+    // 2. Probeer de uitnodigingsmail te versturen via de Edge Function.
+    //    Best-effort: faalt dit (Resend/functie nog niet live), dan deelt de
+    //    admin de link gewoon zelf , die werkt sowieso.
     let emailSent = false;
     try {
       const { data: mailData, error: mailError } = await supabase.functions.invoke(
@@ -766,7 +760,7 @@ export function useOrgInvites(orgId: string | null) {
         {
           body: {
             email,
-            betaCode,
+            inviteLink,
             role: input.role,
             orgName: input.orgName ?? "",
             inviterName: input.inviterName ?? "",
@@ -774,17 +768,17 @@ export function useOrgInvites(orgId: string | null) {
         },
       );
       if (mailError) {
-         
+
         console.warn("[Kaspio] Uitnodigingsmail niet verstuurd:", mailError.message);
       } else if ((mailData as { ok?: boolean } | null)?.ok) {
         emailSent = true;
       }
     } catch (err) {
-       
+
       console.warn("[Kaspio] send-invite-email niet bereikbaar:", err);
     }
 
-    return { error: null, betaCode, emailSent };
+    return { error: null, inviteLink, emailSent };
   }
 
   async function revokeInvite(id: string): Promise<{ error: string | null }> {
@@ -815,6 +809,45 @@ export async function acceptPendingInvites(): Promise<number> {
     return 0;
   }
   return (data as number) ?? 0;
+}
+
+// =============================================================================
+// Token-gebaseerde org-invites (nieuwe flow)
+// =============================================================================
+
+/** Valideer een org-invite-token (anon-safe) + haal prefill-info op. */
+export async function lookupOrgInvite(token: string): Promise<OrgInviteLookup> {
+  const { data, error } = await supabase.rpc(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    "lookup_org_invite" as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { p_token: token } as any,
+  );
+  if (error || !data) return { status: "not_found" };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const d = data as any;
+  return {
+    status: d.status,
+    email: d.email ?? undefined,
+    role: d.role ?? undefined,
+    orgName: d.org_name ?? undefined,
+  };
+}
+
+/** Verzilver een org-invite-token: koppelt de ingelogde user aan die org. */
+export async function redeemOrgInvite(token: string): Promise<string> {
+  const { data, error } = await supabase.rpc(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    "redeem_org_invite" as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { p_token: token } as any,
+  );
+  if (error) {
+
+    console.warn("[Kaspio] redeem_org_invite failed:", error.message);
+    return "error";
+  }
+  return (data as string) ?? "error";
 }
 
 // =============================================================================

@@ -25,6 +25,9 @@ type Props = {
   /** Vooraf ingevuld via invite-link (email + beta-code). */
   prefillEmail?: string;
   prefillCode?: string;
+  /** Gezet bij een geldige org-invite-link: naam van de org waar je lid van
+   *  wordt. Schakelt de signup over naar "word lid"-modus (geen beta-code). */
+  orgInviteName?: string;
 };
 
 // Gedeelde class-strings zodat de hele auth-flow dezelfde iris/emerald-look heeft.
@@ -41,6 +44,7 @@ export function AuthView({
   onDismissError,
   prefillEmail,
   prefillCode,
+  orgInviteName,
 }: Props) {
   const [mode, setMode] = useState<Mode>(initialMode);
 
@@ -107,6 +111,22 @@ export function AuthView({
                 <AuthErrorBanner error={authError} onDismiss={onDismissError} />
               )}
 
+              {orgInviteName && (
+                <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-3 text-sm text-indigo-800 dark:border-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-200">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden>
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M22 11h-6M19 8v6" />
+                  </svg>
+                  <span>
+                    Je bent uitgenodigd voor <strong>{orgInviteName}</strong>.
+                    {mode === "login"
+                      ? " Log in en je wordt automatisch lid."
+                      : " Maak je account aan en je wordt automatisch lid."}
+                  </span>
+                </div>
+              )}
+
               {mode === "login" ? (
                 <LoginForm
                   onAuth={onAuth}
@@ -117,6 +137,7 @@ export function AuthView({
                   onAuth={onAuth}
                   prefillEmail={prefillEmail}
                   prefillCode={prefillCode}
+                  orgInviteName={orgInviteName}
                 />
               )}
             </div>
@@ -389,10 +410,12 @@ function SignupForm({
   onAuth,
   prefillEmail,
   prefillCode,
+  orgInviteName,
 }: {
   onAuth: () => void;
   prefillEmail?: string;
   prefillCode?: string;
+  orgInviteName?: string;
 }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState(prefillEmail ?? "");
@@ -403,24 +426,31 @@ function SignupForm({
   );
   const [error, setError] = useState<string | null>(null);
 
+  // Bij een org-invite-link is de token zelf de toegang: geen aparte beta-code,
+  // en de koppeling aan de org gebeurt bij login via redeem_org_invite().
+  const isOrgInvite = Boolean(orgInviteName);
+
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setStatus("busy");
     try {
-      // Step 1: validate + consume invite code atomically
-      const { data: inviteResult, error: inviteErr } = await supabase.rpc(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        "consume_invite" as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        { p_code: inviteCode.trim().toUpperCase(), p_email: email.trim() } as any,
-      );
-      if (inviteErr) throw inviteErr;
-      const inviteStatus = inviteResult as string;
-      if (inviteStatus !== "ok") {
-        setStatus("idle");
-        setError(translateInviteError(inviteStatus));
-        return;
+      // Beta-code stap: alleen voor niet-uitgenodigde signups. Een geldige
+      // org-invite-link vervangt deze gate volledig.
+      if (!isOrgInvite) {
+        const { data: inviteResult, error: inviteErr } = await supabase.rpc(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          "consume_invite" as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          { p_code: inviteCode.trim().toUpperCase(), p_email: email.trim() } as any,
+        );
+        if (inviteErr) throw inviteErr;
+        const inviteStatus = inviteResult as string;
+        if (inviteStatus !== "ok") {
+          setStatus("idle");
+          setError(translateInviteError(inviteStatus));
+          return;
+        }
       }
 
       // Step 2: create the Supabase Auth user. We maken hier GEEN organisatie aan.
@@ -492,22 +522,24 @@ function SignupForm({
           className={inputCls}
         />
       </Field>
-      <Field
-        label="Invite code"
-        hint="Kaspio is in gesloten bèta. Geen code? Mail storm@kaspio.be."
-      >
-        <input
-          type="text"
-          value={inviteCode}
-          onChange={(e) => setInviteCode(e.target.value)}
-          required
-          placeholder="KASP-XXXXXX"
-          autoCapitalize="characters"
-          autoComplete="off"
-          spellCheck={false}
-          className={`${inputCls} font-num uppercase tracking-wider`}
-        />
-      </Field>
+      {!isOrgInvite && (
+        <Field
+          label="Invite code"
+          hint="Kaspio is in gesloten bèta. Geen code? Mail storm@kaspio.be."
+        >
+          <input
+            type="text"
+            value={inviteCode}
+            onChange={(e) => setInviteCode(e.target.value)}
+            required
+            placeholder="KASP-XXXXXX"
+            autoCapitalize="characters"
+            autoComplete="off"
+            spellCheck={false}
+            className={`${inputCls} font-num uppercase tracking-wider`}
+          />
+        </Field>
+      )}
       {error && <ErrorBox>{error}</ErrorBox>}
       <button
         type="submit"

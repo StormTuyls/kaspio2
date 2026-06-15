@@ -6,6 +6,8 @@ import { useAppState } from "./storage";
 import {
   acceptPendingInvites,
   groupMembersByUser,
+  lookupOrgInvite,
+  redeemOrgInvite,
   useAuditLog,
   useMyOrgs,
   useOrgInvites,
@@ -74,8 +76,12 @@ function parseHashError(): { kind: AuthErrorKind; description: string } | null {
   return { kind, description: desc.replace(/\+/g, " ") };
 }
 
-// Leest een invite-link (?invite=KASP-XXXX&email=...) uit de URL. De
-// uitnodigingsmail linkt hierheen zodat de signup vooraf ingevuld is.
+// localStorage-sleutel: org-invite-token die nog verzilverd moet worden bij de
+// eerste login (overleeft een e-mailbevestiging / page reload tijdens signup).
+const PENDING_INVITE_TOKEN_KEY = "kaspio.pendingInviteToken";
+
+// Leest een invite-link (?invite=<token>&email=...) uit de URL. De
+// uitnodigingslink wijst hierheen zodat de signup vooraf ingevuld is.
 function parseInviteParams(): { code: string; email: string } | null {
   if (typeof window === "undefined") return null;
   const params = new URLSearchParams(window.location.search);
@@ -93,6 +99,35 @@ function App() {
   const [publicView, setPublicView] = useState<PublicView>(
     invitePrefill ? "signup" : "landing",
   );
+
+  // Org-invite-token uit de link valideren: is dit een geldige org-uitnodiging?
+  // Zo ja, dan tonen we "word lid van <org>" en slaan we de beta-code-stap over.
+  // De token wordt bewaard zodat hij bij de eerste login verzilverd wordt.
+  const [orgInvite, setOrgInvite] = useState<{
+    email?: string;
+    orgName?: string;
+  } | null>(null);
+  useEffect(() => {
+    if (!invitePrefill) return;
+    let active = true;
+    lookupOrgInvite(invitePrefill.code).then((res) => {
+      if (!active) return;
+      if (res.status === "ok") {
+        setOrgInvite({
+          email: res.email ?? invitePrefill.email,
+          orgName: res.orgName,
+        });
+        try {
+          localStorage.setItem(PENDING_INVITE_TOKEN_KEY, invitePrefill.code);
+        } catch {
+          // localStorage geblokkeerd , token wordt dan direct na signup verzilverd
+        }
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [invitePrefill]);
 
   // Recovery-mode initial state: check de URL hash direct (vóór React rendert).
   const [recoveryMode, setRecoveryMode] = useState<boolean>(() => {
@@ -150,8 +185,9 @@ function App() {
       <AuthView
         initialMode={publicView === "login" ? "login" : "signup"}
         authError={authError}
-        prefillEmail={invitePrefill?.email}
-        prefillCode={invitePrefill?.code}
+        prefillEmail={orgInvite?.email ?? invitePrefill?.email}
+        prefillCode={orgInvite ? undefined : invitePrefill?.code}
+        orgInviteName={orgInvite?.orgName}
         onAuth={() => {
           // useSession picks up the new session via onAuthStateChange.
         }}
@@ -180,14 +216,35 @@ function useEnsureOrg(
   useEffect(() => {
     let active = true;
     setProcessing(true);
-    acceptPendingInvites()
-      .then((accepted) => {
-        if (!active) return;
-        if (accepted > 0) onInvitesAccepted();
-      })
-      .finally(() => {
-        if (active) setProcessing(false);
-      });
+    (async () => {
+      let joined = 0;
+
+      // 1. Token-gebaseerde org-invite (nieuwe flow): koppelt aan precies die
+      //    org, los van het e-mailadres waarmee men registreerde.
+      let pendingToken: string | null = null;
+      try {
+        pendingToken = localStorage.getItem(PENDING_INVITE_TOKEN_KEY);
+      } catch {
+        pendingToken = null;
+      }
+      if (pendingToken) {
+        const res = await redeemOrgInvite(pendingToken);
+        try {
+          localStorage.removeItem(PENDING_INVITE_TOKEN_KEY);
+        } catch {
+          // negeer
+        }
+        if (res === "ok") joined += 1;
+      }
+
+      // 2. E-mail-gebaseerde invites (legacy / backward compat).
+      const accepted = await acceptPendingInvites();
+      joined += accepted;
+
+      if (active && joined > 0) onInvitesAccepted();
+    })().finally(() => {
+      if (active) setProcessing(false);
+    });
     return () => {
       active = false;
     };
