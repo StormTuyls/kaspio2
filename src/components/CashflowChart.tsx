@@ -1,11 +1,20 @@
+import { useState } from "react";
 import { formatEuro } from "../storage";
 import type { Transaction } from "../types";
 
 type Props = {
   /** Transacties binnen het bereik van de gebruiker (admin/reader: alle; pot-owner: eigen). */
   transactions: Transaction[];
-  months?: number;
 };
+
+type Period = "day" | "week" | "month" | "year";
+
+const PERIODS: { id: Period; label: string; buckets: number; sub: string }[] = [
+  { id: "day", label: "Dag", buckets: 14, sub: "Laatste 14 dagen" },
+  { id: "week", label: "Week", buckets: 12, sub: "Laatste 12 weken" },
+  { id: "month", label: "Maand", buckets: 12, sub: "Laatste 12 maanden" },
+  { id: "year", label: "Jaar", buckets: 6, sub: "Laatste 6 jaar" },
+];
 
 const WIDTH = 600;
 const HEIGHT = 200;
@@ -21,52 +30,101 @@ function niceCeil(v: number): number {
   return step * pow;
 }
 
-/** Genereer `count` opeenvolgende maand-keys (YYYY-MM) eindigend op `end`. */
-function lastMonths(end: string, count: number): string[] {
-  let [y, m] = end.split("-").map(Number);
-  const out: string[] = [];
-  for (let k = 0; k < count; k++) {
-    out.unshift(`${y}-${String(m).padStart(2, "0")}`);
-    m--;
-    if (m === 0) {
-      m = 12;
-      y--;
+const pad2 = (n: number) => String(n).padStart(2, "0");
+const fmtDate = (d: Date) =>
+  `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+/** Periode-key van een transactie-datum (YYYY-MM-DD) voor de gekozen granulariteit. */
+function periodKey(dateStr: string, period: Period): string {
+  const [y, m, d] = dateStr.slice(0, 10).split("-").map(Number);
+  if (period === "year") return `${y}`;
+  if (period === "month") return `${y}-${pad2(m)}`;
+  if (period === "day") return `${y}-${pad2(m)}-${pad2(d)}`;
+  // week: maandag van die week
+  const dt = new Date(y, m - 1, d);
+  const dow = (dt.getDay() + 6) % 7;
+  dt.setDate(dt.getDate() - dow);
+  return fmtDate(dt);
+}
+
+/** Opeenvolgende periode-keys eindigend op vandaag. */
+function trailingKeys(period: Period, count: number): string[] {
+  const now = new Date();
+  const keys: string[] = [];
+  if (period === "year") {
+    const y = now.getFullYear();
+    for (let k = 0; k < count; k++) keys.unshift(`${y - k}`);
+  } else if (period === "month") {
+    let y = now.getFullYear();
+    let m = now.getMonth() + 1;
+    for (let k = 0; k < count; k++) {
+      keys.unshift(`${y}-${pad2(m)}`);
+      m--;
+      if (m === 0) {
+        m = 12;
+        y--;
+      }
+    }
+  } else if (period === "day") {
+    for (let k = 0; k < count; k++) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - k);
+      keys.unshift(fmtDate(d));
+    }
+  } else {
+    // week: maandag van deze week, telkens 7 dagen terug
+    const base = new Date(now);
+    base.setDate(base.getDate() - ((base.getDay() + 6) % 7));
+    for (let k = 0; k < count; k++) {
+      const d = new Date(base);
+      d.setDate(base.getDate() - 7 * k);
+      keys.unshift(fmtDate(d));
     }
   }
-  return out;
+  return keys;
 }
 
-function monthLabel(key: string, showYear: boolean): string {
-  const [y, m] = key.split("-").map(Number);
-  const lbl = new Intl.DateTimeFormat("nl-BE", { month: "short" }).format(
-    new Date(y, m - 1, 1),
-  );
-  return showYear ? `${lbl} '${String(y).slice(2)}` : lbl;
+function labelFor(key: string, period: Period, multiYear: boolean): string {
+  if (period === "year") return key;
+  if (period === "month") {
+    const [y, m] = key.split("-").map(Number);
+    const lbl = new Intl.DateTimeFormat("nl-BE", { month: "short" }).format(
+      new Date(y, m - 1, 1),
+    );
+    return multiYear ? `${lbl} '${String(y).slice(2)}` : lbl;
+  }
+  // day & week: key = YYYY-MM-DD -> d/m
+  const [, m, d] = key.split("-").map(Number);
+  return `${d}/${m}`;
 }
 
-export function CashflowChart({ transactions, months = 6 }: Props) {
+export function CashflowChart({ transactions }: Props) {
+  const [period, setPeriod] = useState<Period>("month");
   if (transactions.length === 0) return null;
 
-  // Som inkomend/uitgaand per maand-key
-  const byMonth = new Map<string, { in: number; out: number }>();
-  let latest = "";
+  const conf = PERIODS.find((p) => p.id === period)!;
+
+  // Aggregeer inkomend/uitgaand per periode-key.
+  const byKey = new Map<string, { in: number; out: number }>();
   for (const t of transactions) {
-    const key = t.occurredOn.slice(0, 7);
-    if (key > latest) latest = key;
-    const e = byMonth.get(key) ?? { in: 0, out: 0 };
+    const key = periodKey(t.occurredOn, period);
+    const e = byKey.get(key) ?? { in: 0, out: 0 };
     if (t.direction === "in") e.in += t.amount;
     else e.out += t.amount;
-    byMonth.set(key, e);
+    byKey.set(key, e);
   }
-  if (!latest) return null;
 
-  const keys = lastMonths(latest, months);
+  const keys = trailingKeys(period, conf.buckets);
   const data = keys.map((k) => ({
     key: k,
-    in: byMonth.get(k)?.in ?? 0,
-    out: byMonth.get(k)?.out ?? 0,
+    in: byKey.get(k)?.in ?? 0,
+    out: byKey.get(k)?.out ?? 0,
   }));
-  const multiYear = new Set(keys.map((k) => k.slice(0, 4))).size > 1;
+  const multiYear =
+    period === "month" && new Set(keys.map((k) => k.slice(0, 4))).size > 1;
+  const hasData = data.some((d) => d.in > 0 || d.out > 0);
+  // Te veel dag-labels: toon er om de twee.
+  const labelEvery = period === "day" ? 2 : 1;
 
   const maxVal = niceCeil(Math.max(1, ...data.map((d) => Math.max(d.in, d.out))));
   const plotH = HEIGHT - PAD_TOP - PAD_BOTTOM;
@@ -74,95 +132,119 @@ export function CashflowChart({ transactions, months = 6 }: Props) {
   const toH = (v: number) => (v / maxVal) * plotH;
 
   const groupW = (WIDTH - PAD_X * 2) / data.length;
-  const barW = Math.min(22, (groupW - 10) / 2);
+  const barW = Math.min(22, Math.max(4, (groupW - 8) / 2));
 
   return (
-    <div className="card p-5">
-      <div className="mb-1 flex items-baseline justify-between">
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_6px_20px_-12px_rgba(15,23,42,0.1)] dark:border-navy-700/60 dark:bg-navy-900 dark:shadow-none">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-navy-900 dark:text-navy-50">
-            Cashflow per maand
+          <h3 className="text-base font-bold tracking-tight text-slate-900 dark:text-navy-50">
+            Cashflow
           </h3>
-          <p className="text-xs text-navy-400 dark:text-navy-300">
-            Laatste {months} maanden
-          </p>
+          <p className="text-xs text-slate-400 dark:text-navy-300">{conf.sub}</p>
         </div>
-        <div className="flex items-center gap-3 text-xs">
-          <span className="flex items-center gap-1.5 text-navy-500 dark:text-navy-300">
-            <span className="h-2.5 w-2.5 rounded-sm bg-teal-500" /> Inkomend
-          </span>
-          <span className="flex items-center gap-1.5 text-navy-500 dark:text-navy-300">
-            <span className="h-2.5 w-2.5 rounded-sm bg-amber-500" /> Uitgaand
-          </span>
+        <div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-navy-800">
+          {PERIODS.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setPeriod(p.id)}
+              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                period === p.id
+                  ? "bg-white text-indigo-700 shadow-sm dark:bg-navy-700 dark:text-white"
+                  : "text-slate-500 hover:text-slate-700 dark:text-navy-300"
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="h-44 w-full">
-        {/* Gridlines op 0, 50%, 100% */}
-        {[0, 0.5, 1].map((f) => (
-          <g key={f}>
-            <line
-              x1={PAD_X}
-              x2={WIDTH - PAD_X}
-              y1={baseY - f * plotH}
-              y2={baseY - f * plotH}
-              className="stroke-navy-100 dark:stroke-navy-700/60"
-              stroke="currentColor"
-              strokeDasharray={f === 0 ? "0" : "4 4"}
-            />
-            <text
-              x={PAD_X - 8}
-              y={baseY - f * plotH + 3}
-              textAnchor="end"
-              className="fill-navy-400 text-[10px] tabular-nums"
-            >
-              {formatEuro(maxVal * f)}
-            </text>
-          </g>
-        ))}
+      <div className="mb-1 flex items-center gap-3 text-xs">
+        <span className="flex items-center gap-1.5 text-slate-500 dark:text-navy-300">
+          <span className="h-2.5 w-2.5 rounded-sm bg-emerald-500" /> Inkomend
+        </span>
+        <span className="flex items-center gap-1.5 text-slate-500 dark:text-navy-300">
+          <span className="h-2.5 w-2.5 rounded-sm bg-rose-500" /> Uitgaand
+        </span>
+      </div>
 
-        {data.map((d, i) => {
-          const cx = PAD_X + groupW * i + groupW / 2;
-          const inX = cx - barW - 1;
-          const outX = cx + 1;
-          return (
-            <g key={d.key}>
-              {d.in > 0 && (
-                <rect
-                  x={inX}
-                  y={baseY - toH(d.in)}
-                  width={barW}
-                  height={toH(d.in)}
-                  rx={3}
-                  className="fill-teal-500"
-                >
-                  <title>{`${monthLabel(d.key, true)} , inkomend ${formatEuro(d.in)}`}</title>
-                </rect>
-              )}
-              {d.out > 0 && (
-                <rect
-                  x={outX}
-                  y={baseY - toH(d.out)}
-                  width={barW}
-                  height={toH(d.out)}
-                  rx={3}
-                  className="fill-amber-500"
-                >
-                  <title>{`${monthLabel(d.key, true)} , uitgaand ${formatEuro(d.out)}`}</title>
-                </rect>
-              )}
+      {hasData ? (
+        <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="h-44 w-full">
+          {/* Gridlines op 0, 50%, 100% */}
+          {[0, 0.5, 1].map((f) => (
+            <g key={f}>
+              <line
+                x1={PAD_X}
+                x2={WIDTH - PAD_X}
+                y1={baseY - f * plotH}
+                y2={baseY - f * plotH}
+                className="stroke-slate-100 dark:stroke-navy-700/60"
+                stroke="currentColor"
+                strokeDasharray={f === 0 ? "0" : "4 4"}
+              />
               <text
-                x={cx}
-                y={HEIGHT - 8}
-                textAnchor="middle"
-                className="fill-navy-400 text-[10px]"
+                x={PAD_X - 8}
+                y={baseY - f * plotH + 3}
+                textAnchor="end"
+                className="fill-slate-400 text-[10px] tabular-nums"
+                style={{ fontFamily: "var(--font-num)" }}
               >
-                {monthLabel(d.key, multiYear)}
+                {formatEuro(maxVal * f)}
               </text>
             </g>
-          );
-        })}
-      </svg>
+          ))}
+
+          {data.map((d, i) => {
+            const cx = PAD_X + groupW * i + groupW / 2;
+            const inX = cx - barW - 1;
+            const outX = cx + 1;
+            const lbl = labelFor(d.key, period, multiYear);
+            return (
+              <g key={d.key}>
+                {d.in > 0 && (
+                  <rect
+                    x={inX}
+                    y={baseY - toH(d.in)}
+                    width={barW}
+                    height={toH(d.in)}
+                    rx={3}
+                    className="fill-emerald-500"
+                  >
+                    <title>{`${lbl} , inkomend ${formatEuro(d.in)}`}</title>
+                  </rect>
+                )}
+                {d.out > 0 && (
+                  <rect
+                    x={outX}
+                    y={baseY - toH(d.out)}
+                    width={barW}
+                    height={toH(d.out)}
+                    rx={3}
+                    className="fill-rose-500"
+                  >
+                    <title>{`${lbl} , uitgaand ${formatEuro(d.out)}`}</title>
+                  </rect>
+                )}
+                {i % labelEvery === 0 && (
+                  <text
+                    x={cx}
+                    y={HEIGHT - 8}
+                    textAnchor="middle"
+                    className="fill-slate-400 text-[10px]"
+                  >
+                    {lbl}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+      ) : (
+        <div className="flex h-44 items-center justify-center text-center text-sm text-slate-400 dark:text-navy-300">
+          Geen transacties in deze periode.
+        </div>
+      )}
     </div>
   );
 }
