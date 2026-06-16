@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import "./App.css";
@@ -88,6 +88,14 @@ function parseInviteParams(): { code: string; email: string } | null {
   const code = params.get("invite");
   if (!code) return null;
   const email = params.get("email") ?? "";
+  // Bewaar de token METEEN (synchroon), nog vóór de async lookup, zodat
+  // useEnsureOrg 'm zeker vindt bij de eerste login , ook voor bestaande
+  // accounts die direct in AuthedApp landen (geen race meer).
+  try {
+    localStorage.setItem(PENDING_INVITE_TOKEN_KEY, code.trim());
+  } catch {
+    // localStorage geblokkeerd , token wordt dan via de lookup-effect bewaard
+  }
   // Maak de URL schoon zodat de params niet blijven plakken bij refresh.
   window.history.replaceState(null, "", window.location.pathname);
   return { code: code.trim(), email: email.trim() };
@@ -209,7 +217,7 @@ function App() {
 // i.p.v. (te vroeg) het onboarding-scherm.
 function useEnsureOrg(
   session: Session,
-  onInvitesAccepted: () => void,
+  onJoined: (orgId?: string) => void,
 ): boolean {
   const [processing, setProcessing] = useState(true);
   useEffect(() => {
@@ -217,9 +225,10 @@ function useEnsureOrg(
     setProcessing(true);
     (async () => {
       let joined = 0;
+      let joinedOrgId: string | undefined;
 
       // 1. Token-gebaseerde org-invite (nieuwe flow): koppelt aan precies die
-      //    org, los van het e-mailadres waarmee men registreerde.
+      //    org (op org-ID uit de token, niet op naam).
       let pendingToken: string | null = null;
       try {
         pendingToken = localStorage.getItem(PENDING_INVITE_TOKEN_KEY);
@@ -233,22 +242,26 @@ function useEnsureOrg(
         } catch {
           // negeer
         }
-        if (res === "ok") joined += 1;
+        if (res.status === "ok" || res.status === "accepted") {
+          joinedOrgId = res.orgId;
+          joined += 1;
+        }
       }
 
       // 2. E-mail-gebaseerde invites (legacy / backward compat).
       const accepted = await acceptPendingInvites();
       joined += accepted;
 
-      if (active && joined > 0) onInvitesAccepted();
+      // Geef het org-ID mee zodat de app je direct in de net-gejoinde org zet
+      // (i.p.v. de oude/oudste selectie te behouden).
+      if (active && joined > 0) onJoined(joinedOrgId);
     })().finally(() => {
       if (active) setProcessing(false);
     });
     return () => {
       active = false;
     };
-    // onInvitesAccepted is stabiel (useCallback in useMyOrgs); session.user.id
-    // is de echte trigger.
+    // onJoined is stabiel (useCallback); session.user.id is de echte trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.user.id]);
   return processing;
@@ -420,9 +433,17 @@ function AuthedApp({
     leaveOrg,
     refresh: refreshOrgs,
   } = useMyOrgs();
-  // Accepteer openstaande org-invites bij eerste login en refetch de orgs zodra
-  // er één geaccepteerd is, zodat een uitgenodigde user direct in zijn org belandt.
-  const ensuringInvites = useEnsureOrg(session, refreshOrgs);
+  // Accepteer openstaande org-invites bij eerste login, refetch de orgs en
+  // selecteer meteen de net-gejoinde org (op ID), zodat een uitgenodigde user
+  // direct in de júiste org belandt en niet in een oude/gelijknamige.
+  const onJoinedOrg = useCallback(
+    async (joinedOrgId?: string) => {
+      await refreshOrgs();
+      if (joinedOrgId) selectOrg(joinedOrgId);
+    },
+    [refreshOrgs, selectOrg],
+  );
+  const ensuringInvites = useEnsureOrg(session, onJoinedOrg);
   const orgId = org?.id ?? null;
   const store = useBridgedStore(localStore, account.id, orgId);
   const { pots: dbPots } = usePots(orgId);

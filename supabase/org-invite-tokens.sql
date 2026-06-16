@@ -112,6 +112,7 @@ begin
     'status', 'ok',
     'email', v_inv.email,
     'role', v_inv.role,
+    'org_id', v_inv.organisation_id,
     'org_name', coalesce(v_org_name, 'een organisatie')
   );
 end;
@@ -123,10 +124,14 @@ grant execute on function public.lookup_org_invite(text) to anon, authenticated;
 -- 4. REDEEM_ORG_INVITE , koppelt de ingelogde user aan precies die org
 -- =============================================================================
 -- Geen e-mail-match: de token is het bewijs van de uitnodiging.
--- Returnt text: 'ok' | 'not_authenticated' | 'not_found' | 'expired' | 'accepted'
+-- Returnt jsonb: { status, org_id? }
+--   status: 'ok' | 'not_authenticated' | 'not_found' | 'expired' | 'accepted'
+--   org_id is enkel aanwezig bij status 'ok' (de org waar je nu lid van bent).
+
+drop function if exists public.redeem_org_invite(text);
 
 create or replace function public.redeem_org_invite(p_token text)
-returns text
+returns jsonb
 language plpgsql
 security definer
 set search_path = public
@@ -139,21 +144,23 @@ declare
   v_pot_id uuid;
 begin
   if v_user is null then
-    return 'not_authenticated';
+    return jsonb_build_object('status', 'not_authenticated');
   end if;
   if p_token is null or trim(p_token) = '' then
-    return 'not_found';
+    return jsonb_build_object('status', 'not_found');
   end if;
 
   select * into v_inv from public.org_invites where token = p_token;
   if not found then
-    return 'not_found';
+    return jsonb_build_object('status', 'not_found');
   end if;
   if v_inv.accepted_at is not null then
-    return 'accepted';
+    -- Al verzilverd: geef tóch het org_id terug zodat de app je daar plaatst
+    -- (bv. dezelfde link twee keer geopend).
+    return jsonb_build_object('status', 'accepted', 'org_id', v_inv.organisation_id);
   end if;
   if v_inv.expires_at is not null and v_inv.expires_at < now() then
-    return 'expired';
+    return jsonb_build_object('status', 'expired');
   end if;
 
   -- Zorg dat het profile bestaat (defensief, net als create_organisation).
@@ -187,7 +194,7 @@ begin
   set accepted_at = now(), accepted_by = v_user
   where id = v_inv.id;
 
-  return 'ok';
+  return jsonb_build_object('status', 'ok', 'org_id', v_inv.organisation_id);
 end;
 $$;
 

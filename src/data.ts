@@ -697,6 +697,7 @@ export type OrgInviteLookup = {
   status: "ok" | "not_found" | "expired" | "accepted";
   email?: string;
   role?: MemberRole;
+  orgId?: string;
   orgName?: string;
 };
 
@@ -830,12 +831,17 @@ export async function lookupOrgInvite(token: string): Promise<OrgInviteLookup> {
     status: d.status,
     email: d.email ?? undefined,
     role: d.role ?? undefined,
+    orgId: d.org_id ?? undefined,
     orgName: d.org_name ?? undefined,
   };
 }
 
-/** Verzilver een org-invite-token: koppelt de ingelogde user aan die org. */
-export async function redeemOrgInvite(token: string): Promise<string> {
+/** Verzilver een org-invite-token: koppelt de ingelogde user aan die org.
+ *  Returnt de status + het org-ID (bij 'ok'/'accepted') zodat de app je direct
+ *  in de juiste org plaatst. */
+export async function redeemOrgInvite(
+  token: string,
+): Promise<{ status: string; orgId?: string }> {
   const { data, error } = await supabase.rpc(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     "redeem_org_invite" as any,
@@ -845,9 +851,13 @@ export async function redeemOrgInvite(token: string): Promise<string> {
   if (error) {
 
     console.warn("[Kaspio] redeem_org_invite failed:", error.message);
-    return "error";
+    return { status: "error" };
   }
-  return (data as string) ?? "error";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const d = data as any;
+  // Oude functie gaf text terug ('ok'); nieuwe geeft jsonb {status, org_id}.
+  if (typeof d === "string") return { status: d };
+  return { status: d?.status ?? "error", orgId: d?.org_id ?? undefined };
 }
 
 // =============================================================================
