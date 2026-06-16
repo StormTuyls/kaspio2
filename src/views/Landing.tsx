@@ -868,7 +868,7 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
           <div className="max-w-2xl">
             <Eyebrow className="mb-3 text-indigo-600">Prijzen</Eyebrow>
             <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-              Simpel. Eerlijk. Schaalbaar.
+              Simpel. Eerlijk. Transparant.
             </h2>
             <p className="max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
               Start gratis. Betaal enkel als je meer nodig hebt. Geen verborgen
@@ -912,7 +912,7 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
               features={[
                 { text: "Tot 3 virtuele potjes" },
                 { text: "Manuele transacties invoeren" },
-                { text: "2 gebruikers (beheerder + 1 potverantwoordelijke)" },
+                { text: "2 gebruikers" },
                 { text: "Basis historiek (30 dagen)" },
                 { text: "CSV-export" },
                 { text: "Bankkoppeling (PSD2)", no: true },
@@ -928,21 +928,21 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
             <Plan
               featured
               name="Pro"
-              price={yearly ? "€3,99" : "€4,99"}
+              price={yearly ? "€3,20" : "€4"}
               priceSuffix="/maand"
               desc={
                 yearly
-                  ? "Je bespaart €12/jaar tov maandelijks. Gefactureerd als €47,88/jaar."
-                  : "Voor freelancers en kleine teams. Betaal per maand of bespaar 20% jaarlijks."
+                  ? "Je bespaart €9,60/jaar tov maandelijks. Gefactureerd als €38,40/jaar."
+                  : "Voor één club of organisatie. Betaal per maand of bespaar 20% jaarlijks."
               }
               features={[
                 { text: "Onbeperkte potjes" },
+                { text: "Onbeperkt aantal gebruikers" },
                 { text: "Manuele + import van transacties" },
-                { text: "Tot 5 gebruikers" },
                 { text: "Volledige historiek" },
-                { text: "Excel & PDF-export" },
-                { text: "Bankkoppeling via PSD2" },
                 { text: "Grafieken & rapportage" },
+                { text: "Bankkoppeling via PSD2 (bèta)" },
+                { text: "Excel & PDF-export" },
                 { text: "E-mail meldingen" },
               ]}
               cta="Kies Pro"
@@ -953,23 +953,21 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
           <Reveal delay={160} className="h-full">
             <Plan
               name="Team"
-              price={yearly ? "€16" : "€20"}
+              price={yearly ? "€8" : "€10"}
               priceSuffix="/maand"
               desc={
                 yearly
-                  ? "Je bespaart €48/jaar tov maandelijks. Gefactureerd als €192/jaar."
-                  : "Voor verenigingen, VZW's en bedrijven. Meerdere beheerders. Meer controle."
+                  ? "Je bespaart €24/jaar tov maandelijks. Gefactureerd als €96/jaar."
+                  : "Voor grotere VZW's en koepels die meer controle en goedkeuringen nodig hebben."
               }
               features={[
-                { text: "Alles uit Pro" },
-                { text: "Tot 25 gebruikers" },
+                { text: "Alles uit Pro, onbeperkt" },
                 { text: "Meerdere beheerders" },
                 { text: "Goedkeuringsflows" },
                 { text: "Memo's & bijlagen" },
                 { text: "Prioriteitsondersteuning" },
-                { text: "Whitelabel optie (op aanvraag)" },
-                { text: "API-toegang (binnenkort)" },
               ]}
+              note="Whitelabel en API op aanvraag, neem contact op."
               cta="Kies Team"
               ctaStyle="amber"
               onClick={onSignup}
@@ -978,8 +976,8 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
         </div>
 
         <p className="mt-7 text-center text-sm text-slate-500">
-          Geen creditcard nodig om te starten · Elk moment opzegbaar · Belgische
-          en Nederlandse wetgeving
+          Geen creditcard nodig om te starten · Elk moment opzegbaar ·
+          GDPR-conform, data in de EU
         </p>
       </div>
     </section>
@@ -994,6 +992,7 @@ function Plan({
   priceSuffix,
   desc,
   features,
+  note,
   cta,
   ctaStyle,
   onClick,
@@ -1004,6 +1003,7 @@ function Plan({
   priceSuffix?: string;
   desc: string;
   features: Feat[];
+  note?: string;
   cta: string;
   ctaStyle: "outline" | "fill" | "amber";
   onClick: () => void;
@@ -1065,6 +1065,9 @@ function Plan({
           </li>
         ))}
       </ul>
+      {note && (
+        <p className="mb-4 text-xs leading-relaxed text-slate-400">{note}</p>
+      )}
       <button
         onClick={onClick}
         className={`w-full rounded-xl py-3 text-sm font-bold transition ${ctaClass}`}
