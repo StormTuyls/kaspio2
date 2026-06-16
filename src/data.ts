@@ -567,8 +567,8 @@ export function usePotGroups(orgId: string | null) {
 /** Limieten per tier. Moeten matchen met de triggers in supabase/subscriptions.sql. */
 export const TIER_LIMITS: Record<SubTier, { pots: number; members: number }> = {
   free: { pots: 3, members: 2 },
-  pro: { pots: Infinity, members: 5 },
-  team: { pots: Infinity, members: 25 },
+  pro: { pots: Infinity, members: Infinity },
+  team: { pots: Infinity, members: Infinity },
 };
 
 export const TIER_LABELS: Record<SubTier, string> = {

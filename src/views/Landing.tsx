@@ -928,21 +928,21 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
             <Plan
               featured
               name="Pro"
-              price={yearly ? "€3,99" : "€4,99"}
+              price={yearly ? "€3,19" : "€3,99"}
               priceSuffix="/maand"
               desc={
                 yearly
-                  ? "Je bespaart €12/jaar tov maandelijks. Gefactureerd als €47,88/jaar."
-                  : "Voor freelancers en kleine teams. Betaal per maand of bespaar 20% jaarlijks."
+                  ? "Je bespaart €9,48/jaar tov maandelijks. Gefactureerd als €38,28/jaar."
+                  : "Voor één club of organisatie. Betaal per maand of bespaar 20% jaarlijks."
               }
               features={[
                 { text: "Onbeperkte potjes" },
+                { text: "Onbeperkt aantal gebruikers" },
                 { text: "Manuele + import van transacties" },
-                { text: "Tot 5 gebruikers" },
                 { text: "Volledige historiek" },
-                { text: "Excel & PDF-export" },
-                { text: "Bankkoppeling via PSD2" },
                 { text: "Grafieken & rapportage" },
+                { text: "Bankkoppeling via PSD2" },
+                { text: "Excel & PDF-export" },
                 { text: "E-mail meldingen" },
               ]}
               cta="Kies Pro"
@@ -953,16 +953,15 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
           <Reveal delay={160} className="h-full">
             <Plan
               name="Team"
-              price={yearly ? "€16" : "€20"}
+              price={yearly ? "€8" : "€10"}
               priceSuffix="/maand"
               desc={
                 yearly
-                  ? "Je bespaart €48/jaar tov maandelijks. Gefactureerd als €192/jaar."
-                  : "Voor verenigingen, VZW's en bedrijven. Meerdere beheerders. Meer controle."
+                  ? "Je bespaart €24/jaar tov maandelijks. Gefactureerd als €96/jaar."
+                  : "Voor wie meer controle wil: extra beheer- en goedkeuringsfuncties."
               }
               features={[
-                { text: "Alles uit Pro" },
-                { text: "Tot 25 gebruikers" },
+                { text: "Alles uit Pro, onbeperkt" },
                 { text: "Meerdere beheerders" },
                 { text: "Goedkeuringsflows" },
                 { text: "Memo's & bijlagen" },

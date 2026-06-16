@@ -8,8 +8,8 @@
 --
 -- Limieten:
 --   Gratis : max 3 potjes, max 2 leden
---   Pro    : onbeperkt potjes, max 5 leden
---   Team   : onbeperkt potjes, max 25 leden
+--   Pro    : onbeperkt potjes, onbeperkt leden
+--   Team   : onbeperkt potjes, onbeperkt leden (+ extra functies)
 -- =============================================================================
 
 do $$ begin
@@ -105,7 +105,8 @@ begin
   if v_exists then return new; end if;  -- bestaande user, geen extra seat
 
   v_tier := public.org_tier(new.organisation_id);
-  v_max := case v_tier when 'free' then 2 when 'pro' then 5 when 'team' then 25 else 2 end;
+  -- Enkel het gratis plan is geplafonneerd; betaalde plannen zijn onbeperkt.
+  v_max := case v_tier when 'free' then 2 else 1000000 end;
   select count(distinct user_id) into v_count
   from public.memberships
   where organisation_id = new.organisation_id;
