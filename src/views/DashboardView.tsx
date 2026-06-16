@@ -39,18 +39,26 @@ export function DashboardView({
   const isReader = currentUser.role === "reader";
   const seesAll = isAdmin || isReader;
 
+  // Periode voor de in/uit-totalen. Het saldo blijft altijd het volledige
+  // lopende saldo; in/uit worden gescoped zodat die bedragen niet eindeloos
+  // oplopen.
+  const [flowPeriod, setFlowPeriod] = useState<FlowPeriod>("month");
+
   const visibleIds = new Set(pots.map((p) => p.id));
   const txInScope = allTransactions.filter((t) =>
     t.potId ? visibleIds.has(t.potId) : isAdmin,
   );
+  // Saldo = alle transacties (het werkelijke bedrag op de rekening).
   const total = txInScope.reduce(
     (s, t) => s + (t.direction === "in" ? t.amount : -t.amount),
     0,
   );
-  const totalIn = txInScope
+  const flowStart = flowWindowStart(flowPeriod);
+  const flowTx = txInScope.filter((t) => t.occurredOn >= flowStart);
+  const totalIn = flowTx
     .filter((t) => t.direction === "in")
     .reduce((s, t) => s + t.amount, 0);
-  const totalOut = txInScope
+  const totalOut = flowTx
     .filter((t) => t.direction === "out")
     .reduce((s, t) => s + t.amount, 0);
 
@@ -87,13 +95,16 @@ export function DashboardView({
 
   return (
     <div className="space-y-6 font-display">
-      <div>
-        <p className="font-num text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
-          {organizationName}
-        </p>
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-          Dashboard
-        </h1>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="font-num text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
+            {organizationName}
+          </p>
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            Dashboard
+          </h1>
+        </div>
+        <PeriodTabs value={flowPeriod} onChange={setFlowPeriod} />
       </div>
 
       {/* Hoofd-statistieken */}
@@ -104,8 +115,8 @@ export function DashboardView({
           potCount={pots.length}
           groupCount={groups.length}
         />
-        <FlowStat label="Totaal inkomend" value={formatEuro(totalIn)} tone="in" />
-        <FlowStat label="Totaal uitgaand" value={formatEuro(totalOut)} tone="out" />
+        <FlowStat label="Inkomend" sub={FLOW_LABELS[flowPeriod]} value={formatEuro(totalIn)} tone="in" />
+        <FlowStat label="Uitgaand" sub={FLOW_LABELS[flowPeriod]} value={formatEuro(totalOut)} tone="out" />
       </div>
 
       {/* Tellers */}
@@ -235,6 +246,64 @@ export function DashboardView({
 /* Local presentational components (nieuwe iris/emerald-identiteit)    */
 /* ------------------------------------------------------------------ */
 
+type FlowPeriod = "day" | "week" | "month" | "year";
+
+const FLOW_LABELS: Record<FlowPeriod, string> = {
+  day: "vandaag",
+  week: "deze week",
+  month: "deze maand",
+  year: "dit jaar",
+};
+
+const FLOW_TABS: { id: FlowPeriod; label: string }[] = [
+  { id: "day", label: "Dag" },
+  { id: "week", label: "Week" },
+  { id: "month", label: "Maand" },
+  { id: "year", label: "Jaar" },
+];
+
+/** Startdatum (YYYY-MM-DD) van de huidige periode, t.o.v. vandaag. */
+function flowWindowStart(p: FlowPeriod): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;
+  const d = now.getDate();
+  if (p === "day") return `${y}-${pad(m)}-${pad(d)}`;
+  if (p === "month") return `${y}-${pad(m)}-01`;
+  if (p === "year") return `${y}-01-01`;
+  // week: maandag van deze week
+  const b = new Date(now);
+  b.setDate(b.getDate() - ((b.getDay() + 6) % 7));
+  return `${b.getFullYear()}-${pad(b.getMonth() + 1)}-${pad(b.getDate())}`;
+}
+
+function PeriodTabs({
+  value,
+  onChange,
+}: {
+  value: FlowPeriod;
+  onChange: (p: FlowPeriod) => void;
+}) {
+  return (
+    <div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-navy-800">
+      {FLOW_TABS.map((t) => (
+        <button
+          key={t.id}
+          onClick={() => onChange(t.id)}
+          className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+            value === t.id
+              ? "bg-white text-indigo-700 shadow-sm dark:bg-navy-700 dark:text-white"
+              : "text-slate-500 hover:text-slate-700 dark:text-navy-300"
+          }`}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function Icon({
   children,
   className = "h-5 w-5",
@@ -295,10 +364,12 @@ function HeroBalance({
 
 function FlowStat({
   label,
+  sub,
   value,
   tone,
 }: {
   label: string;
+  sub?: string;
   value: string;
   tone: "in" | "out";
 }) {
@@ -308,6 +379,11 @@ function FlowStat({
       <div className="mb-2 flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-navy-300">
           {label}
+          {sub && (
+            <span className="ml-1.5 normal-case tracking-normal text-slate-400 dark:text-navy-400">
+              · {sub}
+            </span>
+          )}
         </p>
         <span
           className={`flex h-7 w-7 items-center justify-center rounded-lg ${
