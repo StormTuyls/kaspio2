@@ -11,8 +11,8 @@ is, blijft elke org gewoon op het gratis plan en faalt "Upgrade" netjes.
 2. Ga naar **Product catalog → Add product**. Maak twee producten:
 
    **Pro** (1 org, onbeperkt potjes + leden)
-   - Maandprijs: € 3,99 / maand (recurring, monthly)
-   - Jaarprijs: € 38,28 / jaar (recurring, yearly, = €3,19/mnd)
+   - Maandprijs: € 4 / maand (recurring, monthly)
+   - Jaarprijs: € 38,40 / jaar (recurring, yearly, = €3,20/mnd)
 
    **Team** (alles uit Pro + extra beheer/goedkeuringsfuncties)
    - Maandprijs: € 10 / maand
