@@ -80,6 +80,21 @@ function parseHashError(): { kind: AuthErrorKind; description: string } | null {
 // eerste login (overleeft een e-mailbevestiging / page reload tijdens signup).
 const PENDING_INVITE_TOKEN_KEY = "kaspio.pendingInviteToken";
 
+function readPendingInviteToken(): string | null {
+  try {
+    return localStorage.getItem(PENDING_INVITE_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+function clearPendingInviteToken() {
+  try {
+    localStorage.removeItem(PENDING_INVITE_TOKEN_KEY);
+  } catch {
+    // negeer
+  }
+}
+
 // Leest een invite-link (?invite=<token>&email=...) uit de URL. De
 // uitnodigingslink wijst hierheen zodat de signup vooraf ingevuld is.
 function parseInviteParams(): { code: string; email: string } | null {
@@ -217,7 +232,7 @@ function App() {
 // i.p.v. (te vroeg) het onboarding-scherm.
 function useEnsureOrg(
   session: Session,
-  onJoined: (orgId?: string) => void,
+  onJoined: (orgId?: string) => void | Promise<void>,
 ): boolean {
   const [processing, setProcessing] = useState(true);
   useEffect(() => {
@@ -229,32 +244,28 @@ function useEnsureOrg(
 
       // 1. Token-gebaseerde org-invite (nieuwe flow): koppelt aan precies die
       //    org (op org-ID uit de token, niet op naam).
-      let pendingToken: string | null = null;
-      try {
-        pendingToken = localStorage.getItem(PENDING_INVITE_TOKEN_KEY);
-      } catch {
-        pendingToken = null;
-      }
+      const pendingToken = readPendingInviteToken();
       if (pendingToken) {
         const res = await redeemOrgInvite(pendingToken);
-        try {
-          localStorage.removeItem(PENDING_INVITE_TOKEN_KEY);
-        } catch {
-          // negeer
-        }
         if (res.status === "ok" || res.status === "accepted") {
           joinedOrgId = res.orgId;
           joined += 1;
+          clearPendingInviteToken();
+        } else if (res.status === "not_found" || res.status === "expired") {
+          // Dode token: niet blijven proberen.
+          clearPendingInviteToken();
         }
+        // 'error'/'not_authenticated': token bewust laten staan zodat een
+        // volgende poging (reload) 'm opnieuw probeert i.p.v. 'm te verliezen.
       }
 
       // 2. E-mail-gebaseerde invites (legacy / backward compat).
       const accepted = await acceptPendingInvites();
       joined += accepted;
 
-      // Geef het org-ID mee zodat de app je direct in de net-gejoinde org zet
-      // (i.p.v. de oude/oudste selectie te behouden).
-      if (active && joined > 0) onJoined(joinedOrgId);
+      // AWAIT: pas als de orgs herladen én de juiste org geselecteerd is, mogen
+      // we 'klaar' melden. Anders flitst het onboarding-scherm voorbij.
+      if (active && joined > 0) await onJoined(joinedOrgId);
     })().finally(() => {
       if (active) setProcessing(false);
     });
@@ -585,6 +596,34 @@ function AuthedApp({
     return (
       <div className="flex min-h-screen items-center justify-center bg-canvas text-navy-500 dark:bg-navy-950 dark:text-navy-300">
         Organisatie aan het laden…
+      </div>
+    );
+  }
+
+  // Geen org, maar er staat nog een openstaande invite-token: de redeem is
+  // (tijdelijk) mislukt. Toon GEEN "maak een org"-scherm, maar een retry , zo
+  // belandt een genodigde nooit per ongeluk in de org-aanmaak.
+  if (!org && readPendingInviteToken()) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas px-6 text-center dark:bg-navy-950">
+        <p className="text-navy-700 dark:text-navy-100">
+          Je uitnodiging kon niet automatisch verwerkt worden.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="btn-accent"
+        >
+          Opnieuw proberen
+        </button>
+        <button
+          onClick={() => {
+            clearPendingInviteToken();
+            window.location.reload();
+          }}
+          className="text-sm text-navy-400 hover:text-navy-700 dark:hover:text-navy-100"
+        >
+          Toch zelf een organisatie aanmaken
+        </button>
       </div>
     );
   }
