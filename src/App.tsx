@@ -431,6 +431,7 @@ function AuthedApp({
     setSelected: selectOrg,
     createOrg,
     leaveOrg,
+    deleteOrg,
     refresh: refreshOrgs,
   } = useMyOrgs();
   // Accepteer openstaande org-invites bij eerste login, refetch de orgs en
@@ -724,15 +725,18 @@ function AuthedApp({
               <SettingsView
                 account={account}
                 orgId={org.id}
+                orgName={org.name}
                 tier={tier}
                 potCount={store.state.pots.length}
                 memberCount={uiMembers.length}
                 isAdmin={!!isAdmin}
+                isOwner={org.owner_id === account.id}
                 notifications={store.state.notifications}
                 branding={store.state.branding}
                 onChange={(patch) => store.updateNotifications(patch)}
                 onBrandingChange={(patch) => store.updateBranding(patch)}
                 onBrandingReset={() => store.resetBranding()}
+                onDeleteOrg={() => deleteOrg(org.id)}
               />
             ) : (
               <DashboardView

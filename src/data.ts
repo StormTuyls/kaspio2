@@ -184,6 +184,24 @@ export function useMyOrgs() {
     [fetchOrgs],
   );
 
+  /** Verwijder een organisatie volledig (alleen de eigenaar). Cascade ruimt
+   *  alle gekoppelde data op. Onomkeerbaar. */
+  const deleteOrg = useCallback(
+    async (deleteId: string): Promise<{ error: string | null }> => {
+      const { error } = await (
+        supabase.rpc as unknown as (
+          fn: string,
+          args: Record<string, unknown>,
+        ) => Promise<{ error: Error | null }>
+      )("delete_organisation", { p_org_id: deleteId });
+      if (error) return { error: error.message };
+      setSelectedIdState((cur) => (cur === deleteId ? null : cur));
+      await fetchOrgs();
+      return { error: null };
+    },
+    [fetchOrgs],
+  );
+
   const selected = orgs.find((o) => o.id === selectedId) ?? null;
 
   return {
@@ -194,6 +212,7 @@ export function useMyOrgs() {
     setSelected,
     createOrg,
     leaveOrg,
+    deleteOrg,
     refresh: fetchOrgs,
   };
 }

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { DigestFrequency, NotificationSettings } from "../types";
 import type { Branding } from "../branding";
 import type { SubTier } from "../supabase";
@@ -15,29 +16,35 @@ type Account = {
 type Props = {
   account: Account;
   orgId: string;
+  orgName: string;
   tier: SubTier;
   potCount: number;
   memberCount: number;
   isAdmin: boolean;
+  isOwner: boolean;
   notifications: NotificationSettings;
   branding: Branding;
   onChange: (patch: Partial<NotificationSettings>) => void;
   onBrandingChange: (patch: Partial<Branding>) => void;
   onBrandingReset: () => void;
+  onDeleteOrg: () => Promise<{ error: string | null }>;
 };
 
 export function SettingsView({
   account,
   orgId,
+  orgName,
   tier,
   potCount,
   memberCount,
   isAdmin,
+  isOwner,
   notifications,
   branding,
   onChange,
   onBrandingChange,
   onBrandingReset,
+  onDeleteOrg,
 }: Props) {
   return (
     <div className="space-y-6">
@@ -145,6 +152,70 @@ export function SettingsView({
         </div>
       </div>
 
+      {isOwner && <DangerZone orgName={orgName} onDeleteOrg={onDeleteOrg} />}
+    </div>
+  );
+}
+
+function DangerZone({
+  orgName,
+  onDeleteOrg,
+}: {
+  orgName: string;
+  onDeleteOrg: () => Promise<{ error: string | null }>;
+}) {
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const armed = confirm.trim() === orgName.trim() && orgName.trim() !== "";
+
+  async function handleDelete() {
+    if (!armed || busy) return;
+    setBusy(true);
+    setError(null);
+    const res = await onDeleteOrg();
+    if (res.error) {
+      setError(res.error);
+      setBusy(false);
+    }
+    // Bij succes verdwijnt de org en navigeert de app vanzelf weg
+    // (andere org of onboarding), dus geen verdere state nodig.
+  }
+
+  return (
+    <div className="rounded-2xl border border-rose-200 bg-white p-6 dark:border-rose-900/40 dark:bg-navy-900">
+      <h2 className="mb-1 text-base font-semibold text-rose-700 dark:text-rose-400">
+        Gevarenzone
+      </h2>
+      <p className="mb-4 text-sm text-navy-500 dark:text-navy-300">
+        Verwijder deze organisatie en <strong>alle</strong> bijhorende data:
+        potjes, transacties, leden, uitnodigingen en abonnement. Dit kan niet
+        ongedaan gemaakt worden.
+      </p>
+      <label className="block">
+        <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+          Typ <strong>{orgName}</strong> om te bevestigen
+        </span>
+        <input
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          placeholder={orgName}
+          className="input"
+          autoComplete="off"
+        />
+      </label>
+      {error && (
+        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          {error}
+        </div>
+      )}
+      <button
+        onClick={handleDelete}
+        disabled={!armed || busy}
+        className="btn-danger mt-4"
+      >
+        {busy ? "Bezig met verwijderen…" : "Organisatie definitief verwijderen"}
+      </button>
     </div>
   );
 }
