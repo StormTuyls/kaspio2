@@ -19,6 +19,10 @@
 
 begin;
 
+-- Zet de audit-trigger uit voor deze transactie, anders FK-fout op audit_log
+-- (audit_log_organisation_id_fkey) tijdens de cascade-delete.
+select set_config('kaspio.skip_audit', 'on', true);
+
 delete from public.organisations;        -- cascade ruimt alle org-data op
 delete from public.notification_settings; -- per-user, niet via cascade
 delete from public.invite_codes;          -- ongebruikte beta-codes

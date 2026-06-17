@@ -434,6 +434,12 @@ declare
   v_org_id uuid;
   v_action text;
 begin
+  -- Skip auditing tijdens bulk-opruim (bv. org-verwijdering), anders FK-fout
+  -- op audit_log naar de net-verwijderde org.
+  if coalesce(current_setting('kaspio.skip_audit', true), '') = 'on' then
+    return coalesce(new, old);
+  end if;
+
   -- Bepaal organisation_id afhankelijk van de tabel
   if tg_table_name = 'pots' then
     v_org_id = coalesce(new.organisation_id, old.organisation_id);
