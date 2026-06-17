@@ -48,6 +48,10 @@ set search_path = public
 as $$
 declare
   v_token text;
+  v_tier public.sub_tier;
+  v_max int;
+  v_members int;
+  v_pending int;
 begin
   if not public.is_org_admin(p_org_id) then
     raise exception 'Alleen admins van deze organisatie kunnen uitnodigingen versturen';
@@ -62,6 +66,21 @@ begin
   where organisation_id = p_org_id
     and lower(email) = lower(p_email)
     and accepted_at is null;
+
+  -- Ledenlimiet NU checken (i.p.v. pas bij redeem), zodat de admin meteen weet
+  -- dat het plan vol zit en de genodigde geen kapotte link krijgt. Telt
+  -- bestaande leden + openstaande uitnodigingen (gereserveerde plekken).
+  v_tier := public.org_tier(p_org_id);
+  v_max := case v_tier when 'free' then 2 else 1000000 end;
+  select count(distinct user_id) into v_members
+  from public.memberships where organisation_id = p_org_id;
+  select count(*) into v_pending
+  from public.org_invites where organisation_id = p_org_id and accepted_at is null;
+  if v_members + v_pending >= v_max then
+    raise exception
+      'Ledenlimiet van het gratis plan bereikt (max %). Upgrade naar Pro voor onbeperkt leden.', v_max
+      using errcode = '23514';
+  end if;
 
   v_token := 'INV-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 16));
 
