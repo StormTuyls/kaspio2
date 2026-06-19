@@ -860,7 +860,7 @@ export async function lookupOrgInvite(token: string): Promise<OrgInviteLookup> {
  *  in de juiste org plaatst. */
 export async function redeemOrgInvite(
   token: string,
-): Promise<{ status: string; orgId?: string }> {
+): Promise<{ status: string; orgId?: string; message?: string }> {
   const { data, error } = await supabase.rpc(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     "redeem_org_invite" as any,
@@ -870,7 +870,7 @@ export async function redeemOrgInvite(
   if (error) {
 
     console.warn("[Kaspio] redeem_org_invite failed:", error.message);
-    return { status: "error" };
+    return { status: "error", message: error.message };
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const d = data as any;

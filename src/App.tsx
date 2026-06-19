@@ -456,6 +456,31 @@ function AuthedApp({
     [refreshOrgs, selectOrg],
   );
   const ensuringInvites = useEnsureOrg(session, onJoinedOrg);
+
+  // Onboarding-keuze "lid worden met code": verzilver een invite-code/-link en
+  // spring meteen in de juiste org.
+  const onJoinWithCode = useCallback(
+    async (raw: string): Promise<{ error: string | null }> => {
+      // Accepteer zowel een kale code als een geplakte invite-link.
+      const m = raw.match(/[?&]invite=([^&\s]+)/);
+      const token = decodeURIComponent(m ? m[1] : raw).trim();
+      const res = await redeemOrgInvite(token);
+      if (res.status === "ok" || res.status === "accepted") {
+        await refreshOrgs();
+        if (res.orgId) selectOrg(res.orgId);
+        return { error: null };
+      }
+      const msg =
+        res.status === "not_found"
+          ? "Onbekende of ongeldige code. Controleer de code of vraag een nieuwe link."
+          : res.status === "expired"
+            ? "Deze uitnodiging is verlopen. Vraag de beheerder om een nieuwe."
+            : res.message ?? "Kon niet lid worden. Probeer opnieuw.";
+      return { error: msg };
+    },
+    [refreshOrgs, selectOrg],
+  );
+
   const orgId = org?.id ?? null;
   const store = useBridgedStore(localStore, account.id, orgId);
   const { pots: dbPots } = usePots(orgId);
@@ -637,6 +662,7 @@ function AuthedApp({
           const res = await createOrg(name, account.id);
           return { error: res.error };
         }}
+        onJoinWithCode={onJoinWithCode}
       />
     );
   }
