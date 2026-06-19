@@ -131,51 +131,12 @@ $$;
 grant execute on function public.remove_member(uuid, uuid) to authenticated;
 
 -- =============================================================================
--- 4. CREATE_ORG_INVITE met multi-pot support
+-- 4. CREATE_ORG_INVITE , VERPLAATST naar org-invite-tokens.sql
 -- =============================================================================
--- Vervangt de bestaande functie. Accepteert nu p_pot_ids (array) ipv p_pot_id (single).
-
-drop function if exists public.create_org_invite(uuid, text, public.member_role, uuid, timestamptz);
-
-create or replace function public.create_org_invite(
-  p_org_id uuid,
-  p_email text,
-  p_role public.member_role default 'pot_owner',
-  p_pot_ids uuid[] default null,
-  p_expires_at timestamptz default null
-)
-returns uuid
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_id uuid;
-begin
-  if not public.is_org_admin(p_org_id) then
-    raise exception 'Alleen admins van deze organisatie kunnen uitnodigingen versturen';
-  end if;
-
-  if p_role = 'pot_owner' and (p_pot_ids is null or array_length(p_pot_ids, 1) = 0) then
-    raise exception 'Pot owner moet minstens één potje toegewezen krijgen';
-  end if;
-
-  -- Soft delete bestaande pending invite voor zelfde email
-  delete from public.org_invites
-  where organisation_id = p_org_id
-    and lower(email) = lower(p_email)
-    and accepted_at is null;
-
-  insert into public.org_invites (organisation_id, email, role, pot_ids, invited_by, expires_at)
-  values (p_org_id, p_email, p_role, p_pot_ids, auth.uid(), p_expires_at)
-  returning id into v_id;
-
-  return v_id;
-end;
-$$;
-
-grant execute on function public.create_org_invite(uuid, text, public.member_role, uuid[], timestamptz)
-  to authenticated;
+-- De canonieke definitie staat nu in supabase/org-invite-tokens.sql (returnt
+-- een token (text) i.p.v. uuid, met token + ledenlimietcheck). Hier NIET meer
+-- definiëren, anders botst het returntype (uuid vs text) afhankelijk van de
+-- volgorde waarin je de bestanden draait.
 
 -- =============================================================================
 -- 5. ACCEPT_PENDING_INVITES update , maakt multi-pot memberships
