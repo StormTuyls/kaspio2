@@ -204,9 +204,16 @@ begin
       on conflict (organisation_id, user_id, pot_id) do nothing;
     end if;
   else
+    -- admin/reader: pot_id is NULL. `on conflict (...,pot_id)` dedupt NIET bij
+    -- NULL (Postgres ziet NULLs als verschillend), dus expliciet guarden.
     insert into public.memberships (organisation_id, user_id, role, invited_by)
-    values (v_inv.organisation_id, v_user, v_inv.role, v_inv.invited_by)
-    on conflict (organisation_id, user_id, pot_id) do nothing;
+    select v_inv.organisation_id, v_user, v_inv.role, v_inv.invited_by
+    where not exists (
+      select 1 from public.memberships
+      where organisation_id = v_inv.organisation_id
+        and user_id = v_user
+        and pot_id is null
+    );
   end if;
 
   update public.org_invites
