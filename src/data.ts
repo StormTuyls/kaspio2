@@ -601,6 +601,11 @@ export function chartsEnabled(tier: SubTier): boolean {
   return tier !== "free";
 }
 
+/** Potgroepen (takken/ploegen) zijn een Team-feature. */
+export function groupsEnabled(tier: SubTier): boolean {
+  return tier === "team";
+}
+
 export function useSubscription(orgId: string | null) {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);

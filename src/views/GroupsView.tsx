@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { calcBalance, formatEuro } from "../storage";
 import type { Pot, PotGroup, Transaction } from "../types";
+import { UpgradeHint } from "../components/UpgradeHint";
 
 type Props = {
   groups: PotGroup[];
   pots: Pot[];
   allTransactions: Transaction[];
   isAdmin: boolean;
+  /** Potgroepen zijn een Team-feature; anders enkel een upgrade-aanzet. */
+  canUseGroups: boolean;
+  onUpgrade?: () => void;
   onCreateGroup: (name: string) => Promise<{ error: string | null }>;
   onRenameGroup: (id: string, name: string) => Promise<{ error: string | null }>;
   onDeleteGroup: (id: string) => Promise<{ error: string | null }>;
@@ -18,6 +22,8 @@ export function GroupsView({
   pots,
   allTransactions,
   isAdmin,
+  canUseGroups,
+  onUpgrade,
   onCreateGroup,
   onRenameGroup,
   onDeleteGroup,
@@ -57,12 +63,21 @@ export function GroupsView({
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-navy-900 dark:text-white">Groepen</h1>
-        {isAdmin && !creating && (
+        {isAdmin && canUseGroups && !creating && (
           <button onClick={() => setCreating(true)} className="btn-accent text-sm">
             + Nieuwe groep
           </button>
         )}
       </div>
+
+      {!canUseGroups && (
+        <UpgradeHint
+          badge="Team"
+          title="Potgroepen"
+          description="Bundel je potjes per tak, ploeg of werkgroep. Beschikbaar in het Team-plan."
+          onUpgrade={onUpgrade}
+        />
+      )}
 
       <p className="text-sm text-navy-500 dark:text-navy-300">
         Groepen bundelen potjes per tak, ploeg of werkgroep. Een potje koppel je

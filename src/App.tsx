@@ -6,6 +6,7 @@ import { useAppState } from "./storage";
 import {
   acceptPendingInvites,
   groupMembersByUser,
+  groupsEnabled,
   lookupOrgInvite,
   redeemOrgInvite,
   useAuditLog,
@@ -767,6 +768,8 @@ function AuthedApp({
                 pots={potsForUser}
                 allTransactions={store.state.transactions}
                 isAdmin={!!isAdmin}
+                canUseGroups={groupsEnabled(tier)}
+                onUpgrade={goToUpgrade}
                 onCreateGroup={addGroup}
                 onRenameGroup={renameGroup}
                 onDeleteGroup={deleteGroup}

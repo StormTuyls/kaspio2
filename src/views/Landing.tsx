@@ -944,6 +944,7 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
                 { text: "Bankkoppeling via PSD2 (bèta)" },
                 { text: "Excel & PDF-export" },
                 { text: "E-mail meldingen" },
+                { text: "Potgroepen (takken & ploegen)", no: true },
               ]}
               cta="Kies Pro"
               ctaStyle="fill"
@@ -962,6 +963,7 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
               }
               features={[
                 { text: "Alles uit Pro, onbeperkt" },
+                { text: "Potgroepen (takken & ploegen)" },
                 { text: "Meerdere beheerders" },
                 { text: "Goedkeuringsflows" },
                 { text: "Memo's & bijlagen" },
