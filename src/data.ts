@@ -820,6 +820,28 @@ export function useOrgInvites(orgId: string | null) {
 }
 
 // =============================================================================
+// Transactie-melding , best-effort e-mail naar potverantwoordelijke + admins
+// =============================================================================
+
+/** Stuurt (best-effort) een e-mailmelding bij een nieuwe transactie. Faalt
+ *  stil als de Edge Function/Resend niet bereikbaar is of de org gratis is. */
+export async function notifyTransactionAdded(payload: {
+  orgId: string;
+  potId: string | null;
+  amount: number;
+  direction: "in" | "out";
+  occurredOn: string;
+  counterparty: string | null;
+}): Promise<void> {
+  try {
+    await supabase.functions.invoke("send-transaction-email", { body: payload });
+  } catch (err) {
+
+    console.warn("[Kaspio] send-transaction-email niet bereikbaar:", err);
+  }
+}
+
+// =============================================================================
 // acceptPendingInvites , éénmalige RPC call bij login
 // =============================================================================
 

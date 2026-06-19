@@ -8,6 +8,7 @@ import {
   groupMembersByUser,
   groupsEnabled,
   lookupOrgInvite,
+  notifyTransactionAdded,
   redeemOrgInvite,
   useAuditLog,
   useMyOrgs,
@@ -395,6 +396,18 @@ function useBridgedStore(
           counterparty: input.counterparty || null,
           memo: input.memo || null,
         });
+        // Best-effort e-mailmelding (Pro+; Edge Function checkt tier + ontvangers).
+        // Gegate op de "bij nieuwe transactie"-voorkeur van de toevoeger.
+        if (orgId && localStore.state.notifications.emailOnTransaction) {
+          void notifyTransactionAdded({
+            orgId,
+            potId: input.potId,
+            amount: input.amount,
+            direction: input.direction,
+            occurredOn: input.occurredOn,
+            counterparty: input.counterparty || null,
+          });
+        }
       },
       deleteTransaction: async (id: string) => {
         await deleteDbTx(id);

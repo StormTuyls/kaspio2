@@ -8,7 +8,7 @@ import { PotForm } from "../components/PotForm";
 import { BalanceChart } from "../components/BalanceChart";
 import { UpgradeHint } from "../components/UpgradeHint";
 import { Avatar } from "./Overview";
-import { exportPotCsv } from "../csv";
+import { exportPotCsv, exportPotPdf } from "../csv";
 
 type Props = {
   pot: Pot;
@@ -133,6 +133,16 @@ export function PotDetail({
               >
                 ⬇ CSV
               </button>
+              {chartsEnabled(tier) && (
+                <button
+                  onClick={() => exportPotPdf(pot, potTx)}
+                  disabled={potTx.length === 0}
+                  className="btn-secondary text-sm"
+                  title="Exporteer als PDF (Pro)"
+                >
+                  ⬇ PDF
+                </button>
+              )}
               <button onClick={() => setEditing(true)} className="btn-secondary text-sm">
                 Bewerken
               </button>

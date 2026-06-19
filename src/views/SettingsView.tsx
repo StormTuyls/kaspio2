@@ -100,29 +100,28 @@ export function SettingsView({
               E-mailmeldingen
             </h2>
             <p className="text-sm text-navy-500 dark:text-navy-300">
-              Krijg een mail wanneer er iets belangrijks gebeurt.
+              Krijg een mail wanneer er iets belangrijks gebeurt. Beschikbaar
+              vanaf Pro.
             </p>
           </div>
-          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-            Demo · geen echte e-mails
-          </span>
+          <span className="badge-amber">Pro</span>
         </div>
 
         <div className="space-y-1 divide-y divide-navy-100 dark:divide-navy-700/60">
           <Toggle
             label="Bij nieuwe transactie"
-            description="Mail wanneer een transactie wordt toegevoegd of verwijderd."
+            description="Potverantwoordelijke en beheerders krijgen een mail bij een nieuwe transactie."
             value={notifications.emailOnTransaction}
             onChange={(v) => onChange({ emailOnTransaction: v })}
           />
           <Toggle
-            label="Wanneer een potje wordt aangemaakt"
+            label="Wanneer een potje wordt aangemaakt (binnenkort)"
             description="Handig als meerdere admins potjes opzetten."
             value={notifications.emailOnPotCreated}
             onChange={(v) => onChange({ emailOnPotCreated: v })}
           />
           <Toggle
-            label="Wanneer een lid wordt toegevoegd"
+            label="Wanneer een lid wordt toegevoegd (binnenkort)"
             description="Krijg een melding bij nieuwe potjesbeheerders."
             value={notifications.emailOnMemberAdded}
             onChange={(v) => onChange({ emailOnMemberAdded: v })}

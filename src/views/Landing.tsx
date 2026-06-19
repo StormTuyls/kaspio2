@@ -942,7 +942,7 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
                 { text: "Volledige historiek" },
                 { text: "Grafieken & rapportage" },
                 { text: "Bankkoppeling via PSD2 (bèta)" },
-                { text: "Excel & PDF-export" },
+                { text: "PDF-export (CSV opent in Excel)" },
                 { text: "E-mail meldingen" },
                 { text: "Potgroepen (takken & ploegen)", no: true },
               ]}
