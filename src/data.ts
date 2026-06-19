@@ -918,11 +918,17 @@ export function useOrgMembers(orgId: string | null) {
       return;
     }
     setLoading(true);
+    // profiles wordt via twee FK's gerefereerd (user_id én invited_by), dus de
+    // embed MOET gedisambigueerd worden (!user_id), anders is de query ambigu
+    // en komt er een error -> lege ledenlijst.
     const { data, error } = await supabase
       .from("memberships")
-      .select("id, user_id, organisation_id, role, pot_id, created_at, profile:profiles(full_name, email)")
+      .select("id, user_id, organisation_id, role, pot_id, created_at, profile:profiles!user_id(full_name, email)")
       .eq("organisation_id", orgId)
       .order("created_at", { ascending: true });
+    if (error) {
+      console.warn("[Kaspio] useOrgMembers fetch failed:", error.message);
+    }
     if (!error && data) {
       const rows = data as unknown as MembershipWithProfile[];
       setMembers(
