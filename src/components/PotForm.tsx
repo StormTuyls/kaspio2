@@ -158,7 +158,7 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
       {showGroupField && (
         <Field
           label="Groep"
-          hint="Optioneel — bv. een tak, ploeg of werkgroep. Potjes in dezelfde groep staan samen in het overzicht."
+          hint="Optioneel. Bv. een tak, ploeg of werkgroep. Potjes in dezelfde groep staan samen in het overzicht."
         >
           <div className="space-y-2">
             <select
@@ -189,7 +189,7 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
         </Field>
       )}
 
-      <Field label="Doelbedrag" hint="Optioneel — bv. €500 voor het kamp">
+      <Field label="Doelbedrag" hint="Optioneel. Bv. €500 voor het kamp">
         <div className="relative">
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-navy-400">
             €
@@ -206,7 +206,7 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
         </div>
       </Field>
 
-      <Field label="Beschrijving" hint="Optioneel — wat is het doel van dit potje?">
+      <Field label="Beschrijving" hint="Optioneel. Wat is het doel van dit potje?">
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}

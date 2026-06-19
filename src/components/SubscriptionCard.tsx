@@ -91,9 +91,9 @@ export function SubscriptionCard({
           <div className="grid gap-3 sm:grid-cols-2">
             <PlanOption
               name="Pro"
-              price={yearly ? "€3,99" : "€4,99"}
+              price={yearly ? "€3,20" : "€4"}
               suffix="/maand"
-              features={["Onbeperkt potjes", "Tot 5 leden", "Grafieken & rapportage"]}
+              features={["Onbeperkt potjes", "Onbeperkt leden", "Grafieken & bankkoppeling"]}
               cta="Upgrade naar Pro"
               ctaStyle="fill"
               disabled={!isAdmin || busy !== null}
@@ -102,9 +102,9 @@ export function SubscriptionCard({
             />
             <PlanOption
               name="Team"
-              price={yearly ? "€16" : "€20"}
+              price={yearly ? "€8" : "€10"}
               suffix="/maand"
-              features={["Alles uit Pro", "Tot 25 leden", "Meerdere beheerders"]}
+              features={["Alles uit Pro", "Goedkeuringsflows", "Meerdere beheerders"]}
               cta="Upgrade naar Team"
               ctaStyle="amber"
               disabled={!isAdmin || busy !== null}

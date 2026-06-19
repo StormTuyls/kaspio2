@@ -55,7 +55,7 @@ export function BrandingSection({ branding, defaultBrandName, onChange, onReset 
             Whitelabel
           </h2>
           <p className="text-sm text-navy-500 dark:text-navy-300">
-            Maak deze workspace de jouwe — eigen merknaam, kleur en logo.
+            Maak deze workspace de jouwe met een eigen merknaam, kleur en logo.
           </p>
         </div>
         <button onClick={onReset} className="btn-secondary text-xs">

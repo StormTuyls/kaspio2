@@ -19,7 +19,7 @@ export function ThemeToggle() {
       onClick={() => setTheme(next)}
       className="flex items-center gap-1.5 rounded-xl border border-navy-100 bg-white px-2.5 py-1.5 text-xs font-semibold text-navy-600 shadow-sm transition hover:bg-navy-50 dark:border-navy-700 dark:bg-navy-800 dark:text-navy-200 dark:hover:bg-navy-700"
       aria-label={`Thema: ${labels[theme]}`}
-      title={`Thema: ${labels[theme]} — klik voor ${labels[next]}`}
+      title={`Thema: ${labels[theme]}. Klik voor ${labels[next]}`}
     >
       {icons[theme]}
       <span className="hidden sm:inline">{labels[theme]}</span>
