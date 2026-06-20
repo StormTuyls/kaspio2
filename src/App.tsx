@@ -17,6 +17,7 @@ import {
   useAuditLog,
   useMyOrgs,
   useOrgInvites,
+  useNotificationSettings,
   useOrgMembers,
   usePotGroups,
   usePots,
@@ -373,7 +374,7 @@ function useBridgedStore(
           description: input.description,
           groupId: input.groupId ?? null,
         });
-        if (orgId && localStore.state.notifications.emailOnPotCreated) {
+        if (orgId) {
           void notifyOrgEvent(orgId, "pot_created", input.name);
         }
       },
@@ -408,9 +409,9 @@ function useBridgedStore(
           counterparty: input.counterparty || null,
           memo: input.memo || null,
         });
-        // Best-effort e-mailmelding (Pro+; Edge Function checkt tier + ontvangers).
-        // Gegate op de "bij nieuwe transactie"-voorkeur van de toevoeger.
-        if (orgId && localStore.state.notifications.emailOnTransaction) {
+        // Best-effort e-mailmelding. De Edge Function checkt tier én filtert per
+        // ontvanger op diens notificatie-voorkeur (DB).
+        if (orgId) {
           void notifyTransactionAdded({
             orgId,
             potId: input.potId,
@@ -518,6 +519,8 @@ function AuthedApp({
   } = useOrgMembers(orgId);
   const { entries: auditEntries, loading: auditLoading } = useAuditLog(orgId);
   const { tier, limits } = useSubscription(orgId);
+  const { settings: notifSettings, update: updateNotifSettings } =
+    useNotificationSettings(account.id);
   const {
     groups: dbGroups,
     addGroup,
@@ -824,9 +827,9 @@ function AuthedApp({
                 memberCount={uiMembers.length}
                 isAdmin={!!isAdmin}
                 isOwner={org.owner_id === account.id}
-                notifications={store.state.notifications}
+                notifications={notifSettings}
                 branding={store.state.branding}
-                onChange={(patch) => store.updateNotifications(patch)}
+                onChange={(patch) => updateNotifSettings(patch)}
                 onBrandingChange={(patch) => store.updateBranding(patch)}
                 onBrandingReset={() => store.resetBranding()}
                 onDeleteOrg={() => deleteOrg(org.id)}

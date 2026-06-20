@@ -74,8 +74,21 @@ Deno.serve(async (req: Request) => {
     if (actorId) ids.delete(actorId);
     if (ids.size === 0) return json({ ok: true, sent: 0 }, 200);
 
+    // Filter per ontvanger op diens voorkeur voor dit event (default: aan).
+    const prefCol = event === "pot_created" ? "email_on_pot_created" : "email_on_member_added";
+    const { data: prefs } = await admin
+      .from("notification_settings")
+      .select(`user_id, ${prefCol}`)
+      .in("user_id", [...ids]);
+    const optedOut = new Set(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (prefs ?? []).filter((p: any) => p[prefCol] === false).map((p: any) => p.user_id),
+    );
+    const wanted = [...ids].filter((id) => !optedOut.has(id));
+    if (wanted.length === 0) return json({ ok: true, sent: 0 }, 200);
+
     const { data: profiles } = await admin
-      .from("profiles").select("email, full_name").in("id", [...ids]);
+      .from("profiles").select("email, full_name").in("id", wanted);
     const emails = (profiles ?? [])
       .map((p) => p.email)
       .filter((e): e is string => !!e && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e));

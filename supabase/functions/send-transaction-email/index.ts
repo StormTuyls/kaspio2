@@ -116,10 +116,21 @@ Deno.serve(async (req: Request) => {
 
     if (recipientIds.size === 0) return json({ ok: true, sent: 0 }, 200);
 
+    // Filter per ontvanger op diens voorkeur (default: aan).
+    const { data: prefs } = await admin
+      .from("notification_settings")
+      .select("user_id, email_on_transaction")
+      .in("user_id", [...recipientIds]);
+    const optedOut = new Set(
+      (prefs ?? []).filter((p) => p.email_on_transaction === false).map((p) => p.user_id),
+    );
+    const wanted = [...recipientIds].filter((id) => !optedOut.has(id));
+    if (wanted.length === 0) return json({ ok: true, sent: 0 }, 200);
+
     const { data: profiles } = await admin
       .from("profiles")
       .select("email, full_name")
-      .in("id", [...recipientIds]);
+      .in("id", wanted);
     const emails = (profiles ?? [])
       .map((p) => p.email)
       .filter((e): e is string => !!e && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e));

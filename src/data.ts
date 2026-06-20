@@ -17,6 +17,8 @@ import type {
   Transaction,
 } from "./supabase";
 import { supabase } from "./supabase";
+import type { NotificationSettings } from "./types";
+import { defaultNotificationSettings } from "./types";
 
 // =============================================================================
 // useRealtimeRefresh , live sync via Supabase Realtime
@@ -890,6 +892,63 @@ export async function notifyOrgEvent(
 
     console.warn("[Kaspio] send-org-event-email niet bereikbaar:", err);
   }
+}
+
+// =============================================================================
+// useNotificationSettings , per-gebruiker voorkeuren in de DB
+// =============================================================================
+
+export function useNotificationSettings(userId: string | null) {
+  const [settings, setSettings] = useState<NotificationSettings>(
+    defaultNotificationSettings,
+  );
+
+  const fetchSettings = useCallback(async () => {
+    if (!userId) return;
+    const { data } = await supabase
+      .from("notification_settings")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (data) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const d = data as any;
+      setSettings({
+        emailOnTransaction: d.email_on_transaction ?? true,
+        emailOnPotCreated: d.email_on_pot_created ?? false,
+        emailOnMemberAdded: d.email_on_member_added ?? true,
+        digestFrequency: d.digest_frequency ?? "never",
+      });
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
+
+  const update = useCallback(
+    async (patch: Partial<NotificationSettings>) => {
+      setSettings((prev) => {
+        const next = { ...prev, ...patch };
+        if (userId) {
+          void supabase
+            .from("notification_settings")
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .upsert({
+              user_id: userId,
+              email_on_transaction: next.emailOnTransaction,
+              email_on_pot_created: next.emailOnPotCreated,
+              email_on_member_added: next.emailOnMemberAdded,
+              digest_frequency: next.digestFrequency,
+            } as any);
+        }
+        return next;
+      });
+    },
+    [userId],
+  );
+
+  return { settings, update };
 }
 
 // =============================================================================
