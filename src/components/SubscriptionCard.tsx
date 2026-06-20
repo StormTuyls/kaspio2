@@ -104,7 +104,13 @@ export function SubscriptionCard({
               name="Team"
               price={yearly ? "€8" : "€10"}
               suffix="/maand"
-              features={["Alles uit Pro", "Goedkeuringsflows", "Meerdere beheerders"]}
+              features={[
+                "Alles uit Pro",
+                "Potgroepen",
+                "Goedkeuringsflows",
+                "Bijlagen (bonnetjes & facturen)",
+                "Meerdere beheerders",
+              ]}
               cta="Upgrade naar Team"
               ctaStyle="amber"
               disabled={!isAdmin || busy !== null}

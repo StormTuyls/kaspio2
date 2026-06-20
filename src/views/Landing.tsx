@@ -910,9 +910,9 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
               price="€0"
               desc="Perfect om te starten. Geen kaart vereist."
               features={[
-                { text: "Tot 3 virtuele potjes" },
+                { text: "Tot 5 virtuele potjes" },
                 { text: "Manuele transacties invoeren" },
-                { text: "2 gebruikers" },
+                { text: "3 gebruikers" },
                 { text: "Basis historiek (30 dagen)" },
                 { text: "CSV-export" },
                 { text: "Bankkoppeling (PSD2)", no: true },
@@ -945,6 +945,7 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
                 { text: "PDF-export (CSV opent in Excel)" },
                 { text: "E-mail meldingen" },
                 { text: "Potgroepen (takken & ploegen)", no: true },
+                { text: "Bijlagen (bonnetjes & facturen)", no: true },
               ]}
               cta="Kies Pro"
               ctaStyle="fill"
@@ -966,7 +967,7 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
                 { text: "Potgroepen (takken & ploegen)" },
                 { text: "Meerdere beheerders" },
                 { text: "Goedkeuringsflows" },
-                { text: "Memo's & bijlagen" },
+                { text: "Bijlagen (bonnetjes & facturen)" },
                 { text: "Prioriteitsondersteuning" },
               ]}
               note="Whitelabel en API op aanvraag, neem contact op."

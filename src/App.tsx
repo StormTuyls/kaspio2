@@ -763,6 +763,7 @@ function AuthedApp({
                 currentUser={currentUser}
                 groups={uiGroups}
                 tier={tier}
+                orgId={orgId}
                 onUpgrade={goToUpgrade}
                 onCreateGroup={addGroup}
                 onBack={() => setSelectedPotId(null)}

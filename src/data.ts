@@ -587,7 +587,7 @@ export function usePotGroups(orgId: string | null) {
 
 /** Limieten per tier. Moeten matchen met de triggers in supabase/subscriptions.sql. */
 export const TIER_LIMITS: Record<SubTier, { pots: number; members: number }> = {
-  free: { pots: 3, members: 2 },
+  free: { pots: 5, members: 3 },
   pro: { pots: Infinity, members: Infinity },
   team: { pots: Infinity, members: Infinity },
 };
@@ -606,6 +606,121 @@ export function chartsEnabled(tier: SubTier): boolean {
 /** Potgroepen (takken/ploegen) zijn een Team-feature. */
 export function groupsEnabled(tier: SubTier): boolean {
   return tier === "team";
+}
+
+/** Bijlagen (bonnetjes/facturen) bij transacties zijn een Team-feature. */
+export function attachmentsEnabled(tier: SubTier): boolean {
+  return tier === "team";
+}
+
+// =============================================================================
+// useAttachments , bijlagen bij één transactie (Team-feature)
+// =============================================================================
+// Bestanden in de private Storage-bucket 'attachments', metadata in
+// public.transaction_attachments. Pad: {orgId}/{transactionId}/{ts}-{naam}.
+// Team-gating gebeurt server-side (trigger) en in de UI (attachmentsEnabled).
+
+export type Attachment = {
+  id: string;
+  transaction_id: string;
+  organisation_id: string;
+  path: string;
+  name: string;
+  size: number | null;
+  created_at: string;
+};
+
+const ATTACH_BUCKET = "attachments";
+const MAX_ATTACH_BYTES = 10 * 1024 * 1024; // 10 MB
+
+export function useAttachments(
+  orgId: string | null,
+  transactionId: string | null,
+) {
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const refresh = useCallback(async () => {
+    if (!orgId || !transactionId) {
+      setAttachments([]);
+      return;
+    }
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("transaction_attachments")
+      .select("id, transaction_id, organisation_id, path, name, size, created_at")
+      .eq("transaction_id", transactionId)
+      .order("created_at", { ascending: true });
+    if (error) console.error("useAttachments:", error.message);
+    setAttachments((data as Attachment[]) ?? []);
+    setLoading(false);
+  }, [orgId, transactionId]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const upload = useCallback(
+    async (file: File) => {
+      if (!orgId || !transactionId) throw new Error("Geen transactie geselecteerd");
+      if (file.size > MAX_ATTACH_BYTES) {
+        throw new Error("Bestand te groot (max 10 MB).");
+      }
+      // Pad-veilige naam; org-map is het eerste segment (storage-RLS leunt erop).
+      const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+      const path = `${orgId}/${transactionId}/${Date.now()}-${safeName}`;
+
+      const { error: upErr } = await supabase.storage
+        .from(ATTACH_BUCKET)
+        .upload(path, file, { upsert: false, contentType: file.type || undefined });
+      if (upErr) throw new Error(upErr.message);
+
+      const { error: insErr } = await supabase
+        .from("transaction_attachments")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert({
+          transaction_id: transactionId,
+          organisation_id: orgId,
+          path,
+          name: file.name,
+          size: file.size,
+        } as never);
+      if (insErr) {
+        // Rollback het verweesde object als de metadata-insert faalt (bv. Team-gate).
+        await supabase.storage.from(ATTACH_BUCKET).remove([path]);
+        throw new Error(insErr.message);
+      }
+      await refresh();
+    },
+    [orgId, transactionId, refresh],
+  );
+
+  const remove = useCallback(
+    async (att: Attachment) => {
+      await supabase.storage.from(ATTACH_BUCKET).remove([att.path]);
+      const { error } = await supabase
+        .from("transaction_attachments")
+        .delete()
+        .eq("id", att.id);
+      if (error) throw new Error(error.message);
+      await refresh();
+    },
+    [refresh],
+  );
+
+  // Tijdelijke download-URL (private bucket). 1 uur geldig.
+  const getUrl = useCallback(async (att: Attachment): Promise<string | null> => {
+    const { data, error } = await supabase.storage
+      .from(ATTACH_BUCKET)
+      .createSignedUrl(att.path, 3600);
+    if (error) {
+      console.error("getUrl:", error.message);
+      return null;
+    }
+    return data?.signedUrl ?? null;
+  }, []);
+
+  return { attachments, loading, upload, remove, getUrl, refresh };
 }
 
 export function useSubscription(orgId: string | null) {

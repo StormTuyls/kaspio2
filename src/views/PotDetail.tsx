@@ -1,12 +1,13 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { calcBalance, formatDate, formatEuro } from "../storage";
 import type { Member, Pot, PotGroup, Transaction, TransactionDirection } from "../types";
 import type { SubTier } from "../supabase";
-import { chartsEnabled } from "../data";
+import { attachmentsEnabled, chartsEnabled } from "../data";
 import { Modal } from "../components/Modal";
 import { PotForm } from "../components/PotForm";
 import { BalanceChart } from "../components/BalanceChart";
 import { UpgradeHint } from "../components/UpgradeHint";
+import { TransactionAttachments } from "../components/TransactionAttachments";
 import { Avatar } from "./Overview";
 import { exportPotCsv, exportPotPdf } from "../csv";
 
@@ -15,8 +16,10 @@ type Props = {
   transactions: Transaction[];
   members: Member[];
   currentUser: Member;
-  /** Licentie: grafieken zijn Pro+. */
+  /** Licentie: grafieken zijn Pro+, bijlagen zijn Team. */
   tier?: SubTier;
+  /** Org-id (nodig voor bijlagen / Storage-pad). */
+  orgId?: string | null;
   onUpgrade?: () => void;
   /** Potgroepen voor het bewerk-formulier. */
   groups?: PotGroup[];
@@ -44,6 +47,7 @@ export function PotDetail({
   members,
   currentUser,
   tier = "free",
+  orgId = null,
   onUpgrade,
   groups,
   onCreateGroup,
@@ -56,7 +60,10 @@ export function PotDetail({
   const [editing, setEditing] = useState(false);
   const [search, setSearch] = useState("");
   const [direction, setDirection] = useState<DirectionFilter>("all");
+  const [expandedTx, setExpandedTx] = useState<string | null>(null);
   const isAdmin = currentUser.role === "admin";
+  // Bijlagen (bonnetjes/facturen) zijn een Team-feature en vereisen een org-id.
+  const canUseAttachments = attachmentsEnabled(tier) && !!orgId;
   // Lezers zien alleen; admins en pot-verantwoordelijken mogen transacties
   // toevoegen. Verwijderen van transacties is admin-only (RLS dwingt dit ook af).
   const canAddTransaction = currentUser.role !== "reader";
@@ -313,6 +320,27 @@ export function PotDetail({
                       {tx.memo && (
                         <p className="mt-1 text-sm text-navy-500 dark:text-navy-400">{tx.memo}</p>
                       )}
+                      {canUseAttachments && (
+                        <div className="mt-2">
+                          <button
+                            onClick={() =>
+                              setExpandedTx((id) => (id === tx.id ? null : tx.id))
+                            }
+                            className="text-xs font-medium text-iris-700 hover:underline dark:text-iris-300"
+                          >
+                            📎 Bijlagen {expandedTx === tx.id ? "verbergen" : "tonen"}
+                          </button>
+                          {expandedTx === tx.id && orgId && (
+                            <div className="mt-2 rounded-lg bg-canvas p-3 dark:bg-navy-800/40">
+                              <TransactionAttachments
+                                orgId={orgId}
+                                transactionId={tx.id}
+                                isAdmin={isAdmin}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -329,8 +357,8 @@ export function PotDetail({
                   </thead>
                   <tbody className="divide-y divide-navy-100 dark:divide-navy-700/60">
                     {filtered.map((tx) => (
+                      <Fragment key={tx.id}>
                       <tr
-                        key={tx.id}
                         className="transition hover:bg-canvas dark:hover:bg-navy-800/40"
                       >
                         <td className="whitespace-nowrap px-4 py-3 text-navy-500 dark:text-navy-300">
@@ -353,19 +381,49 @@ export function PotDetail({
                           {formatEuro(tx.amount)}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          {isAdmin && (
-                            <button
-                              onClick={() => {
-                                if (confirm("Transactie verwijderen?")) onDeleteTransaction(tx.id);
-                              }}
-                              className="text-xs text-navy-300 hover:text-rose-600 dark:text-navy-500 dark:hover:text-rose-400"
-                              aria-label="Verwijderen"
-                            >
-                              ✕
-                            </button>
-                          )}
+                          <div className="flex items-center justify-end gap-2">
+                            {canUseAttachments && (
+                              <button
+                                onClick={() =>
+                                  setExpandedTx((id) => (id === tx.id ? null : tx.id))
+                                }
+                                className={`text-sm ${
+                                  expandedTx === tx.id
+                                    ? "text-iris-700 dark:text-iris-300"
+                                    : "text-navy-300 hover:text-iris-700 dark:text-navy-500 dark:hover:text-iris-300"
+                                }`}
+                                aria-label="Bijlagen"
+                                title="Bijlagen"
+                              >
+                                📎
+                              </button>
+                            )}
+                            {isAdmin && (
+                              <button
+                                onClick={() => {
+                                  if (confirm("Transactie verwijderen?")) onDeleteTransaction(tx.id);
+                                }}
+                                className="text-xs text-navy-300 hover:text-rose-600 dark:text-navy-500 dark:hover:text-rose-400"
+                                aria-label="Verwijderen"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
+                      {canUseAttachments && expandedTx === tx.id && orgId && (
+                        <tr className="bg-canvas dark:bg-navy-800/40">
+                          <td colSpan={5} className="px-4 py-3">
+                            <TransactionAttachments
+                              orgId={orgId}
+                              transactionId={tx.id}
+                              isAdmin={isAdmin}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>

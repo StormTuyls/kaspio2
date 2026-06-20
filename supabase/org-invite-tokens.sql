@@ -71,7 +71,7 @@ begin
   -- dat het plan vol zit en de genodigde geen kapotte link krijgt. Telt
   -- bestaande leden + openstaande uitnodigingen (gereserveerde plekken).
   v_tier := public.org_tier(p_org_id);
-  v_max := case v_tier when 'free' then 2 else 1000000 end;
+  v_max := case v_tier when 'free' then 3 else 1000000 end;
   select count(distinct user_id) into v_members
   from public.memberships where organisation_id = p_org_id;
   select count(*) into v_pending
