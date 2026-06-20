@@ -132,14 +132,14 @@ export function SettingsView({
             onChange={(v) => onChange({ emailOnTransaction: v })}
           />
           <Toggle
-            label="Wanneer een potje wordt aangemaakt (binnenkort)"
-            description="Handig als meerdere admins potjes opzetten."
+            label="Wanneer een potje wordt aangemaakt"
+            description="Beheerders krijgen een mail als er een nieuw potje bijkomt."
             value={notifications.emailOnPotCreated}
             onChange={(v) => onChange({ emailOnPotCreated: v })}
           />
           <Toggle
-            label="Wanneer een lid wordt toegevoegd (binnenkort)"
-            description="Krijg een melding bij nieuwe potjesbeheerders."
+            label="Wanneer een lid zich aansluit"
+            description="Beheerders krijgen een mail als iemand via een uitnodiging lid wordt."
             value={notifications.emailOnMemberAdded}
             onChange={(v) => onChange({ emailOnMemberAdded: v })}
           />

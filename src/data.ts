@@ -876,6 +876,22 @@ export function setApprovalSettings(
   });
 }
 
+/** Best-effort melding voor org-gebeurtenissen (nieuw potje / nieuw lid). */
+export async function notifyOrgEvent(
+  orgId: string,
+  event: "pot_created" | "member_added",
+  potName?: string,
+): Promise<void> {
+  try {
+    await supabase.functions.invoke("send-org-event-email", {
+      body: { orgId, event, potName },
+    });
+  } catch (err) {
+
+    console.warn("[Kaspio] send-org-event-email niet bereikbaar:", err);
+  }
+}
+
 // =============================================================================
 // acceptPendingInvites , éénmalige RPC call bij login
 // =============================================================================

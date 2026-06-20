@@ -11,6 +11,7 @@ import {
   rejectTransaction,
   setApprovalSettings,
   lookupOrgInvite,
+  notifyOrgEvent,
   notifyTransactionAdded,
   redeemOrgInvite,
   useAuditLog,
@@ -255,6 +256,10 @@ function useEnsureOrg(
         if (res.status === "ok" || res.status === "accepted") {
           joinedOrgId = res.orgId;
           joined += 1;
+          // Melding aan admins bij een verse join (niet bij 'accepted' = al lid).
+          if (res.status === "ok" && res.orgId) {
+            void notifyOrgEvent(res.orgId, "member_added");
+          }
           clearPendingInviteToken();
         } else if (res.status === "not_found" || res.status === "expired") {
           // Dode token: niet blijven proberen.
@@ -368,6 +373,9 @@ function useBridgedStore(
           description: input.description,
           groupId: input.groupId ?? null,
         });
+        if (orgId && localStore.state.notifications.emailOnPotCreated) {
+          void notifyOrgEvent(orgId, "pot_created", input.name);
+        }
       },
       updatePot: async (
         id: string,
