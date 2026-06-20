@@ -34,6 +34,8 @@ export type Transaction = {
   occurredOn: string;
   counterparty: string;
   memo?: string;
+  /** 'pending' = wacht op goedkeuring (telt niet mee in saldo). */
+  status?: "approved" | "pending";
   createdAt: string;
 };
 

@@ -20,6 +20,9 @@ type Props = {
   onOpenGroup: (groupId: string | null) => void;
   /** Open de "Nog toe te wijzen" inbox (admin). */
   onOpenInbox?: () => void;
+  /** Goedkeuren/afwijzen van transacties die op goedkeuring wachten (admin). */
+  onApprove?: (txnId: string) => void;
+  onReject?: (txnId: string) => void;
 };
 
 export function DashboardView({
@@ -34,6 +37,8 @@ export function DashboardView({
   onSelect,
   onOpenGroup,
   onOpenInbox,
+  onApprove,
+  onReject,
 }: Props) {
   const isAdmin = currentUser.role === "admin";
   const isReader = currentUser.role === "reader";
@@ -48,13 +53,17 @@ export function DashboardView({
   const txInScope = allTransactions.filter((t) =>
     t.potId ? visibleIds.has(t.potId) : isAdmin,
   );
-  // Saldo = alle transacties (het werkelijke bedrag op de rekening).
-  const total = txInScope.reduce(
+  // Goedgekeurde transacties tellen mee in saldo/totalen; 'pending' niet.
+  const approvedInScope = txInScope.filter((t) => t.status !== "pending");
+  // Saldo = alle goedgekeurde transacties (het werkelijke bedrag op de rekening).
+  const total = approvedInScope.reduce(
     (s, t) => s + (t.direction === "in" ? t.amount : -t.amount),
     0,
   );
   const flowStart = flowWindowStart(flowPeriod);
-  const flowTx = txInScope.filter((t) => t.occurredOn >= flowStart);
+  const flowTx = approvedInScope.filter((t) => t.occurredOn >= flowStart);
+  // Transacties die op goedkeuring wachten (admin keurt ze goed/af).
+  const pendingApprovals = allTransactions.filter((t) => t.status === "pending");
   const totalIn = flowTx
     .filter((t) => t.direction === "in")
     .reduce((s, t) => s + t.amount, 0);
@@ -154,6 +163,55 @@ export function DashboardView({
             →
           </span>
         </button>
+      )}
+
+      {/* Wacht op goedkeuring (admin) */}
+      {isAdmin && pendingApprovals.length > 0 && (
+        <div className="rounded-2xl border border-amber-200 bg-white p-5 dark:border-amber-900/40 dark:bg-navy-900">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-bold tracking-tight text-slate-900 dark:text-navy-50">
+            Wacht op goedkeuring
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 font-num text-xs font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+              {pendingApprovals.length}
+            </span>
+          </h2>
+          <ul className="space-y-2">
+            {pendingApprovals.map((t) => (
+              <li
+                key={t.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2.5 dark:border-navy-700/60 dark:bg-navy-800/40"
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-slate-900 dark:text-navy-50">
+                    {t.counterparty || "Uitgave"}
+                    <span className="ml-2 font-normal text-slate-400">
+                      {t.potId ? potById.get(t.potId)?.name ?? "—" : "Nog toe te wijzen"}
+                    </span>
+                  </div>
+                  <div className="font-num text-xs text-slate-400">
+                    {formatDate(t.occurredOn)}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-num text-sm font-semibold tabular-nums text-rose-600 dark:text-rose-400">
+                    −{formatEuro(t.amount)}
+                  </span>
+                  <button
+                    onClick={() => onApprove?.(t.id)}
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                  >
+                    Goedkeuren
+                  </button>
+                  <button
+                    onClick={() => onReject?.(t.id)}
+                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 dark:border-navy-700"
+                  >
+                    Afwijzen
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {txInScope.length > 0 &&

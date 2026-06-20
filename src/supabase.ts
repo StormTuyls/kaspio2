@@ -147,6 +147,9 @@ export interface Organisation {
   id: string;
   name: string;
   owner_id: string;
+  /** Goedkeuringsflows (Team): vereis goedkeuring voor uitgaven boven de drempel. */
+  require_approval?: boolean;
+  approval_threshold?: number;
   created_at: string;
   updated_at: string;
 }
@@ -196,6 +199,8 @@ export interface Transaction {
   created_by: string | null;
   /** Verwijst naar de originele transactie als deze uit een splitsing komt. */
   split_from: string | null;
+  /** 'approved' (telt mee) of 'pending' (wacht op goedkeuring, telt niet mee). */
+  status?: "approved" | "pending";
   created_at: string;
 }
 

@@ -306,7 +306,7 @@ export function useAppState(accountId: string, bootstrapAdminName?: string) {
 
 export function calcBalance(transactions: Transaction[], potId: string) {
   return transactions
-    .filter((t) => t.potId === potId)
+    .filter((t) => t.potId === potId && t.status !== "pending")
     .reduce((sum, t) => sum + (t.direction === "in" ? t.amount : -t.amount), 0);
 }
 

@@ -5,8 +5,11 @@ import "./App.css";
 import { useAppState } from "./storage";
 import {
   acceptPendingInvites,
+  approveTransaction,
   groupMembersByUser,
   groupsEnabled,
+  rejectTransaction,
+  setApprovalSettings,
   lookupOrgInvite,
   notifyTransactionAdded,
   redeemOrgInvite,
@@ -312,6 +315,7 @@ function dbTxToUiTx(t: DbTransaction): Transaction {
     occurredOn: t.occurred_on,
     counterparty: t.counterparty ?? "",
     memo: t.memo ?? undefined,
+    status: t.status ?? "approved",
     createdAt: t.created_at,
   };
 }
@@ -818,6 +822,14 @@ function AuthedApp({
                 onBrandingChange={(patch) => store.updateBranding(patch)}
                 onBrandingReset={() => store.resetBranding()}
                 onDeleteOrg={() => deleteOrg(org.id)}
+                approvalAvailable={tier === "team"}
+                requireApproval={org.require_approval ?? false}
+                approvalThreshold={org.approval_threshold ?? 0}
+                onSetApproval={async (require, threshold) => {
+                  const res = await setApprovalSettings(org.id, require, threshold);
+                  if (!res.error) await refreshOrgs();
+                  return res;
+                }}
               />
             ) : (
               <DashboardView
@@ -836,6 +848,8 @@ function AuthedApp({
                   setFocusGroup(groupId);
                 }}
                 onOpenInbox={isAdmin ? () => setShowInbox(true) : undefined}
+                onApprove={isAdmin ? (id) => void approveTransaction(id) : undefined}
+                onReject={isAdmin ? (id) => void rejectTransaction(id) : undefined}
               />
             )}
           </main>

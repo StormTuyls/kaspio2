@@ -842,6 +842,41 @@ export async function notifyTransactionAdded(payload: {
 }
 
 // =============================================================================
+// Goedkeuringsflows (Team)
+// =============================================================================
+
+async function callVoidRpc(
+  fn: string,
+  args: Record<string, unknown>,
+): Promise<{ error: string | null }> {
+  const { error } = await (
+    supabase.rpc as unknown as (
+      f: string,
+      a: Record<string, unknown>,
+    ) => Promise<{ error: Error | null }>
+  )(fn, args);
+  return { error: error ? error.message : null };
+}
+
+export function approveTransaction(txnId: string) {
+  return callVoidRpc("approve_transaction", { p_txn_id: txnId });
+}
+export function rejectTransaction(txnId: string) {
+  return callVoidRpc("reject_transaction", { p_txn_id: txnId });
+}
+export function setApprovalSettings(
+  orgId: string,
+  require: boolean,
+  threshold: number,
+) {
+  return callVoidRpc("set_approval_settings", {
+    p_org: orgId,
+    p_require: require,
+    p_threshold: threshold,
+  });
+}
+
+// =============================================================================
 // acceptPendingInvites , éénmalige RPC call bij login
 // =============================================================================
 

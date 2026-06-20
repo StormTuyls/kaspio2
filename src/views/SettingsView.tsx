@@ -4,6 +4,7 @@ import type { Branding } from "../branding";
 import type { SubTier } from "../supabase";
 import { BrandingSection } from "../components/BrandingSection";
 import { SubscriptionCard } from "../components/SubscriptionCard";
+import { UpgradeHint } from "../components/UpgradeHint";
 
 type Account = {
   id: string;
@@ -28,6 +29,11 @@ type Props = {
   onBrandingChange: (patch: Partial<Branding>) => void;
   onBrandingReset: () => void;
   onDeleteOrg: () => Promise<{ error: string | null }>;
+  /** Goedkeuringsflows (Team). */
+  approvalAvailable: boolean;
+  requireApproval: boolean;
+  approvalThreshold: number;
+  onSetApproval: (require: boolean, threshold: number) => Promise<{ error: string | null }>;
 };
 
 export function SettingsView({
@@ -45,6 +51,10 @@ export function SettingsView({
   onBrandingChange,
   onBrandingReset,
   onDeleteOrg,
+  approvalAvailable,
+  requireApproval,
+  approvalThreshold,
+  onSetApproval,
 }: Props) {
   return (
     <div className="space-y-6">
@@ -64,6 +74,13 @@ export function SettingsView({
         potCount={potCount}
         memberCount={memberCount}
         isAdmin={isAdmin}
+      />
+
+      <ApprovalSection
+        available={approvalAvailable}
+        requireApproval={requireApproval}
+        threshold={approvalThreshold}
+        onSave={onSetApproval}
       />
 
       <BrandingSection
@@ -152,6 +169,93 @@ export function SettingsView({
       </div>
 
       {isOwner && <DangerZone orgName={orgName} onDeleteOrg={onDeleteOrg} />}
+    </div>
+  );
+}
+
+function ApprovalSection({
+  available,
+  requireApproval,
+  threshold,
+  onSave,
+}: {
+  available: boolean;
+  requireApproval: boolean;
+  threshold: number;
+  onSave: (require: boolean, threshold: number) => Promise<{ error: string | null }>;
+}) {
+  const [enabled, setEnabled] = useState(requireApproval);
+  const [amount, setAmount] = useState(String(threshold || 0));
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!available) {
+    return (
+      <UpgradeHint
+        badge="Team"
+        title="Goedkeuringsflows"
+        description="Laat uitgaven van potbeheerders boven een bedrag eerst goedkeuren. Beschikbaar in het Team-plan."
+      />
+    );
+  }
+
+  async function save() {
+    setBusy(true);
+    setError(null);
+    setSaved(false);
+    const res = await onSave(
+      enabled,
+      Math.max(0, Number(amount.replace(",", ".")) || 0),
+    );
+    setBusy(false);
+    if (res.error) {
+      setError(res.error);
+    } else {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }
+  }
+
+  return (
+    <div className="card p-6">
+      <h2 className="mb-1 text-base font-semibold text-navy-900 dark:text-navy-50">
+        Goedkeuring van uitgaven
+      </h2>
+      <p className="mb-4 text-sm text-navy-500 dark:text-navy-300">
+        Uitgaven van potbeheerders boven de drempel komen eerst in een
+        goedkeuringswachtrij op het dashboard. Beheerders boeken meteen.
+      </p>
+      <Toggle
+        label="Goedkeuring vereisen voor uitgaven"
+        value={enabled}
+        onChange={setEnabled}
+      />
+      <label className="mt-4 block">
+        <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+          Drempelbedrag (€)
+        </span>
+        <input
+          type="number"
+          min="0"
+          step="1"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          disabled={!enabled}
+          className="input max-w-[160px] disabled:opacity-50"
+        />
+        <span className="mt-1 block text-xs text-navy-400 dark:text-navy-300">
+          Uitgaven vanaf dit bedrag vereisen goedkeuring. 0 = alle uitgaven.
+        </span>
+      </label>
+      {error && (
+        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          {error}
+        </div>
+      )}
+      <button onClick={save} disabled={busy} className="btn-accent mt-4 text-sm">
+        {busy ? "Bezig…" : saved ? "✓ Opgeslagen" : "Opslaan"}
+      </button>
     </div>
   );
 }
