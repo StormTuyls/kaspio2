@@ -8,6 +8,7 @@ import {
   approveTransaction,
   groupMembersByUser,
   groupsEnabled,
+  importEnabled,
   rejectTransaction,
   setApprovalSettings,
   lookupOrgInvite,
@@ -46,6 +47,7 @@ import { PasswordResetView } from "./views/PasswordResetView";
 import { Modal } from "./components/Modal";
 import { PotForm } from "./components/PotForm";
 import { TransactionForm } from "./components/TransactionForm";
+import { ImportTransactionsModal } from "./components/ImportTransactionsModal";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { Mark } from "./components/Logo";
 import { paletteToCssVars } from "./branding";
@@ -340,6 +342,7 @@ function useBridgedStore(
   const {
     transactions: dbTx,
     addTransaction: addDbTx,
+    importTransactions: importDbTx,
     deleteTransaction: deleteDbTx,
     assignTransaction: assignDbTx,
   } = useTransactions(orgId);
@@ -425,6 +428,9 @@ function useBridgedStore(
       deleteTransaction: async (id: string) => {
         await deleteDbTx(id);
       },
+      // Bulk-import (CSV). Geen per-transactie e-mails: dat zou bij een afschrift
+      // honderden mails sturen. Eén batch-insert, één refresh.
+      importTransactions: importDbTx,
       assignTransaction: assignDbTx,
     };
   }, [
@@ -435,6 +441,7 @@ function useBridgedStore(
     updateDbPot,
     deleteDbPot,
     addDbTx,
+    importDbTx,
     deleteDbTx,
     assignDbTx,
   ]);
@@ -530,6 +537,7 @@ function AuthedApp({
   const [selectedPotId, setSelectedPotId] = useState<string | null>(null);
   const [showAddPot, setShowAddPot] = useState(false);
   const [showAddTx, setShowAddTx] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showNewOrg, setShowNewOrg] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
@@ -787,6 +795,9 @@ function AuthedApp({
                 onSelect={(id) => setSelectedPotId(id)}
                 onAddPot={() => setShowAddPot(true)}
                 onAddTransaction={isAdmin ? () => setShowAddTx(true) : undefined}
+                onImport={
+                  isAdmin && importEnabled(tier) ? () => setShowImport(true) : undefined
+                }
                 canAddPot={canAddPot}
                 potLimit={limits.pots}
                 onUpgrade={goToUpgrade}
@@ -905,6 +916,14 @@ function AuthedApp({
           />
         )}
       </Modal>
+
+      <ImportTransactionsModal
+        open={showImport}
+        pots={potsForUser}
+        allowUnallocated={!!isAdmin}
+        onImport={(inputs) => store.importTransactions(inputs)}
+        onClose={() => setShowImport(false)}
+      />
 
       <Modal
         open={showInbox}

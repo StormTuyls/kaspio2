@@ -18,6 +18,8 @@ type PotsViewProps = {
   onAddPot: () => void;
   /** Org-brede transactie toevoegen (admin). */
   onAddTransaction?: () => void;
+  /** CSV-import (Pro). Alleen aanwezig als de licentie het toelaat. */
+  onImport?: () => void;
   /** Licentie: kan er nog een potje bij? Anders upgrade-prompt. */
   canAddPot?: boolean;
   potLimit?: number;
@@ -38,6 +40,7 @@ export function PotsView({
   onSelect,
   onAddPot,
   onAddTransaction,
+  onImport,
   canAddPot = true,
   potLimit,
   onUpgrade,
@@ -93,6 +96,11 @@ export function PotsView({
         </h1>
         {isAdmin && (
           <div className="flex gap-2">
+            {onImport && (
+              <button onClick={onImport} className="btn-secondary text-sm">
+                Importeer CSV
+              </button>
+            )}
             {onAddTransaction && (
               <button onClick={onAddTransaction} className="btn-secondary text-sm">
                 + Transactie

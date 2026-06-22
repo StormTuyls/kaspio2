@@ -1,0 +1,383 @@
+import { useEffect, useMemo, useState } from "react";
+import type { Pot } from "../types";
+import type { TransactionInput } from "../data";
+import {
+  guessColumns,
+  parseAmount,
+  parseCsv,
+  parseDate,
+  type ColumnKey,
+} from "../csvImport";
+
+type Props = {
+  open: boolean;
+  pots: Pot[];
+  /** Admins mogen "Onverdeeld" laten staan (komt in de inbox). */
+  allowUnallocated: boolean;
+  onImport: (
+    inputs: TransactionInput[],
+  ) => Promise<{ error: string | null; count: number }>;
+  onClose: () => void;
+};
+
+type DirectionMode = "sign" | "all_in" | "all_out";
+
+type PreviewRow = {
+  occurredOn: string | null;
+  amount: number | null; // ondertekend zoals geparsed
+  counterparty: string;
+  memo: string;
+  valid: boolean;
+};
+
+const UNALLOCATED = "__unallocated__";
+
+const SAMPLE_CSV = `Datum;Bedrag;Tegenpartij;Mededeling
+20/06/2026;-12,50;Colruyt;Boodschappen materiaal
+21/06/2026;100,00;Jan Janssens;Lidgeld 2026
+22/06/2026;-45,00;Sportshop;Ballen`;
+
+function downloadSample() {
+  // BOM zodat Excel UTF-8 herkent.
+  const blob = new Blob(["﻿" + SAMPLE_CSV], {
+    type: "text/csv;charset=utf-8",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "kaspio-voorbeeld.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export function ImportTransactionsModal({
+  open,
+  pots,
+  allowUnallocated,
+  onImport,
+  onClose,
+}: Props) {
+  const [step, setStep] = useState<"upload" | "map">("upload");
+  const [fileName, setFileName] = useState("");
+  const [headers, setHeaders] = useState<string[]>([]);
+  const [rows, setRows] = useState<string[][]>([]);
+  const [cols, setCols] = useState<Record<ColumnKey, number>>({
+    date: -1,
+    amount: -1,
+    counterparty: -1,
+    memo: -1,
+  });
+  const [dirMode, setDirMode] = useState<DirectionMode>("sign");
+  const [targetPot, setTargetPot] = useState<string>(
+    allowUnallocated ? UNALLOCATED : (pots[0]?.id ?? ""),
+  );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Reset bij sluiten zodat een volgende import schoon start.
+  useEffect(() => {
+    if (!open) {
+      setStep("upload");
+      setFileName("");
+      setHeaders([]);
+      setRows([]);
+      setError(null);
+      setBusy(false);
+    }
+  }, [open]);
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result ?? "");
+      const parsed = parseCsv(text);
+      if (parsed.headers.length === 0 || parsed.rows.length === 0) {
+        setError("Kon geen rijen uit dit bestand lezen. Is het een CSV?");
+        return;
+      }
+      setFileName(file.name);
+      setHeaders(parsed.headers);
+      setRows(parsed.rows);
+      setCols(guessColumns(parsed.headers));
+      setStep("map");
+    };
+    reader.onerror = () => setError("Bestand kon niet gelezen worden.");
+    reader.readAsText(file);
+  }
+
+  // Bouw de preview op basis van de gekozen kolommen.
+  const preview = useMemo<PreviewRow[]>(() => {
+    if (step !== "map") return [];
+    return rows.map((r) => {
+      const occurredOn = cols.date >= 0 ? parseDate(r[cols.date] ?? "") : null;
+      const amount = cols.amount >= 0 ? parseAmount(r[cols.amount] ?? "") : null;
+      const counterparty = cols.counterparty >= 0 ? (r[cols.counterparty] ?? "").trim() : "";
+      const memo = cols.memo >= 0 ? (r[cols.memo] ?? "").trim() : "";
+      const valid = occurredOn !== null && amount !== null && amount !== 0;
+      return { occurredOn, amount, counterparty, memo, valid };
+    });
+  }, [step, rows, cols]);
+
+  const validRows = preview.filter((p) => p.valid);
+  const invalidCount = preview.length - validRows.length;
+  const canImport =
+    cols.date >= 0 && cols.amount >= 0 && validRows.length > 0 && !busy;
+
+  function directionOf(signed: number): "in" | "out" {
+    if (dirMode === "all_in") return "in";
+    if (dirMode === "all_out") return "out";
+    return signed < 0 ? "out" : "in";
+  }
+
+  async function runImport() {
+    setBusy(true);
+    setError(null);
+    const potId = targetPot === UNALLOCATED ? null : targetPot;
+    const inputs: TransactionInput[] = validRows.map((p) => ({
+      potId,
+      amount: Math.abs(p.amount as number),
+      direction: directionOf(p.amount as number),
+      occurredOn: p.occurredOn as string,
+      counterparty: p.counterparty || null,
+      memo: p.memo || null,
+    }));
+    const res = await onImport(inputs);
+    setBusy(false);
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    onClose();
+  }
+
+  if (!open) return null;
+
+  const colSelect = (key: ColumnKey, label: string, required?: boolean) => (
+    <label className="block">
+      <span className="mb-1 block text-xs font-medium text-navy-500 dark:text-navy-300">
+        {label} {required && <span className="text-rose-500">*</span>}
+      </span>
+      <select
+        value={cols[key]}
+        onChange={(e) => setCols({ ...cols, [key]: Number(e.target.value) })}
+        className="w-full rounded-lg border border-navy-200 bg-white px-2.5 py-1.5 text-sm dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50"
+      >
+        <option value={-1}>— niet gebruiken —</option>
+        {headers.map((h, i) => (
+          <option key={i} value={i}>
+            {h || `Kolom ${i + 1}`}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/40 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl dark:bg-navy-900 dark:ring-1 dark:ring-navy-700/60"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-navy-100 px-5 py-4 dark:border-navy-700/60">
+          <h2 className="text-lg font-bold text-navy-900 dark:text-white">
+            Transacties importeren
+          </h2>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-navy-400 hover:bg-navy-50 hover:text-navy-700 dark:hover:bg-navy-800 dark:hover:text-white"
+            aria-label="Sluiten"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          {step === "upload" && (
+            <div className="space-y-4">
+              <p className="text-sm text-navy-500 dark:text-navy-300">
+                Exporteer je rekeningafschrift als CSV vanuit je bank en laad het
+                hier in. We herkennen automatisch de scheidingstekens en
+                datum/bedrag-formaten.
+              </p>
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-navy-200 py-10 text-sm text-navy-500 hover:border-iris-400 hover:text-iris-700 dark:border-navy-600 dark:text-navy-300 dark:hover:border-iris-500">
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="hidden"
+                  onChange={handleFile}
+                />
+                <span className="text-2xl">📄</span>
+                <span className="font-medium">Kies een CSV-bestand</span>
+              </label>
+
+              {/* Hoe moet het eruit zien */}
+              <div className="rounded-xl border border-navy-100 bg-canvas p-4 dark:border-navy-700/60 dark:bg-navy-800/40">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+                    Voorbeeld
+                  </span>
+                  <button
+                    onClick={downloadSample}
+                    className="text-xs font-medium text-iris-700 hover:underline dark:text-iris-300"
+                  >
+                    ↓ Download voorbeeldbestand
+                  </button>
+                </div>
+                <pre className="overflow-x-auto rounded-lg bg-white p-3 text-xs leading-relaxed text-navy-600 ring-1 ring-navy-100 dark:bg-navy-900 dark:text-navy-200 dark:ring-navy-700/60">
+{`Datum;Bedrag;Tegenpartij;Mededeling
+20/06/2026;-12,50;Colruyt;Boodschappen
+21/06/2026;100,00;Jan Janssens;Lidgeld 2026`}
+                </pre>
+                <ul className="mt-3 space-y-1 text-xs text-navy-500 dark:text-navy-400">
+                  <li>
+                    <strong className="text-navy-700 dark:text-navy-200">Datum</strong> en{" "}
+                    <strong className="text-navy-700 dark:text-navy-200">Bedrag</strong> zijn
+                    verplicht. Tegenpartij en mededeling zijn optioneel.
+                  </li>
+                  <li>
+                    De kolomvolgorde maakt niet uit , je koppelt de kolommen in de
+                    volgende stap.
+                  </li>
+                  <li>
+                    Negatief bedrag = uitgave, positief = inkomst (of forceer het
+                    nadien zelf).
+                  </li>
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {step === "map" && (
+            <div className="space-y-5">
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="truncate text-navy-500 dark:text-navy-300">
+                  {fileName} · {rows.length} rijen
+                </span>
+                <button
+                  onClick={() => setStep("upload")}
+                  className="shrink-0 text-iris-700 hover:underline dark:text-iris-300"
+                >
+                  Ander bestand
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {colSelect("date", "Datum", true)}
+                {colSelect("amount", "Bedrag", true)}
+                {colSelect("counterparty", "Tegenpartij")}
+                {colSelect("memo", "Mededeling")}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="mb-1 block text-xs font-medium text-navy-500 dark:text-navy-300">
+                    In / uit bepalen
+                  </span>
+                  <select
+                    value={dirMode}
+                    onChange={(e) => setDirMode(e.target.value as DirectionMode)}
+                    className="w-full rounded-lg border border-navy-200 bg-white px-2.5 py-1.5 text-sm dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50"
+                  >
+                    <option value="sign">Op teken (− = uit, + = in)</option>
+                    <option value="all_out">Alles als uitgave</option>
+                    <option value="all_in">Alles als inkomst</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs font-medium text-navy-500 dark:text-navy-300">
+                    Toewijzen aan
+                  </span>
+                  <select
+                    value={targetPot}
+                    onChange={(e) => setTargetPot(e.target.value)}
+                    className="w-full rounded-lg border border-navy-200 bg-white px-2.5 py-1.5 text-sm dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50"
+                  >
+                    {allowUnallocated && (
+                      <option value={UNALLOCATED}>Onverdeeld (later toewijzen)</option>
+                    )}
+                    {pots.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              {/* Preview */}
+              <div className="rounded-xl border border-navy-100 dark:border-navy-700/60">
+                <div className="border-b border-navy-100 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-navy-400 dark:border-navy-700/60 dark:text-navy-300">
+                  Voorbeeld ({validRows.length} importeerbaar
+                  {invalidCount > 0 ? `, ${invalidCount} overgeslagen` : ""})
+                </div>
+                <div className="max-h-56 overflow-y-auto">
+                  <table className="w-full text-sm">
+                    <tbody className="divide-y divide-navy-100 dark:divide-navy-700/60">
+                      {preview.slice(0, 50).map((p, i) => (
+                        <tr
+                          key={i}
+                          className={p.valid ? "" : "opacity-40"}
+                          title={p.valid ? "" : "Datum of bedrag onleesbaar — wordt overgeslagen"}
+                        >
+                          <td className="whitespace-nowrap px-3 py-1.5 text-navy-500 dark:text-navy-300">
+                            {p.occurredOn ?? "—"}
+                          </td>
+                          <td className="px-3 py-1.5 text-navy-700 dark:text-navy-200">
+                            <span className="block max-w-[14rem] truncate">
+                              {p.counterparty || p.memo || "—"}
+                            </span>
+                          </td>
+                          <td
+                            className={`whitespace-nowrap px-3 py-1.5 text-right font-semibold tabular-nums ${
+                              p.amount !== null && directionOf(p.amount) === "in"
+                                ? "text-teal-700 dark:text-teal-300"
+                                : "text-amber-700 dark:text-amber-400"
+                            }`}
+                          >
+                            {p.amount === null
+                              ? "—"
+                              : `${directionOf(p.amount) === "in" ? "+" : "−"}€${Math.abs(p.amount).toFixed(2)}`}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <p className="mt-3 text-sm text-rose-600 dark:text-rose-400">{error}</p>
+          )}
+        </div>
+
+        {step === "map" && (
+          <div className="flex items-center justify-end gap-3 border-t border-navy-100 px-5 py-4 dark:border-navy-700/60">
+            <button
+              onClick={onClose}
+              className="rounded-lg px-4 py-2 text-sm font-medium text-navy-500 hover:bg-navy-50 dark:text-navy-300 dark:hover:bg-navy-800"
+            >
+              Annuleren
+            </button>
+            <button
+              onClick={runImport}
+              disabled={!canImport}
+              className="rounded-lg bg-iris-600 px-4 py-2 text-sm font-semibold text-white hover:bg-iris-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {busy ? "Importeren…" : `${validRows.length} importeren`}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

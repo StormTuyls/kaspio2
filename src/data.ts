@@ -399,6 +399,30 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
     return { error: null };
   }
 
+  /** Bulk-import (CSV): één insert voor alle rijen, daarna één refresh. */
+  async function importTransactions(
+    inputs: TransactionInput[],
+  ): Promise<{ error: string | null; count: number }> {
+    if (!orgId) return { error: "Geen organisatie geselecteerd.", count: 0 };
+    if (inputs.length === 0) return { error: "Geen rijen om te importeren.", count: 0 };
+    const rows = inputs.map((input) => ({
+      organisation_id: orgId,
+      pot_id: input.potId,
+      amount: input.amount,
+      direction: input.direction,
+      occurred_on: input.occurredOn,
+      memo: input.memo ?? null,
+      counterparty: input.counterparty ?? null,
+    }));
+    const { error: err } = await supabase
+      .from("transactions")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .insert(rows as any);
+    if (err) return { error: err.message, count: 0 };
+    await fetchTransactions();
+    return { error: null, count: rows.length };
+  }
+
   async function deleteTransaction(
     id: string,
   ): Promise<{ error: string | null }> {
@@ -480,6 +504,7 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
     loading,
     error,
     addTransaction,
+    importTransactions,
     deleteTransaction,
     assignTransaction,
     refresh: fetchTransactions,
@@ -606,6 +631,11 @@ export function chartsEnabled(tier: SubTier): boolean {
 /** Potgroepen (takken/ploegen) zijn een Team-feature. */
 export function groupsEnabled(tier: SubTier): boolean {
   return tier === "team";
+}
+
+/** CSV-import van transacties is een Pro+ feature (zoals op de landing). */
+export function importEnabled(tier: SubTier): boolean {
+  return tier !== "free";
 }
 
 /** Bijlagen (bonnetjes/facturen) bij transacties zijn een Team-feature. */
