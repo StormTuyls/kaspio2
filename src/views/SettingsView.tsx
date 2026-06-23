@@ -4,6 +4,7 @@ import type { Branding } from "../branding";
 import type { SubTier } from "../supabase";
 import { BrandingSection } from "../components/BrandingSection";
 import { SubscriptionCard } from "../components/SubscriptionCard";
+import { OwnerCompCodes } from "../components/OwnerCompCodes";
 import { UpgradeHint } from "../components/UpgradeHint";
 
 type Account = {
@@ -23,6 +24,8 @@ type Props = {
   memberCount: number;
   isAdmin: boolean;
   isOwner: boolean;
+  /** App-eigenaar: toont het test-/promocode-paneel. */
+  isPlatformAdmin?: boolean;
   notifications: NotificationSettings;
   branding: Branding;
   onChange: (patch: Partial<NotificationSettings>) => void;
@@ -45,6 +48,7 @@ export function SettingsView({
   memberCount,
   isAdmin,
   isOwner,
+  isPlatformAdmin,
   notifications,
   branding,
   onChange,
@@ -75,6 +79,8 @@ export function SettingsView({
         memberCount={memberCount}
         isAdmin={isAdmin}
       />
+
+      {isPlatformAdmin && <OwnerCompCodes />}
 
       <ApprovalSection
         available={approvalAvailable}

@@ -1191,6 +1191,62 @@ export async function redeemOrgInvite(
 }
 
 // =============================================================================
+// Comp-codes , gratis Pro/Team voor testers (enkel de app-eigenaar maakt ze)
+// =============================================================================
+
+/** Is de ingelogde gebruiker platform-admin (app-eigenaar)? */
+export function useIsPlatformAdmin(userId: string | null): boolean {
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    if (!userId) {
+      setIsAdmin(false);
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    supabase.rpc("is_platform_admin" as any).then(({ data }) => {
+      setIsAdmin(data === true);
+    });
+  }, [userId]);
+  return isAdmin;
+}
+
+/** Maak een comp-code (platform-admin). Returnt de code of een fout. */
+export async function createCompCode(
+  tier: "pro" | "team",
+  max: number,
+  note: string | null,
+): Promise<{ code: string | null; error: string | null }> {
+  const { data, error } = await supabase.rpc(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    "create_comp_code" as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { p_tier: tier, p_max: max, p_note: note } as any,
+  );
+  if (error) return { code: null, error: error.message };
+  return { code: (data as string) ?? null, error: null };
+}
+
+/** Wissel een comp-code in voor een org (caller moet admin zijn). */
+export async function redeemCompCode(
+  code: string,
+  orgId: string,
+): Promise<{ status: string; tier?: string }> {
+  const { data, error } = await supabase.rpc(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    "redeem_comp_code" as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { p_code: code, p_org_id: orgId } as any,
+  );
+  if (error) {
+    console.warn("[Kaspio] redeem_comp_code failed:", error.message);
+    return { status: "error" };
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const d = data as any;
+  return { status: d?.status ?? "error", tier: d?.tier };
+}
+
+// =============================================================================
 // useOrgMembers , active memberships voor een org (joined met profiles)
 // =============================================================================
 

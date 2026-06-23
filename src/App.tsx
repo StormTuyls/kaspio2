@@ -9,8 +9,10 @@ import {
   groupMembersByUser,
   groupsEnabled,
   importEnabled,
+  redeemCompCode,
   reportsEnabled,
   rejectTransaction,
+  useIsPlatformAdmin,
   setApprovalSettings,
   lookupOrgInvite,
   notifyOrgEvent,
@@ -71,6 +73,13 @@ import type { Branding } from "./branding";
 
 type Tab = "dashboard" | "potjes" | "groepen" | "leden" | "activiteit" | "instellingen";
 type PublicView = "landing" | "login" | "signup";
+
+// Comp-code (?comp=CODE) vroeg inlezen, vóór de invite-parsing de query
+// opschoont. Wordt verzilverd zodra de gebruiker een org-admin is.
+const INITIAL_COMP_CODE =
+  typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("comp")
+    : null;
 
 // Schermvullende fallback terwijl een lazy-geladen view binnenkomt.
 const routeFallback = (
@@ -619,6 +628,42 @@ function AuthedApp({
       : "reader";
   const isReader = myRole === "reader";
 
+  const isPlatformAdmin = useIsPlatformAdmin(account.id);
+
+  // Comp-code verzilveren: gratis Pro/Team voor testers. Pas wanneer de gebruiker
+  // admin van de actieve org is. Eénmalige bevestiging, daarna tier verversen.
+  const [pendingComp, setPendingComp] = useState<string | null>(INITIAL_COMP_CODE);
+  useEffect(() => {
+    if (!pendingComp || !orgId || !isAdmin) return;
+    let cancelled = false;
+    const code = pendingComp;
+    setPendingComp(null); // niet opnieuw proberen
+    (async () => {
+      const ok = window.confirm(
+        `Gratis testabonnement activeren voor "${org?.name ?? "deze organisatie"}" met code ${code}?`,
+      );
+      if (!ok || cancelled) return;
+      const res = await redeemCompCode(code, orgId);
+      if (cancelled) return;
+      if (res.status === "ok") {
+        await refreshSub();
+        setUpgradeNotice("success");
+        setTimeout(() => setUpgradeNotice(null), 6000);
+      } else {
+        const msg: Record<string, string> = {
+          not_admin: "Je moet beheerder van deze organisatie zijn.",
+          not_found: "Deze testcode bestaat niet.",
+          expired: "Deze testcode is vervallen.",
+          used_up: "Deze testcode is al volledig gebruikt.",
+        };
+        alert(msg[res.status] ?? "Code inwisselen mislukt.");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pendingComp, orgId, isAdmin, org?.name, refreshSub]);
+
   // Synthetische currentUser, altijd gedefinieerd zolang session bestaat.
   const currentUser = {
     id: account.id,
@@ -906,6 +951,7 @@ function AuthedApp({
                 memberCount={uiMembers.length}
                 isAdmin={!!isAdmin}
                 isOwner={org.owner_id === account.id}
+                isPlatformAdmin={isPlatformAdmin}
                 notifications={notifSettings}
                 branding={store.state.branding}
                 onChange={(patch) => updateNotifSettings(patch)}
