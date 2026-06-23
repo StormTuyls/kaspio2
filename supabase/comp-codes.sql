@@ -116,11 +116,12 @@ end; $$;
 grant execute on function public.redeem_comp_code(text, uuid) to authenticated;
 
 -- =============================================================================
--- SEED: maak jezelf platform-admin (stormtuyls@icloud.com).
--- user_id uit de auth.users / network-logs: 8ce38e95-6a4f-4d5c-a659-8ef96fb3c023
+-- SEED: maak jezelf platform-admin. Zoekt op je login-e-mail i.p.v. een
+-- hardgecodeerd id, zodat je zelf kan controleren wie owner-rechten krijgt.
+-- Pas de e-mail aan als je een ander account owner wil maken.
 -- =============================================================================
 insert into public.platform_admins (user_id)
-values ('8ce38e95-6a4f-4d5c-a659-8ef96fb3c023')
+select id from auth.users where lower(email) = lower('stormtuyls@icloud.com')
 on conflict (user_id) do nothing;
 
 -- Verificatie:
