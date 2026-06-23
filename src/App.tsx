@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import "./App.css";
@@ -29,7 +29,9 @@ import {
 import { UnallocatedInbox } from "./components/UnallocatedInbox";
 import { InviteMemberForm } from "./components/InviteMemberForm";
 import { MembersListView } from "./views/MembersListView";
-import { AuditLogView } from "./views/AuditLogView";
+const AuditLogView = lazy(() =>
+  import("./views/AuditLogView").then((m) => ({ default: m.AuditLogView })),
+);
 import { OrgOnboardingView } from "./views/OrgOnboardingView";
 import { OrgSwitcher } from "./components/OrgSwitcher";
 import { CreateOrgForm } from "./components/CreateOrgForm";
@@ -42,14 +44,26 @@ import { DashboardView } from "./views/DashboardView";
 import { GroupsView } from "./views/GroupsView";
 import { PotDetail } from "./views/PotDetail";
 import { SettingsView } from "./views/SettingsView";
-import { Landing } from "./views/Landing";
-import { AuthView } from "./views/AuthView";
-import { PasswordResetView } from "./views/PasswordResetView";
+const Landing = lazy(() =>
+  import("./views/Landing").then((m) => ({ default: m.Landing })),
+);
+const AuthView = lazy(() =>
+  import("./views/AuthView").then((m) => ({ default: m.AuthView })),
+);
+const PasswordResetView = lazy(() =>
+  import("./views/PasswordResetView").then((m) => ({ default: m.PasswordResetView })),
+);
 import { Modal } from "./components/Modal";
 import { PotForm } from "./components/PotForm";
 import { TransactionForm } from "./components/TransactionForm";
-import { ImportTransactionsModal } from "./components/ImportTransactionsModal";
-import { ReportModal } from "./components/ReportModal";
+const ImportTransactionsModal = lazy(() =>
+  import("./components/ImportTransactionsModal").then((m) => ({
+    default: m.ImportTransactionsModal,
+  })),
+);
+const ReportModal = lazy(() =>
+  import("./components/ReportModal").then((m) => ({ default: m.ReportModal })),
+);
 import { ThemeToggle } from "./components/ThemeToggle";
 import { Mark } from "./components/Logo";
 import { paletteToCssVars } from "./branding";
@@ -57,6 +71,13 @@ import type { Branding } from "./branding";
 
 type Tab = "dashboard" | "potjes" | "groepen" | "leden" | "activiteit" | "instellingen";
 type PublicView = "landing" | "login" | "signup";
+
+// Schermvullende fallback terwijl een lazy-geladen view binnenkomt.
+const routeFallback = (
+  <div className="flex min-h-screen items-center justify-center bg-canvas text-navy-500 dark:bg-navy-950 dark:text-navy-300">
+    Laden…
+  </div>
+);
 
 // Lokale Account-shape (bridge tussen Supabase user en de oude localStorage-laag).
 // In sprint 2 vervangen we localStorage door Supabase queries — dan is dit type
@@ -203,33 +224,41 @@ function App() {
   }
 
   if (recoveryMode) {
-    return <PasswordResetView onDone={() => setRecoveryMode(false)} />;
+    return (
+      <Suspense fallback={routeFallback}>
+        <PasswordResetView onDone={() => setRecoveryMode(false)} />
+      </Suspense>
+    );
   }
 
   if (!session) {
     if (publicView === "landing") {
       return (
-        <Landing
-          onLogin={() => setPublicView("login")}
-          onSignup={() => setPublicView("signup")}
-        />
+        <Suspense fallback={routeFallback}>
+          <Landing
+            onLogin={() => setPublicView("login")}
+            onSignup={() => setPublicView("signup")}
+          />
+        </Suspense>
       );
     }
     return (
-      <AuthView
-        initialMode={publicView === "login" ? "login" : "signup"}
-        authError={authError}
-        prefillEmail={orgInvite?.email ?? invitePrefill?.email}
-        orgInviteName={orgInvite?.orgName}
-        onAuth={() => {
-          // useSession picks up the new session via onAuthStateChange.
-        }}
-        onBack={() => {
-          setAuthError(null);
-          setPublicView("landing");
-        }}
-        onDismissError={() => setAuthError(null)}
-      />
+      <Suspense fallback={routeFallback}>
+        <AuthView
+          initialMode={publicView === "login" ? "login" : "signup"}
+          authError={authError}
+          prefillEmail={orgInvite?.email ?? invitePrefill?.email}
+          orgInviteName={orgInvite?.orgName}
+          onAuth={() => {
+            // useSession picks up the new session via onAuthStateChange.
+          }}
+          onBack={() => {
+            setAuthError(null);
+            setPublicView("landing");
+          }}
+          onDismissError={() => setAuthError(null)}
+        />
+      </Suspense>
     );
   }
 
@@ -727,11 +756,13 @@ function AuthedApp({
   // Publieke website bekijken terwijl je ingelogd bent (vanuit de sidebar).
   if (viewSite) {
     return (
-      <Landing
-        onLogin={() => setViewSite(false)}
-        onSignup={() => setViewSite(false)}
-        onExitPreview={() => setViewSite(false)}
-      />
+      <Suspense fallback={routeFallback}>
+        <Landing
+          onLogin={() => setViewSite(false)}
+          onSignup={() => setViewSite(false)}
+          onExitPreview={() => setViewSite(false)}
+        />
+      </Suspense>
     );
   }
 
@@ -862,7 +893,9 @@ function AuthedApp({
                 onRevokeInvite={revokeInvite}
               />
             ) : tab === "activiteit" && isAdmin ? (
-              <AuditLogView entries={auditEntries} loading={auditLoading} />
+              <Suspense fallback={<div className="py-10 text-center text-sm text-navy-400">Laden…</div>}>
+                <AuditLogView entries={auditEntries} loading={auditLoading} />
+              </Suspense>
             ) : tab === "instellingen" && isAdmin ? (
               <SettingsView
                 account={account}
@@ -954,22 +987,28 @@ function AuthedApp({
         )}
       </Modal>
 
-      <ImportTransactionsModal
-        open={showImport}
-        pots={potsForUser}
-        allowUnallocated={!!isAdmin}
-        onImport={(inputs) => store.importTransactions(inputs)}
-        onClose={() => setShowImport(false)}
-      />
+      {showImport && (
+        <Suspense fallback={null}>
+          <ImportTransactionsModal
+            open={showImport}
+            pots={potsForUser}
+            allowUnallocated={!!isAdmin}
+            onImport={(inputs) => store.importTransactions(inputs)}
+            onClose={() => setShowImport(false)}
+          />
+        </Suspense>
+      )}
 
-      {org && (
-        <ReportModal
-          open={showReport}
-          orgName={org.name}
-          pots={potsForUser}
-          transactions={store.state.transactions}
-          onClose={() => setShowReport(false)}
-        />
+      {org && showReport && (
+        <Suspense fallback={null}>
+          <ReportModal
+            open={showReport}
+            orgName={org.name}
+            pots={potsForUser}
+            transactions={store.state.transactions}
+            onClose={() => setShowReport(false)}
+          />
+        </Suspense>
       )}
 
       <Modal
