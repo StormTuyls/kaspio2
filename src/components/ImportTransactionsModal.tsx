@@ -73,8 +73,16 @@ export function ImportTransactionsModal({
   const [targetPot, setTargetPot] = useState<string>(
     allowUnallocated ? UNALLOCATED : (pots[0]?.id ?? ""),
   );
+  // Toewijzing per rij (potId of UNALLOCATED). De "alle rijen"-keuze vult deze;
+  // per rij kan je daarna overschrijven.
+  const [rowPot, setRowPot] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Bij nieuw bestand of als de bulk-keuze verandert: alle rijen op die waarde.
+  useEffect(() => {
+    setRowPot(rows.map(() => targetPot));
+  }, [rows, targetPot]);
 
   // Reset bij sluiten zodat een volgende import schoon start.
   useEffect(() => {
@@ -137,15 +145,20 @@ export function ImportTransactionsModal({
   async function runImport() {
     setBusy(true);
     setError(null);
-    const potId = targetPot === UNALLOCATED ? null : targetPot;
-    const inputs: TransactionInput[] = validRows.map((p) => ({
-      potId,
-      amount: Math.abs(p.amount as number),
-      direction: directionOf(p.amount as number),
-      occurredOn: p.occurredOn as string,
-      counterparty: p.counterparty || null,
-      memo: p.memo || null,
-    }));
+    const inputs: TransactionInput[] = preview
+      .map((p, i) => ({ p, i }))
+      .filter(({ p }) => p.valid)
+      .map(({ p, i }) => {
+        const choice = rowPot[i] ?? targetPot;
+        return {
+          potId: choice === UNALLOCATED ? null : choice,
+          amount: Math.abs(p.amount as number),
+          direction: directionOf(p.amount as number),
+          occurredOn: p.occurredOn as string,
+          counterparty: p.counterparty || null,
+          memo: p.memo || null,
+        };
+      });
     const res = await onImport(inputs);
     setBusy(false);
     if (res.error) {
@@ -293,7 +306,7 @@ export function ImportTransactionsModal({
                 </label>
                 <label className="block">
                   <span className="mb-1 block text-xs font-medium text-navy-500 dark:text-navy-300">
-                    Toewijzen aan
+                    Potje voor alle rijen
                   </span>
                   <select
                     value={targetPot}
@@ -314,9 +327,14 @@ export function ImportTransactionsModal({
 
               {/* Preview */}
               <div className="rounded-xl border border-navy-100 dark:border-navy-700/60">
-                <div className="border-b border-navy-100 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-navy-400 dark:border-navy-700/60 dark:text-navy-300">
-                  Voorbeeld ({validRows.length} importeerbaar
-                  {invalidCount > 0 ? `, ${invalidCount} overgeslagen` : ""})
+                <div className="flex items-center justify-between gap-2 border-b border-navy-100 px-3 py-2 dark:border-navy-700/60">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+                    Voorbeeld ({validRows.length} importeerbaar
+                    {invalidCount > 0 ? `, ${invalidCount} overgeslagen` : ""})
+                  </span>
+                  <span className="text-[11px] font-normal normal-case text-navy-400 dark:text-navy-500">
+                    potje per rij aanpasbaar →
+                  </span>
                 </div>
                 <div className="max-h-56 overflow-y-auto">
                   <table className="w-full text-sm">
@@ -346,11 +364,41 @@ export function ImportTransactionsModal({
                               ? "—"
                               : `${directionOf(p.amount) === "in" ? "+" : "−"}€${Math.abs(p.amount).toFixed(2)}`}
                           </td>
+                          <td className="px-3 py-1.5">
+                            {p.valid ? (
+                              <select
+                                value={rowPot[i] ?? targetPot}
+                                onChange={(e) => {
+                                  const next = [...rowPot];
+                                  next[i] = e.target.value;
+                                  setRowPot(next);
+                                }}
+                                className="max-w-[9rem] rounded-md border border-navy-200 bg-white px-1.5 py-1 text-xs dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50"
+                              >
+                                {allowUnallocated && (
+                                  <option value={UNALLOCATED}>Onverdeeld</option>
+                                )}
+                                {pots.map((pot) => (
+                                  <option key={pot.id} value={pot.id}>
+                                    {pot.name}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span className="text-xs text-navy-300 dark:text-navy-600">—</span>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
+                {preview.length > 50 && (
+                  <div className="border-t border-navy-100 px-3 py-2 text-[11px] text-navy-400 dark:border-navy-700/60 dark:text-navy-500">
+                    + {preview.length - 50} rijen meer , die volgen het potje voor
+                    alle rijen.
+                  </div>
+                )}
               </div>
             </div>
           )}
