@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TIER_LABELS, TIER_LIMITS, startCheckout } from "../data";
+import { TIER_LABELS, TIER_LIMITS, startCheckout, startPortal } from "../data";
 import type { SubTier } from "../supabase";
 
 type Props = {
@@ -39,6 +39,17 @@ export function SubscriptionCard({
     // bij succes redirect startCheckout naar Stripe (geen reset nodig)
   }
 
+  async function manage() {
+    setError(null);
+    setBusy("portal");
+    const res = await startPortal(orgId);
+    if (res.error) {
+      setError(res.error);
+      setBusy(null);
+    }
+    // bij succes redirect startPortal naar de Stripe-portal
+  }
+
   return (
     <div className="card p-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -51,10 +62,14 @@ export function SubscriptionCard({
             <span className="badge-teal">{TIER_LABELS[tier]}</span>
           </p>
         </div>
-        {tier !== "free" && (
-          <span className="text-xs text-navy-400">
-            Beheer of zeg op via de betaalportal (binnenkort).
-          </span>
+        {tier !== "free" && isAdmin && (
+          <button
+            onClick={manage}
+            disabled={busy !== null}
+            className="btn-secondary text-sm disabled:opacity-50"
+          >
+            {busy === "portal" ? "Bezig…" : "Abonnement beheren"}
+          </button>
         )}
       </div>
 

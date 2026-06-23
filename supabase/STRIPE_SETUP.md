@@ -73,13 +73,19 @@ secrets. Zet Kaspio's prijzen pas live als je de bedragen definitief hebt.
   per org (eenmalig), maakt een Checkout-sessie voor de gekozen tier+interval.
 - `stripe-webhook` (no-jwt, signature-verified): zet tier/status/period in
   `public.subscriptions` op basis van de Stripe-subscription.
-- Limieten worden **server-side** afgedwongen (triggers in `subscriptions.sql`):
-  gratis = 3 potjes / 2 leden, Pro = 5 leden, Team = 25 leden. Niet te omzeilen
-  via de API.
-- Grafieken zijn Pro+; gratis ziet een upgrade-aanzet.
+- Limieten worden **server-side** afgedwongen (triggers): gratis = 5 potjes /
+  3 leden, Pro en Team = onbeperkt potjes + leden. Niet te omzeilen via de API.
+- Grafieken, CSV-import en rapporten zijn Pro+; potgroepen, goedkeuringsflows en
+  bijlagen zijn Team. Gratis ziet telkens een upgrade-aanzet.
+- `create-portal-session` (JWT-verified): admin-only, opent de Stripe Billing
+  Portal zodat de admin zelf kan opzeggen / betaalmethode wijzigen.
+- Terugkeer van Checkout: de app leest `?upgrade=success|cancel`, toont een
+  melding en ververst het abonnement.
 
-## Beheerportal (later)
+## Beheerportal activeren
 
-Voor opzeggen/plan wijzigen door de klant zelf kun je later het Stripe
-**Customer Portal** toevoegen (een extra Edge Function die een portal-sessie
-maakt). Nu nog niet ingebouwd.
+`create-portal-session` is ingebouwd en wordt gebruikt door de knop "Abonnement
+beheren" (Instellingen → Abonnement). Eenmalig in Stripe activeren:
+**Settings → Billing → Customer portal → Activate**. Geen extra secret nodig
+(gebruikt `STRIPE_SECRET_KEY`). Deploy: `supabase functions deploy
+create-portal-session`.

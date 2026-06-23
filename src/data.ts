@@ -814,6 +814,30 @@ export async function startCheckout(
   }
 }
 
+/**
+ * Open de Stripe Billing Portal zodat een admin zijn abonnement kan beheren
+ * (betaalmethode, facturen, opzeggen). Redirect naar de portal-URL.
+ */
+export async function startPortal(
+  orgId: string,
+): Promise<{ error: string | null }> {
+  try {
+    const { data, error } = await supabase.functions.invoke(
+      "create-portal-session",
+      { body: { orgId } },
+    );
+    if (error) return { error: error.message };
+    const url = (data as { url?: string } | null)?.url;
+    if (!url) return { error: "Geen portal-URL ontvangen." };
+    window.location.href = url;
+    return { error: null };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Portal niet beschikbaar.",
+    };
+  }
+}
+
 // =============================================================================
 // Pot balance helper
 // =============================================================================

@@ -527,7 +527,24 @@ function AuthedApp({
     removeMember,
   } = useOrgMembers(orgId);
   const { entries: auditEntries, loading: auditLoading } = useAuditLog(orgId);
-  const { tier, limits } = useSubscription(orgId);
+  const { tier, limits, refresh: refreshSub } = useSubscription(orgId);
+  // Terugkeer van Stripe Checkout: ?upgrade=success|cancel. Toon een melding,
+  // ververs het abonnement (realtime pikt de tier-wissel ook op) en maak de URL
+  // schoon zodat de melding niet blijft plakken.
+  const [upgradeNotice, setUpgradeNotice] = useState<"success" | "cancel" | null>(
+    null,
+  );
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const u = p.get("upgrade");
+    if (u === "success" || u === "cancel") {
+      setUpgradeNotice(u);
+      if (u === "success") void refreshSub();
+      window.history.replaceState(null, "", window.location.pathname);
+      const t = setTimeout(() => setUpgradeNotice(null), 6000);
+      return () => clearTimeout(t);
+    }
+  }, [refreshSub]);
   const { settings: notifSettings, update: updateNotifSettings } =
     useNotificationSettings(account.id);
   const {
@@ -723,6 +740,20 @@ function AuthedApp({
 
   return (
     <div className="min-h-screen bg-canvas dark:bg-navy-950" style={brandStyle}>
+      {upgradeNotice && (
+        <div
+          className={`fixed left-1/2 top-4 z-[60] -translate-x-1/2 rounded-xl px-4 py-2.5 text-sm font-medium shadow-lg ${
+            upgradeNotice === "success"
+              ? "bg-teal-600 text-white"
+              : "bg-navy-800 text-white"
+          }`}
+          role="status"
+        >
+          {upgradeNotice === "success"
+            ? "✓ Bedankt! Je upgrade wordt geactiveerd, dit kan enkele seconden duren."
+            : "Upgrade geannuleerd, er is niets aangerekend."}
+        </div>
+      )}
       <div className="flex min-h-screen">
         <Sidebar
           tab={tab}
