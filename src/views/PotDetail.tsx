@@ -326,7 +326,7 @@ export function PotDetail({
                             onClick={() =>
                               setExpandedTx((id) => (id === tx.id ? null : tx.id))
                             }
-                            className="text-xs font-medium text-iris-700 hover:underline dark:text-iris-300"
+                            className="text-xs font-medium text-teal-700 hover:underline dark:text-teal-300"
                           >
                             📎 Bijlagen {expandedTx === tx.id ? "verbergen" : "tonen"}
                           </button>
@@ -389,8 +389,8 @@ export function PotDetail({
                                 }
                                 className={`text-sm ${
                                   expandedTx === tx.id
-                                    ? "text-iris-700 dark:text-iris-300"
-                                    : "text-navy-300 hover:text-iris-700 dark:text-navy-500 dark:hover:text-iris-300"
+                                    ? "text-teal-700 dark:text-teal-300"
+                                    : "text-navy-300 hover:text-teal-700 dark:text-navy-500 dark:hover:text-teal-300"
                                 }`}
                                 aria-label="Bijlagen"
                                 title="Bijlagen"

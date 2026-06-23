@@ -77,7 +77,7 @@ export function TransactionAttachments({ orgId, transactionId, isAdmin }: Props)
               <button
                 type="button"
                 onClick={() => openAttachment(att)}
-                className="flex items-center gap-1.5 font-medium text-iris-700 hover:underline dark:text-iris-300"
+                className="flex items-center gap-1.5 font-medium text-teal-700 hover:underline dark:text-teal-300"
                 title="Openen"
               >
                 <span aria-hidden>📎</span>
@@ -106,7 +106,7 @@ export function TransactionAttachments({ orgId, transactionId, isAdmin }: Props)
 
       {isAdmin && (
         <div className="flex items-center gap-3">
-          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-navy-200 px-2.5 py-1.5 text-xs font-medium text-navy-600 hover:border-iris-400 hover:text-iris-700 dark:border-navy-600 dark:text-navy-300 dark:hover:border-iris-500 dark:hover:text-iris-300">
+          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-navy-200 px-2.5 py-1.5 text-xs font-medium text-navy-600 hover:border-teal-400 hover:text-teal-700 dark:border-navy-600 dark:text-navy-300 dark:hover:border-teal-500 dark:hover:text-teal-300">
             <input
               ref={inputRef}
               type="file"

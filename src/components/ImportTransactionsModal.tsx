@@ -220,7 +220,7 @@ export function ImportTransactionsModal({
                 hier in. We herkennen automatisch de scheidingstekens en
                 datum/bedrag-formaten.
               </p>
-              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-navy-200 py-10 text-sm text-navy-500 hover:border-iris-400 hover:text-iris-700 dark:border-navy-600 dark:text-navy-300 dark:hover:border-iris-500">
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-navy-200 py-10 text-sm text-navy-500 hover:border-teal-400 hover:text-teal-700 dark:border-navy-600 dark:text-navy-300 dark:hover:border-teal-500">
                 <input
                   type="file"
                   accept=".csv,text/csv"
@@ -239,7 +239,7 @@ export function ImportTransactionsModal({
                   </span>
                   <button
                     onClick={downloadSample}
-                    className="text-xs font-medium text-iris-700 hover:underline dark:text-iris-300"
+                    className="text-xs font-medium text-teal-700 hover:underline dark:text-teal-300"
                   >
                     ↓ Download voorbeeldbestand
                   </button>
@@ -276,7 +276,7 @@ export function ImportTransactionsModal({
                 </span>
                 <button
                   onClick={() => setStep("upload")}
-                  className="shrink-0 text-iris-700 hover:underline dark:text-iris-300"
+                  className="shrink-0 text-teal-700 hover:underline dark:text-teal-300"
                 >
                   Ander bestand
                 </button>
@@ -419,7 +419,7 @@ export function ImportTransactionsModal({
             <button
               onClick={runImport}
               disabled={!canImport}
-              className="rounded-lg bg-iris-600 px-4 py-2 text-sm font-semibold text-white hover:bg-iris-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {busy ? "Importeren…" : `${validRows.length} importeren`}
             </button>
