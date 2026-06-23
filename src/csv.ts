@@ -116,13 +116,9 @@ export function exportPotPdf(pot: Pot, transactions: Transaction[]) {
     <tbody>${rows || `<tr><td colspan="4" style="color:#9ca3af;padding:24px;text-align:center">Nog geen transacties.</td></tr>`}</tbody>
   </table>
   <p class="foot">Kaspio , virtuele potjes op één bankrekening</p>
-  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 250); };</script>
 </body></html>`;
 
-  const w = window.open("", "_blank");
-  if (!w) return;
-  w.document.write(html);
-  w.document.close();
+  openPrintWindow(html);
 }
 
 export type OrgReportOptions = {
@@ -291,13 +287,33 @@ export function exportOrgReport(opts: OrgReportOptions) {
   </table>
   ${detailsHtml}
   <p class="foot">Kaspio , virtuele potjes op één bankrekening</p>
-  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 250); };</script>
 </body></html>`;
 
+  openPrintWindow(html);
+}
+
+/**
+ * Open een nieuw venster met de meegegeven HTML en trigger het printdialoog
+ * vanuit dít venster (geen inline script in de popup, zodat een strikte CSP
+ * niet in de weg zit).
+ */
+function openPrintWindow(html: string) {
   const w = window.open("", "_blank");
   if (!w) return;
   w.document.write(html);
   w.document.close();
+  try {
+    w.focus();
+  } catch {
+    // niet kritisch
+  }
+  setTimeout(() => {
+    try {
+      w.print();
+    } catch {
+      // popup kan gesloten zijn; geen probleem
+    }
+  }, 350);
 }
 
 function slugify(s: string): string {
