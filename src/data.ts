@@ -638,6 +638,11 @@ export function importEnabled(tier: SubTier): boolean {
   return tier !== "free";
 }
 
+/** Financiële rapporten (PDF) zijn Pro+ ("Grafieken & rapportage"). */
+export function reportsEnabled(tier: SubTier): boolean {
+  return tier !== "free";
+}
+
 /** Bijlagen (bonnetjes/facturen) bij transacties zijn een Team-feature. */
 export function attachmentsEnabled(tier: SubTier): boolean {
   return tier === "team";

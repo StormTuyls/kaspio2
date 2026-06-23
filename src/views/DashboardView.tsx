@@ -20,6 +20,8 @@ type Props = {
   onOpenGroup: (groupId: string | null) => void;
   /** Open de "Nog toe te wijzen" inbox (admin). */
   onOpenInbox?: () => void;
+  /** Genereer een financieel rapport (PDF). Alleen aanwezig bij Pro+ admin. */
+  onExportReport?: () => void;
   /** Goedkeuren/afwijzen van transacties die op goedkeuring wachten (admin). */
   onApprove?: (txnId: string) => void;
   onReject?: (txnId: string) => void;
@@ -37,6 +39,7 @@ export function DashboardView({
   onSelect,
   onOpenGroup,
   onOpenInbox,
+  onExportReport,
   onApprove,
   onReject,
 }: Props) {
@@ -113,7 +116,14 @@ export function DashboardView({
             Dashboard
           </h1>
         </div>
-        <PeriodTabs value={flowPeriod} onChange={setFlowPeriod} />
+        <div className="flex items-center gap-2">
+          {onExportReport && (
+            <button onClick={onExportReport} className="btn-secondary text-sm">
+              Rapport (PDF)
+            </button>
+          )}
+          <PeriodTabs value={flowPeriod} onChange={setFlowPeriod} />
+        </div>
       </div>
 
       {/* Hoofd-statistieken */}

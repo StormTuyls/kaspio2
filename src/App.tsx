@@ -9,6 +9,7 @@ import {
   groupMembersByUser,
   groupsEnabled,
   importEnabled,
+  reportsEnabled,
   rejectTransaction,
   setApprovalSettings,
   lookupOrgInvite,
@@ -48,6 +49,7 @@ import { Modal } from "./components/Modal";
 import { PotForm } from "./components/PotForm";
 import { TransactionForm } from "./components/TransactionForm";
 import { ImportTransactionsModal } from "./components/ImportTransactionsModal";
+import { ReportModal } from "./components/ReportModal";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { Mark } from "./components/Logo";
 import { paletteToCssVars } from "./branding";
@@ -538,6 +540,7 @@ function AuthedApp({
   const [showAddPot, setShowAddPot] = useState(false);
   const [showAddTx, setShowAddTx] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showNewOrg, setShowNewOrg] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
@@ -871,6 +874,9 @@ function AuthedApp({
                   setFocusGroup(groupId);
                 }}
                 onOpenInbox={isAdmin ? () => setShowInbox(true) : undefined}
+                onExportReport={
+                  isAdmin && reportsEnabled(tier) ? () => setShowReport(true) : undefined
+                }
                 onApprove={isAdmin ? (id) => void approveTransaction(id) : undefined}
                 onReject={isAdmin ? (id) => void rejectTransaction(id) : undefined}
               />
@@ -924,6 +930,16 @@ function AuthedApp({
         onImport={(inputs) => store.importTransactions(inputs)}
         onClose={() => setShowImport(false)}
       />
+
+      {org && (
+        <ReportModal
+          open={showReport}
+          orgName={org.name}
+          pots={potsForUser}
+          transactions={store.state.transactions}
+          onClose={() => setShowReport(false)}
+        />
+      )}
 
       <Modal
         open={showInbox}

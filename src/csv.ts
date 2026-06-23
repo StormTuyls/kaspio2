@@ -125,6 +125,181 @@ export function exportPotPdf(pot: Pot, transactions: Transaction[]) {
   w.document.close();
 }
 
+export type OrgReportOptions = {
+  orgName: string;
+  /** Mensvriendelijk label, bv. "2026" of "1 jan 2026 , 31 dec 2026". */
+  periodLabel: string;
+  /** Inclusieve grenzen (YYYY-MM-DD). null = geen ondergrens / bovengrens. */
+  start: string | null;
+  end: string | null;
+  pots: Pot[];
+  transactions: Transaction[];
+  /** Voeg per potje de transactielijst toe. */
+  includeDetails: boolean;
+};
+
+/**
+ * Org-breed financieel rapport (PDF via printvenster). Voor de penningmeester
+ * en de AV: totalen + resultaat per potje over een periode, optioneel met
+ * transactiedetails. Pro+ feature ("Grafieken & rapportage" op de landing).
+ */
+export function exportOrgReport(opts: OrgReportOptions) {
+  const { orgName, periodLabel, start, end, pots, includeDetails } = opts;
+
+  // Enkel goedgekeurde transacties tellen mee (pending niet, net als het saldo).
+  const approved = opts.transactions.filter((t) => t.status !== "pending");
+  const inPeriod = (d: string) =>
+    (start === null || d >= start) && (end === null || d <= end);
+
+  // Saldo t/m einde periode (of all-time als er geen einddatum is).
+  const balanceUpTo = (potId: string | null) =>
+    approved
+      .filter((t) => t.potId === potId && (end === null || t.occurredOn <= end))
+      .reduce((s, t) => s + (t.direction === "in" ? t.amount : -t.amount), 0);
+
+  // Groepeer per potje-id (plus null = onverdeeld/overig).
+  type Line = { name: string; in: number; out: number; balance: number; potId: string | null };
+  const known = new Set(pots.map((p) => p.id));
+  const lines: Line[] = [];
+
+  const summarise = (potId: string | null, name: string): Line => {
+    const txs = approved.filter((t) => t.potId === potId && inPeriod(t.occurredOn));
+    const tin = txs.filter((t) => t.direction === "in").reduce((s, t) => s + t.amount, 0);
+    const tout = txs.filter((t) => t.direction === "out").reduce((s, t) => s + t.amount, 0);
+    return { name, in: tin, out: tout, balance: balanceUpTo(potId), potId };
+  };
+
+  for (const p of pots) lines.push(summarise(p.id, p.name));
+  // Transacties zonder (bestaand) potje: onverdeeld + verweesde pot-ids.
+  const hasOrphan = approved.some(
+    (t) => t.potId === null || (t.potId !== null && !known.has(t.potId)),
+  );
+  if (hasOrphan) {
+    const txs = approved.filter(
+      (t) =>
+        (t.potId === null || !known.has(t.potId)) && inPeriod(t.occurredOn),
+    );
+    const tin = txs.filter((t) => t.direction === "in").reduce((s, t) => s + t.amount, 0);
+    const tout = txs.filter((t) => t.direction === "out").reduce((s, t) => s + t.amount, 0);
+    const bal = approved
+      .filter(
+        (t) =>
+          (t.potId === null || !known.has(t.potId)) &&
+          (end === null || t.occurredOn <= end),
+      )
+      .reduce((s, t) => s + (t.direction === "in" ? t.amount : -t.amount), 0);
+    lines.push({ name: "Onverdeeld / overig", in: tin, out: tout, balance: bal, potId: null });
+  }
+
+  const totalIn = lines.reduce((s, l) => s + l.in, 0);
+  const totalOut = lines.reduce((s, l) => s + l.out, 0);
+  const totalBalance = lines.reduce((s, l) => s + l.balance, 0);
+  const result = totalIn - totalOut;
+
+  const potRows = lines
+    .map(
+      (l) => `<tr>
+        <td>${escapeHtml(l.name)}</td>
+        <td style="text-align:right;color:#059669;font-variant-numeric:tabular-nums">${fmtEuro(l.in)}</td>
+        <td style="text-align:right;color:#e11d48;font-variant-numeric:tabular-nums">${fmtEuro(l.out)}</td>
+        <td style="text-align:right;font-variant-numeric:tabular-nums">${l.in - l.out >= 0 ? "+" : "-"}${fmtEuro(Math.abs(l.in - l.out))}</td>
+        <td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">${fmtEuro(l.balance)}</td>
+      </tr>`,
+    )
+    .join("");
+
+  // Optionele details per potje.
+  let detailsHtml = "";
+  if (includeDetails) {
+    const potName = (id: string | null) =>
+      id === null ? "Onverdeeld / overig" : (pots.find((p) => p.id === id)?.name ?? "Onverdeeld / overig");
+    const blocks = lines
+      .map((l) => {
+        const txs = approved
+          .filter((t) => {
+            const belongs =
+              l.potId === null
+                ? t.potId === null || !known.has(t.potId ?? "")
+                : t.potId === l.potId;
+            return belongs && inPeriod(t.occurredOn);
+          })
+          .sort((a, b) => a.occurredOn.localeCompare(b.occurredOn));
+        if (txs.length === 0) return "";
+        const rows = txs
+          .map((t) => {
+            const sign = t.direction === "in" ? "+" : "-";
+            const color = t.direction === "in" ? "#059669" : "#e11d48";
+            return `<tr>
+              <td>${escapeHtml(t.occurredOn)}</td>
+              <td>${escapeHtml(t.counterparty ?? "")}</td>
+              <td>${escapeHtml(t.memo ?? "")}</td>
+              <td style="text-align:right;color:${color};font-variant-numeric:tabular-nums;white-space:nowrap">${sign}${fmtEuro(t.amount)}</td>
+            </tr>`;
+          })
+          .join("");
+        return `<h3 class="dt">${escapeHtml(potName(l.potId))}</h3>
+          <table><thead><tr><th>Datum</th><th>Tegenpartij</th><th>Memo</th><th style="text-align:right">Bedrag</th></tr></thead>
+          <tbody>${rows}</tbody></table>`;
+      })
+      .join("");
+    if (blocks) detailsHtml = `<h2 class="sec">Transactiedetails</h2>${blocks}`;
+  }
+
+  const generated = new Intl.DateTimeFormat("nl-BE", { dateStyle: "long" }).format(
+    new Date(),
+  );
+
+  const html = `<!doctype html><html lang="nl"><head><meta charset="utf-8" />
+<title>${escapeHtml(orgName)} , financieel overzicht , Kaspio</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color: #1a1a18; margin: 40px; }
+  h1 { font-size: 22px; margin: 0 0 2px; }
+  h2.sec { font-size: 15px; margin: 32px 0 10px; padding-top: 12px; border-top: 1px solid #e5e7eb; }
+  h3.dt { font-size: 13px; margin: 18px 0 6px; }
+  .sub { color: #6b7280; font-size: 13px; margin: 0 0 20px; }
+  .totals { display: flex; gap: 16px; margin: 0 0 8px; flex-wrap: wrap; }
+  .tot { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 16px; min-width: 130px; }
+  .tot .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #6b7280; }
+  .tot .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 4px; }
+  th { text-align: left; border-bottom: 2px solid #1a1a18; padding: 8px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+  td { padding: 7px 10px; border-bottom: 1px solid #eee; }
+  tfoot td { font-weight: 700; border-top: 2px solid #1a1a18; border-bottom: none; }
+  .foot { margin-top: 24px; color: #9ca3af; font-size: 11px; }
+  @media print { body { margin: 0; } @page { margin: 16mm; } h3.dt { page-break-after: avoid; } table { page-break-inside: auto; } }
+</style></head><body>
+  <h1>${escapeHtml(orgName)}</h1>
+  <p class="sub">Financieel overzicht , ${escapeHtml(periodLabel)} , gegenereerd op ${generated} via Kaspio</p>
+  <div class="totals">
+    <div class="tot"><div class="lbl">Inkomsten</div><div class="val" style="color:#059669">${fmtEuro(totalIn)}</div></div>
+    <div class="tot"><div class="lbl">Uitgaven</div><div class="val" style="color:#e11d48">${fmtEuro(totalOut)}</div></div>
+    <div class="tot"><div class="lbl">Resultaat periode</div><div class="val">${result >= 0 ? "+" : "-"}${fmtEuro(Math.abs(result))}</div></div>
+    <div class="tot"><div class="lbl">Eindsaldo</div><div class="val">${fmtEuro(totalBalance)}</div></div>
+  </div>
+  <h2 class="sec">Per potje</h2>
+  <table>
+    <thead><tr><th>Potje</th><th style="text-align:right">Inkomsten</th><th style="text-align:right">Uitgaven</th><th style="text-align:right">Resultaat</th><th style="text-align:right">Eindsaldo</th></tr></thead>
+    <tbody>${potRows || `<tr><td colspan="5" style="color:#9ca3af;padding:24px;text-align:center">Geen transacties in deze periode.</td></tr>`}</tbody>
+    <tfoot><tr>
+      <td>Totaal</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${fmtEuro(totalIn)}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${fmtEuro(totalOut)}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${result >= 0 ? "+" : "-"}${fmtEuro(Math.abs(result))}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${fmtEuro(totalBalance)}</td>
+    </tr></tfoot>
+  </table>
+  ${detailsHtml}
+  <p class="foot">Kaspio , virtuele potjes op één bankrekening</p>
+  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 250); };</script>
+</body></html>`;
+
+  const w = window.open("", "_blank");
+  if (!w) return;
+  w.document.write(html);
+  w.document.close();
+}
+
 function slugify(s: string): string {
   return (
     s
