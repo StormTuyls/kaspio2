@@ -240,7 +240,7 @@ function Hero({ onSignup }: { onSignup: () => void }) {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-500 opacity-75" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-indigo-500" />
               </span>
-              Nu in bèta · gratis starten
+              Live · gratis te starten
             </span>
           </Reveal>
 
@@ -481,7 +481,7 @@ function Txn({
 /* ------------------------------------------------------------------ */
 
 function TrustStrip() {
-  const items = ["Bèta is live", "Gratis te starten", "Geen kaart nodig", "Data exporteerbaar"];
+  const items = ["Gratis te starten", "Geen kaart nodig", "Onbeperkt potjes op Pro", "Data exporteerbaar"];
   return (
     <section className="border-y border-slate-100 bg-slate-50/60 py-6">
       <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-center gap-x-8 gap-y-3 px-6">
@@ -598,7 +598,7 @@ function HowItWorks() {
     {
       n: 2,
       title: "Voeg transacties toe",
-      desc: "Koppel inkomsten en uitgaven aan het juiste potje, manueel of via automatische PSD2-import.",
+      desc: "Koppel inkomsten en uitgaven aan het juiste potje. Voer ze manueel in of importeer een CSV-bestand van je bank.",
     },
     {
       n: 3,
@@ -691,8 +691,8 @@ function Features() {
       ),
     },
     {
-      title: "Bankkoppeling (PSD2)",
-      desc: "Transacties automatisch importeren via open banking, beschikbaar in Pro en Team.",
+      title: "CSV-import",
+      desc: "Importeer je bankafschrift als CSV en wijs de transacties in één keer toe aan je potjes. Bankkoppeling via PSD2 volgt later.",
       icon: (
         <>
           <line x1="3" y1="22" x2="21" y2="22" />
@@ -915,7 +915,7 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
                 { text: "3 gebruikers" },
                 { text: "Basis historiek (30 dagen)" },
                 { text: "CSV-export" },
-                { text: "Bankkoppeling (PSD2)", no: true },
+                { text: "CSV-import", no: true },
                 { text: "Grafieken & rapportage", no: true },
                 { text: "Meldingen", no: true },
               ]}
@@ -938,12 +938,12 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
               features={[
                 { text: "Onbeperkte potjes" },
                 { text: "Onbeperkt aantal gebruikers" },
-                { text: "Manuele + import van transacties" },
+                { text: "Manuele invoer + CSV-import" },
                 { text: "Volledige historiek" },
                 { text: "Grafieken & rapportage" },
-                { text: "Bankkoppeling via PSD2 (bèta)" },
                 { text: "PDF-export (CSV opent in Excel)" },
                 { text: "E-mail meldingen" },
+                { text: "Bankkoppeling (PSD2) , binnenkort", no: true },
                 { text: "Potgroepen (takken & ploegen)", no: true },
                 { text: "Bijlagen (bonnetjes & facturen)", no: true },
               ]}
@@ -1089,19 +1089,19 @@ function BuildInPublic() {
   const status = [
     {
       label: "Nu",
-      title: "Gesloten beta",
-      desc: "Eerste gebruikers zijn binnen. Inkomsten en uitgaven loggen, potjes aanmaken, rolgebaseerd delen. Gratis te starten.",
+      title: "Live en gratis te starten",
+      desc: "Geen wachtlijst, geen code nodig. Potjes, rollen & delen, manuele invoer én CSV-import, grafieken, PDF-rapporten en e-mailmeldingen werken vandaag.",
       done: true,
     },
     {
       label: "Volgende",
-      title: "Feedback verwerken",
-      desc: "In gesprek met scouts, sportclubs, artiestenbureaus en VZW's. Hun feedback bepaalt wat we eerst bouwen.",
+      title: "Betalingen live",
+      desc: "Pro (€4) en Team (€10) met onbeperkte potjes, potgroepen, goedkeuringen en bijlagen. De Stripe-betaalintegratie zit in de laatste testfase.",
     },
     {
       label: "Daarna",
-      title: "Publieke launch",
-      desc: "Voor iedereen open zodra de beta-feedback is verwerkt. PSD2-bankkoppeling en exports volgen.",
+      title: "Bankkoppeling (PSD2)",
+      desc: "Automatische import van je banktransacties via open banking. In ontwikkeling , vandaag importeer je een CSV-bestand van je bank.",
     },
   ];
   return (
@@ -1164,12 +1164,12 @@ function Faq() {
       a: "Nee. Kaspio is geen bank en beheert geen echt geld. Het is een overzichtstool die jou helpt om inkomsten op jouw bestaande rekening te labelen en te verdelen over virtuele potjes. Jij behoudt volledig de controle over de echte rekening.",
     },
     {
-      q: "Hoe worden mijn bankgegevens beveiligd?",
-      a: "We gebruiken PSD2-gereguleerde bankkoppelingen (enkel leesrechten, nooit schrijfrechten). Alle data is versleuteld opgeslagen. Kaspio kan nooit geld verplaatsen of transacties uitvoeren namens jou.",
+      q: "Heeft Kaspio toegang tot mijn bankrekening?",
+      a: "Nee. Kaspio leest vandaag geen banktransacties uit. Je voert ze manueel in of importeert een CSV-bestand van je bank. Een automatische PSD2-koppeling (enkel leesrechten, nooit schrijfrechten) is in ontwikkeling; ook dan kan Kaspio nooit geld verplaatsen.",
     },
     {
-      q: "Kan ik zonder bankkoppeling werken?",
-      a: "Absoluut. In de gratis versie en Pro voer je transacties manueel in. De bankkoppeling is optioneel en beschikbaar als upgrade, handig als je veel transacties hebt en geen tijd wil verliezen met manuele invoer.",
+      q: "Hoe krijg ik mijn transacties in Kaspio?",
+      a: "Voer ze manueel in, of exporteer een CSV vanuit je bank en importeer die in één keer (Pro). Je mapt zelf de kolommen en wijst elke transactie toe aan een potje. De automatische PSD2-bankkoppeling volgt later.",
     },
     {
       q: "Werkt Kaspio voor mijn sportclub of jeugdbeweging?",
