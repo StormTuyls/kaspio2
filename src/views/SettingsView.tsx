@@ -20,6 +20,8 @@ type Props = {
   orgId: string;
   orgName: string;
   tier: SubTier;
+  /** Heeft deze org een echt Stripe-abonnement (klant)? Stuurt "Abonnement beheren". */
+  hasStripeBilling?: boolean;
   potCount: number;
   memberCount: number;
   isAdmin: boolean;
@@ -44,6 +46,7 @@ export function SettingsView({
   orgId,
   orgName,
   tier,
+  hasStripeBilling,
   potCount,
   memberCount,
   isAdmin,
@@ -75,6 +78,7 @@ export function SettingsView({
       <SubscriptionCard
         orgId={orgId}
         tier={tier}
+        hasStripeBilling={!!hasStripeBilling}
         potCount={potCount}
         memberCount={memberCount}
         isAdmin={isAdmin}

@@ -5,6 +5,8 @@ import type { SubTier } from "../supabase";
 type Props = {
   orgId: string;
   tier: SubTier;
+  /** Echt Stripe-abonnement aanwezig? Zo niet (handmatig/comped tier), geen portal. */
+  hasStripeBilling?: boolean;
   /** Huidig verbruik om naast de limieten te tonen. */
   potCount: number;
   memberCount: number;
@@ -19,6 +21,7 @@ function fmtLimit(n: number): string {
 export function SubscriptionCard({
   orgId,
   tier,
+  hasStripeBilling = false,
   potCount,
   memberCount,
   isAdmin,
@@ -62,7 +65,7 @@ export function SubscriptionCard({
             <span className="badge-teal">{TIER_LABELS[tier]}</span>
           </p>
         </div>
-        {tier !== "free" && isAdmin && (
+        {tier !== "free" && isAdmin && hasStripeBilling && (
           <button
             onClick={manage}
             disabled={busy !== null}
@@ -70,6 +73,11 @@ export function SubscriptionCard({
           >
             {busy === "portal" ? "Bezig…" : "Abonnement beheren"}
           </button>
+        )}
+        {tier !== "free" && isAdmin && !hasStripeBilling && (
+          <span className="text-xs text-navy-400 dark:text-navy-500">
+            Handmatig/test-plan , geen Stripe-abonnement
+          </span>
         )}
       </div>
 

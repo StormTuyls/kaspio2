@@ -788,6 +788,28 @@ export function useSubscription(orgId: string | null) {
 }
 
 /**
+ * Haal de echte foutboodschap uit een Edge Function-respons. supabase-js geeft
+ * bij een non-2xx enkel "Edge Function returned a non-2xx status code"; de
+ * échte boodschap zit in de response-body (error.context).
+ */
+async function functionErrorMessage(
+  error: unknown,
+  fallback: string,
+): Promise<string> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ctx = (error as any)?.context;
+    if (ctx && typeof ctx.json === "function") {
+      const body = await ctx.json();
+      if (body?.error) return String(body.error);
+    }
+  } catch {
+    // body niet leesbaar; val terug op de generieke boodschap
+  }
+  return error instanceof Error ? error.message : fallback;
+}
+
+/**
  * Start een Stripe Checkout-sessie voor een upgrade. Roept de Edge Function
  * aan en redirect naar de betaalpagina. Faalt netjes als Stripe nog niet
  * geconfigureerd is.
@@ -802,7 +824,7 @@ export async function startCheckout(
       "create-checkout-session",
       { body: { orgId, tier, interval } },
     );
-    if (error) return { error: error.message };
+    if (error) return { error: await functionErrorMessage(error, "Betaling niet beschikbaar.") };
     const url = (data as { url?: string } | null)?.url;
     if (!url) return { error: "Geen checkout-URL ontvangen." };
     window.location.href = url;
@@ -826,7 +848,7 @@ export async function startPortal(
       "create-portal-session",
       { body: { orgId } },
     );
-    if (error) return { error: error.message };
+    if (error) return { error: await functionErrorMessage(error, "Portal niet beschikbaar.") };
     const url = (data as { url?: string } | null)?.url;
     if (!url) return { error: "Geen portal-URL ontvangen." };
     window.location.href = url;

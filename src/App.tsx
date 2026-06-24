@@ -565,7 +565,7 @@ function AuthedApp({
     removeMember,
   } = useOrgMembers(orgId);
   const { entries: auditEntries, loading: auditLoading } = useAuditLog(orgId);
-  const { tier, limits, refresh: refreshSub } = useSubscription(orgId);
+  const { subscription, tier, limits, refresh: refreshSub } = useSubscription(orgId);
   // Terugkeer van Stripe Checkout: ?upgrade=success|cancel. Toon een melding,
   // ververs het abonnement (realtime pikt de tier-wissel ook op) en maak de URL
   // schoon zodat de melding niet blijft plakken.
@@ -947,6 +947,7 @@ function AuthedApp({
                 orgId={org.id}
                 orgName={org.name}
                 tier={tier}
+                hasStripeBilling={!!subscription?.stripe_subscription_id}
                 potCount={store.state.pots.length}
                 memberCount={uiMembers.length}
                 isAdmin={!!isAdmin}
