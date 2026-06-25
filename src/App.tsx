@@ -71,8 +71,8 @@ import { ThemeToggle } from "./components/ThemeToggle";
 import { Mark } from "./components/Logo";
 import { paletteToCssVars } from "./branding";
 import type { Branding } from "./branding";
+import { parseRoute, buildPath, type Tab } from "./routing";
 
-type Tab = "dashboard" | "potjes" | "groepen" | "leden" | "activiteit" | "instellingen";
 type PublicView = "landing" | "login" | "signup";
 
 // Comp-code (?comp=CODE) vroeg inlezen, vóór de invite-parsing de query
@@ -161,9 +161,25 @@ function parseInviteParams(): { code: string; email: string } | null {
 function App() {
   const { session, loading } = useSession();
   const [invitePrefill] = useState(() => parseInviteParams());
-  const [publicView, setPublicView] = useState<PublicView>(
-    invitePrefill ? "signup" : "landing",
-  );
+  const [publicView, setPublicView] = useState<PublicView>(() => {
+    if (invitePrefill) return "signup";
+    const p = window.location.pathname;
+    if (p === "/login") return "login";
+    if (p === "/signup") return "signup";
+    return "landing";
+  });
+
+  // Logged-out: houd het pad gelijk aan de publieke view (ingelogd doet AuthedApp dit).
+  // Niet tijdens 'loading': dan is de sessie nog onbekend en zouden we een deep-link
+  // (bv. /potjes/:id) wegschrijven vóór AuthedApp de kans krijgt 'm te lezen.
+  useEffect(() => {
+    if (loading || session) return;
+    const path =
+      publicView === "login" ? "/login" : publicView === "signup" ? "/signup" : "/";
+    if (path !== window.location.pathname) {
+      window.history.replaceState(null, "", path);
+    }
+  }, [loading, session, publicView]);
 
   // Org-invite-token uit de link valideren: is dit een geldige org-uitnodiging?
   // Zo ja, dan tonen we "word lid van <org>" en slaan we de beta-code-stap over.
@@ -592,8 +608,12 @@ function AuthedApp({
     renameGroup,
     deleteGroup,
   } = usePotGroups(orgId);
-  const [selectedPotId, setSelectedPotId] = useState<string | null>(null);
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [selectedPotId, setSelectedPotId] = useState<string | null>(
+    () => parseRoute(window.location.pathname).potId,
+  );
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(
+    () => parseRoute(window.location.pathname).groupId,
+  );
   const [showAddPot, setShowAddPot] = useState(false);
   const [showAddTx, setShowAddTx] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -601,7 +621,30 @@ function AuthedApp({
   const [showInvite, setShowInvite] = useState(false);
   const [showNewOrg, setShowNewOrg] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
-  const [tab, setTab] = useState<Tab>("dashboard");
+  const [tab, setTab] = useState<Tab>(
+    () => parseRoute(window.location.pathname).tab,
+  );
+
+  // URL <-> state synchroniseren (deep-links, back-knop, refresh-blijft-staan).
+  // State -> URL: push een nieuw history-item wanneer het pad verandert.
+  useEffect(() => {
+    const path = buildPath({ tab, potId: selectedPotId, groupId: selectedGroupId });
+    if (path !== window.location.pathname) {
+      window.history.pushState(null, "", path);
+    }
+  }, [tab, selectedPotId, selectedGroupId]);
+
+  // URL -> state: back/forward parsen we terug naar state (geen push: pad klopt al).
+  useEffect(() => {
+    const onPop = () => {
+      const r = parseRoute(window.location.pathname);
+      setTab(r.tab);
+      setSelectedPotId(r.potId);
+      setSelectedGroupId(r.groupId);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
   // Toon de publieke website (landing) terwijl je ingelogd bent.
   const [viewSite, setViewSite] = useState(false);
   // Groep-sectie waar de Potjes-pagina naartoe scrollt (gezet vanuit sidebar/dashboard).
