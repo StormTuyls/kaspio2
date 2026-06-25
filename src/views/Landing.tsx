@@ -1176,8 +1176,8 @@ function Faq() {
       a: "Ja, dat is precies de doelgroep waarvoor Kaspio gebouwd is. Het Team-plan is ideaal: meerdere beheerders (bv. penningmeester + voorzitter), aparte potjes per activiteit of werkgroep, en exporteerbare rapporten voor het jaarverslag.",
     },
     {
-      q: "Wat als ik meer dan 25 gebruikers heb?",
-      a: "Neem contact op via onze Enterprise-pagina. We bieden maatwerkoplossingen aan voor grotere organisaties, inclusief whitelabeling voor boekhouders of koepelorganisaties.",
+      q: "Is er een limiet op het aantal gebruikers?",
+      a: "Op Pro en Team is het aantal gebruikers én potjes onbeperkt. De gratis versie is beperkt tot 5 potjes en 3 gebruikers. Heb je whitelabeling of een opzet voor een koepel of boekhouder nodig? Neem gewoon even contact op.",
     },
     {
       q: "Kan ik mijn data exporteren als ik stop?",
@@ -1324,7 +1324,7 @@ function Footer() {
           <FooterCol title="Product" links={["Functies", "Prijzen", "Demo", "Roadmap", "Changelog"]} />
           <FooterCol
             title="Gebruik"
-            links={["Sportclubs", "Jeugdbewegingen", "Artiestenbureaus", "VZW's", "Enterprise"]}
+            links={["Sportclubs", "Jeugdbewegingen", "Artiestenbureaus", "VZW's", "Kleine bedrijven"]}
           />
           <FooterCol title="Bedrijf" links={["Over ons", "Blog", "Contact", "Pers", "Vacatures"]} />
         </div>
