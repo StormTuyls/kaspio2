@@ -18,6 +18,8 @@ type Props = {
   onSelect: (potId: string) => void;
   /** Spring naar de Potjes-pagina, eventueel gefocust op een groep. */
   onOpenGroup: (groupId: string | null) => void;
+  /** Spring naar een tab (Potjes/Groepen/Leden) vanuit de teller-tegels. */
+  onNavigate?: (tab: "potjes" | "groepen" | "leden") => void;
   /** Open de "Nog toe te wijzen" inbox (admin). */
   onOpenInbox?: () => void;
   /** Genereer een financieel rapport (PDF). Alleen aanwezig bij Pro+ admin. */
@@ -38,6 +40,7 @@ export function DashboardView({
   onUpgrade,
   onSelect,
   onOpenGroup,
+  onNavigate,
   onOpenInbox,
   onExportReport,
   onApprove,
@@ -140,9 +143,21 @@ export function DashboardView({
 
       {/* Tellers */}
       <div className="grid grid-cols-3 gap-4">
-        <CountStat label="Potjes" value={pots.length} />
-        <CountStat label="Groepen" value={groups.length} />
-        <CountStat label={members.length === 1 ? "Lid" : "Leden"} value={members.length} />
+        <CountStat
+          label="Potjes"
+          value={pots.length}
+          onClick={onNavigate ? () => onNavigate("potjes") : undefined}
+        />
+        <CountStat
+          label="Groepen"
+          value={groups.length}
+          onClick={onNavigate ? () => onNavigate("groepen") : undefined}
+        />
+        <CountStat
+          label={members.length === 1 ? "Lid" : "Leden"}
+          value={members.length}
+          onClick={onNavigate && isAdmin ? () => onNavigate("leden") : undefined}
+        />
       </div>
 
       {/* Onverdeeld geld */}
@@ -482,16 +497,39 @@ function FlowStat({
   );
 }
 
-function CountStat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-4 text-center dark:border-navy-700/60 dark:bg-navy-900">
+function CountStat({
+  label,
+  value,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  onClick?: () => void;
+}) {
+  const inner = (
+    <>
       <span className="font-num text-2xl font-extrabold tabular-nums text-slate-900 dark:text-navy-50">
         {value}
       </span>
       <span className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-navy-300">
         {label}
       </span>
-    </div>
+    </>
+  );
+  const base =
+    "flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-4 text-center dark:border-navy-700/60 dark:bg-navy-900";
+  if (!onClick) return <div className={base}>{inner}</div>;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`${base} group cursor-pointer transition hover:border-teal-300 hover:shadow-[0_6px_20px_-12px_rgba(15,23,42,0.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 dark:hover:border-teal-500/60`}
+    >
+      {inner}
+      <span className="mt-1 text-[11px] font-medium text-teal-600 opacity-0 transition group-hover:opacity-100 dark:text-teal-400">
+        Bekijken →
+      </span>
+    </button>
   );
 }
 

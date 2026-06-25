@@ -984,6 +984,10 @@ function AuthedApp({
                   setSelectedPotId(null);
                   setFocusGroup(groupId);
                 }}
+                onNavigate={(t) => {
+                  setTab(t);
+                  setSelectedPotId(null);
+                }}
                 onOpenInbox={isAdmin ? () => setShowInbox(true) : undefined}
                 onExportReport={
                   isAdmin && reportsEnabled(tier) ? () => setShowReport(true) : undefined
