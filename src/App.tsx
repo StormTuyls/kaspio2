@@ -44,6 +44,7 @@ import { signOut, supabase, useSession } from "./supabase";
 import { PotsView, Avatar } from "./views/Overview";
 import { DashboardView } from "./views/DashboardView";
 import { GroupsView } from "./views/GroupsView";
+import { GroupDetail } from "./views/GroupDetail";
 import { PotDetail } from "./views/PotDetail";
 import { SettingsView } from "./views/SettingsView";
 const Landing = lazy(() =>
@@ -592,6 +593,7 @@ function AuthedApp({
     deleteGroup,
   } = usePotGroups(orgId);
   const [selectedPotId, setSelectedPotId] = useState<string | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [showAddPot, setShowAddPot] = useState(false);
   const [showAddTx, setShowAddTx] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -731,11 +733,13 @@ function AuthedApp({
     () => dbGroups.map((g) => ({ id: g.id, name: g.name })),
     [dbGroups],
   );
+  const selectedGroup = uiGroups.find((g) => g.id === selectedGroupId) ?? null;
 
   // Licentie-limiet: kan er nog een potje bij? (server dwingt 't ook af)
   const canAddPot = store.state.pots.length < limits.pots;
   const goToUpgrade = () => {
     setSelectedPotId(null);
+    setSelectedGroupId(null);
     setTab("instellingen");
   };
 
@@ -842,6 +846,7 @@ function AuthedApp({
           onSelectOrg={(id) => {
             selectOrg(id);
             setSelectedPotId(null);
+            setSelectedGroupId(null);
           }}
           onCreateOrg={() => setShowNewOrg(true)}
           onLeaveOrg={leaveOrg}
@@ -849,11 +854,14 @@ function AuthedApp({
           groups={uiGroups}
           transactions={store.state.transactions}
           selectedPotId={selectedPotId}
-          onSelectPot={(id) => setSelectedPotId(id)}
+          onSelectPot={(id) => {
+            setSelectedGroupId(null);
+            setSelectedPotId(id);
+          }}
           onSelectGroup={(groupId) => {
-            setTab("potjes");
+            setTab("groepen");
             setSelectedPotId(null);
-            setFocusGroup(groupId);
+            setSelectedGroupId(groupId);
           }}
           onViewSite={() => setViewSite(true)}
           brandName={brandName}
@@ -861,6 +869,7 @@ function AuthedApp({
           onTab={(t) => {
             setTab(t);
             setSelectedPotId(null);
+            setSelectedGroupId(null);
           }}
         />
 
@@ -893,6 +902,16 @@ function AuthedApp({
                   setSelectedPotId(null);
                 }}
               />
+            ) : selectedGroup ? (
+              <GroupDetail
+                group={selectedGroup}
+                pots={potsForUser}
+                allTransactions={store.state.transactions}
+                members={uiMembers}
+                tier={tier}
+                onBack={() => setSelectedGroupId(null)}
+                onSelectPot={(id) => setSelectedPotId(id)}
+              />
             ) : tab === "potjes" ? (
               <PotsView
                 pots={potsForUser}
@@ -924,6 +943,7 @@ function AuthedApp({
                 onRenameGroup={renameGroup}
                 onDeleteGroup={deleteGroup}
                 onSelectPot={(id) => setSelectedPotId(id)}
+                onOpenGroup={(id) => setSelectedGroupId(id)}
               />
             ) : tab === "leden" && isAdmin ? (
               <MembersListView
@@ -980,13 +1000,14 @@ function AuthedApp({
                 onUpgrade={goToUpgrade}
                 onSelect={(id) => setSelectedPotId(id)}
                 onOpenGroup={(groupId) => {
-                  setTab("potjes");
+                  setTab("groepen");
                   setSelectedPotId(null);
-                  setFocusGroup(groupId);
+                  setSelectedGroupId(groupId);
                 }}
                 onNavigate={(t) => {
                   setTab(t);
                   setSelectedPotId(null);
+                  setSelectedGroupId(null);
                 }}
                 onOpenInbox={isAdmin ? () => setShowInbox(true) : undefined}
                 onExportReport={
@@ -1008,6 +1029,7 @@ function AuthedApp({
         onTab={(t) => {
           setTab(t);
           setSelectedPotId(null);
+          setSelectedGroupId(null);
         }}
       />
 

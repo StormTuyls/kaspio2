@@ -15,6 +15,8 @@ type Props = {
   onRenameGroup: (id: string, name: string) => Promise<{ error: string | null }>;
   onDeleteGroup: (id: string) => Promise<{ error: string | null }>;
   onSelectPot: (potId: string) => void;
+  /** Open het dashboard van één groep. */
+  onOpenGroup?: (groupId: string) => void;
 };
 
 export function GroupsView({
@@ -28,6 +30,7 @@ export function GroupsView({
   onRenameGroup,
   onDeleteGroup,
   onSelectPot,
+  onOpenGroup,
 }: Props) {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
@@ -137,6 +140,7 @@ export function GroupsView({
               onRename={onRenameGroup}
               onDelete={onDeleteGroup}
               onSelectPot={onSelectPot}
+              onOpen={onOpenGroup ? () => onOpenGroup(g.id) : undefined}
             />
           ))}
         </div>
@@ -171,6 +175,7 @@ function GroupCard({
   onRename,
   onDelete,
   onSelectPot,
+  onOpen,
 }: {
   group: PotGroup;
   pots: Pot[];
@@ -179,6 +184,7 @@ function GroupCard({
   onRename: (id: string, name: string) => Promise<{ error: string | null }>;
   onDelete: (id: string) => Promise<{ error: string | null }>;
   onSelectPot: (potId: string) => void;
+  onOpen?: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(group.name);
@@ -231,14 +237,22 @@ function GroupCard({
             className="input py-1 text-sm font-semibold"
           />
         ) : (
-          <div className="flex min-w-0 items-baseline gap-2">
+          <button
+            type="button"
+            onClick={onOpen}
+            disabled={!onOpen}
+            className="flex min-w-0 items-baseline gap-2 text-left enabled:hover:text-teal-700 dark:enabled:hover:text-teal-300"
+          >
             <h3 className="truncate text-base font-bold text-navy-900 dark:text-white">
               {group.name}
             </h3>
             <span className="rounded-full bg-navy-100 px-1.5 text-[11px] font-semibold text-navy-500 dark:bg-navy-800 dark:text-navy-300">
               {pots.length}
             </span>
-          </div>
+            {onOpen && (
+              <span className="text-xs font-medium text-teal-600 dark:text-teal-400">→</span>
+            )}
+          </button>
         )}
         <span className="flex-shrink-0 text-base font-bold tabular-nums text-navy-900 dark:text-navy-50">
           {formatEuro(balance(pots))}
