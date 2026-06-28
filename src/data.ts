@@ -861,20 +861,6 @@ export async function startPortal(
 }
 
 // =============================================================================
-// Pot balance helper
-// =============================================================================
-
-/** Compute saldo van een potje uit een lijst transactions. */
-export function potBalance(potId: string, transactions: Transaction[]): number {
-  return transactions
-    .filter((t) => t.pot_id === potId)
-    .reduce(
-      (sum, t) => sum + (t.direction === "in" ? Number(t.amount) : -Number(t.amount)),
-      0,
-    );
-}
-
-// =============================================================================
 // useOrgInvites , beheer pending invites voor een org (admin-only via RLS)
 // =============================================================================
 

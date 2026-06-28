@@ -23,8 +23,10 @@ function euro(n: number): string {
 
 Deno.serve(async (req: Request) => {
   try {
+    // Beveiliging: DIGEST_SECRET is verplicht. Ontbreekt hij, dan weigeren we
+    // (fail closed) i.p.v. de check over te slaan: deze functie draait no-verify-jwt.
     const secret = Deno.env.get("DIGEST_SECRET");
-    if (secret && req.headers.get("x-digest-secret") !== secret) {
+    if (!secret || req.headers.get("x-digest-secret") !== secret) {
       return new Response("forbidden", { status: 403 });
     }
     const apiKey = Deno.env.get("RESEND_API_KEY");

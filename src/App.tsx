@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react
 import type { CSSProperties, ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import "./App.css";
-import { useAppState } from "./storage";
+import { useAppState, calcBalance } from "./storage";
 import {
   acceptPendingInvites,
   approveTransaction,
@@ -1224,13 +1224,9 @@ function Sidebar({
   onViewSite: () => void;
   onTab: (t: Tab) => void;
 }) {
-  const balanceFor = (potId: string) =>
-    transactions
-      .filter((t) => t.potId === potId)
-      .reduce(
-        (sum, t) => sum + (t.direction === "in" ? t.amount : -t.amount),
-        0,
-      );
+  // Saldo via de canonieke helper, zodat de sidebar 'pending' net zo uitsluit
+  // als de pot-detail en het dashboard (voorheen telde dit pending wel mee).
+  const balanceFor = (potId: string) => calcBalance(transactions, potId);
 
   // Potjes per groep voor de sidebar-lijst; groepsloze potjes achteraan.
   const sidebarSections: { id: string | null; label: string | null; pots: Pot[] }[] = [
