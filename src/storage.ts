@@ -304,6 +304,11 @@ export function useAppState(accountId: string, bootstrapAdminName?: string) {
   };
 }
 
+/**
+ * Canonieke saldo-berekening voor een potje. Eén bron van waarheid: alle views
+ * en de sidebar horen dit te gebruiken. 'pending' transacties tellen niet mee
+ * (wachten op goedkeuring), conform de regel in types.ts.
+ */
 export function calcBalance(transactions: Transaction[], potId: string) {
   return transactions
     .filter((t) => t.potId === potId && t.status !== "pending")
