@@ -1094,9 +1094,10 @@ function BuildInPublic() {
       done: true,
     },
     {
-      label: "Volgende",
+      label: "Net live",
       title: "Betalingen live",
-      desc: "Pro (€4) en Team (€10) met onbeperkte potjes, potgroepen, goedkeuringen en bijlagen. De Stripe-betaalintegratie zit in de laatste testfase.",
+      desc: "Pro (€4) en Team (€10) met onbeperkte potjes, potgroepen, goedkeuringen en bijlagen. Betalen via Stripe werkt , kies een plan en reken meteen veilig af.",
+      done: true,
     },
     {
       label: "Daarna",
