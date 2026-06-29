@@ -943,9 +943,8 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
                 { text: "Grafieken & rapportage" },
                 { text: "PDF-export (CSV opent in Excel)" },
                 { text: "E-mail meldingen" },
+                { text: "Potgroepen en bijlagen: vanaf Team", no: true },
                 { text: "Bankkoppeling (PSD2) , binnenkort", no: true },
-                { text: "Potgroepen (takken & ploegen)", no: true },
-                { text: "Bijlagen (bonnetjes & facturen)", no: true },
               ]}
               cta="Kies Pro"
               ctaStyle="fill"
@@ -1350,9 +1349,9 @@ function Footer() {
         <div className="flex flex-col items-start justify-between gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center">
           <span>© {new Date().getFullYear()} Kaspio BV. Alle rechten voorbehouden.</span>
           <div className="flex gap-5">
-            <a className="transition hover:text-indigo-300" href="#">Privacybeleid</a>
-            <a className="transition hover:text-indigo-300" href="#">Gebruiksvoorwaarden</a>
-            <a className="transition hover:text-indigo-300" href="#">Cookies</a>
+            <a className="transition hover:text-indigo-300" href="/privacy">Privacybeleid</a>
+            <a className="transition hover:text-indigo-300" href="/voorwaarden">Gebruiksvoorwaarden</a>
+            <a className="transition hover:text-indigo-300" href="/privacy#cookies">Cookies</a>
           </div>
         </div>
       </div>

@@ -57,6 +57,9 @@ const AuthView = lazy(() =>
 const PasswordResetView = lazy(() =>
   import("./views/PasswordResetView").then((m) => ({ default: m.PasswordResetView })),
 );
+const LegalView = lazy(() =>
+  import("./views/LegalView").then((m) => ({ default: m.LegalView })),
+);
 import { Modal } from "./components/Modal";
 import { PotForm } from "./components/PotForm";
 import { TransactionForm } from "./components/TransactionForm";
@@ -175,9 +178,13 @@ function App() {
   // (bv. /potjes/:id) wegschrijven vóór AuthedApp de kans krijgt 'm te lezen.
   useEffect(() => {
     if (loading || session) return;
+    // Juridische pagina's hebben hun eigen URL (full-load route, zie hieronder);
+    // niet platslaan naar "/".
+    const current = window.location.pathname;
+    if (current === "/privacy" || current === "/voorwaarden") return;
     const path =
       publicView === "login" ? "/login" : publicView === "signup" ? "/signup" : "/";
-    if (path !== window.location.pathname) {
+    if (path !== current) {
       window.history.replaceState(null, "", path);
     }
   }, [loading, session, publicView]);
@@ -247,6 +254,17 @@ function App() {
       <div className="flex min-h-screen items-center justify-center bg-canvas text-navy-500 dark:bg-navy-950 dark:text-navy-300">
         Laden…
       </div>
+    );
+  }
+
+  // Publieke juridische pagina's: eigen full-load route, los van auth en
+  // van de app-routing (werkt dus ook voor ingelogde bezoekers en bij direct laden).
+  const legalPath = window.location.pathname;
+  if (legalPath === "/privacy" || legalPath === "/voorwaarden") {
+    return (
+      <Suspense fallback={routeFallback}>
+        <LegalView page={legalPath === "/privacy" ? "privacy" : "terms"} />
+      </Suspense>
     );
   }
 
