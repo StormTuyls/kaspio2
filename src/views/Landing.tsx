@@ -1145,10 +1145,28 @@ function BuildInPublic() {
             </Reveal>
           ))}
         </div>
-        <p className="mt-10 text-center text-sm text-slate-500">
-          Wil je meebouwen? Maak een account aan, ik neem graag 20 minuten de
-          tijd om te horen hoe jullie het vandaag aanpakken.
-        </p>
+        <div className="mt-10 text-center">
+          <p className="mx-auto max-w-xl text-sm leading-relaxed text-slate-500">
+            Wil je meebouwen? Maak een account aan, ik hoor graag hoe jullie het
+            vandaag aanpakken.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <a
+              href="https://calendly.com/stormtuyls-4e1o/30min"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
+            >
+              Plan 30 min
+            </a>
+            <a
+              href="mailto:stormtuyls@icloud.com?subject=Kaspio"
+              className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Mail me
+            </a>
+          </div>
+        </div>
       </div>
     </section>
   );
