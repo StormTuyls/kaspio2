@@ -1076,6 +1076,48 @@ export async function notifyOrgEvent(
   }
 }
 
+export type FeedbackKind = "bug" | "idea" | "other";
+
+/**
+ * Slaat in-app feedback op (RLS: enkel je eigen rij) en stuurt best-effort een
+ * mail naar de operator. Mail-fout faalt zacht: de rij blijft bewaard.
+ */
+export async function submitFeedback(input: {
+  kind: FeedbackKind;
+  message: string;
+  orgId: string | null;
+  context: Record<string, unknown>;
+}): Promise<{ ok: boolean; error?: string }> {
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth.user?.id ?? null;
+  // 'feedback' staat nog niet in de gegenereerde types; cast zoals elders.
+  const { error } = await (
+    supabase.from("feedback") as unknown as {
+      insert: (v: Record<string, unknown>) => Promise<{ error: Error | null }>;
+    }
+  ).insert({
+    user_id: uid,
+    organisation_id: input.orgId,
+    kind: input.kind,
+    message: input.message,
+    context: input.context,
+  });
+  if (error) return { ok: false, error: error.message };
+  try {
+    await supabase.functions.invoke("send-feedback-email", {
+      body: {
+        kind: input.kind,
+        message: input.message,
+        context: input.context,
+        orgId: input.orgId,
+      },
+    });
+  } catch (err) {
+    console.warn("[Kaspio] send-feedback-email niet bereikbaar:", err);
+  }
+  return { ok: true };
+}
+
 // =============================================================================
 // useNotificationSettings , per-gebruiker voorkeuren in de DB
 // =============================================================================

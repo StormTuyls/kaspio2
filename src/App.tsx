@@ -29,6 +29,7 @@ import {
   useTransactions,
 } from "./data";
 import { UnallocatedInbox } from "./components/UnallocatedInbox";
+import { FeedbackModal } from "./components/FeedbackModal";
 import { InviteMemberForm } from "./components/InviteMemberForm";
 import { MembersListView } from "./views/MembersListView";
 const AuditLogView = lazy(() =>
@@ -621,6 +622,7 @@ function AuthedApp({
   const [showInvite, setShowInvite] = useState(false);
   const [showNewOrg, setShowNewOrg] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [tab, setTab] = useState<Tab>(
     () => parseRoute(window.location.pathname).tab,
   );
@@ -922,6 +924,7 @@ function AuthedApp({
             brandName={brandName}
             branding={store.state.branding}
             onLogout={onLogout}
+            onFeedback={() => setShowFeedback(true)}
           />
 
           <main className="mx-auto max-w-6xl px-4 pb-24 pt-6 sm:px-8 sm:pt-8 lg:pb-8">
@@ -1175,6 +1178,13 @@ function AuthedApp({
           onCancel={() => setShowNewOrg(false)}
         />
       </Modal>
+
+      <FeedbackModal
+        open={showFeedback}
+        onClose={() => setShowFeedback(false)}
+        orgId={orgId}
+        tier={tier}
+      />
     </div>
   );
 }
@@ -1575,11 +1585,13 @@ function Topbar({
   brandName,
   branding,
   onLogout,
+  onFeedback,
 }: {
   account: Account;
   brandName: string;
   branding: Branding;
   onLogout: () => void;
+  onFeedback: () => void;
 }) {
   return (
     <header className="border-b border-navy-100 bg-white dark:border-navy-800 dark:bg-navy-900">
@@ -1598,6 +1610,17 @@ function Topbar({
         <div className="hidden lg:block" />
 
         <div className="flex flex-shrink-0 items-center gap-1.5 sm:gap-3">
+          <button
+            onClick={onFeedback}
+            className="inline-flex items-center gap-1.5 rounded-xl p-2 text-navy-500 transition hover:bg-navy-50 hover:text-navy-900 sm:px-3 dark:text-navy-300 dark:hover:bg-navy-800 dark:hover:text-white"
+            aria-label="Feedback geven"
+            title="Feedback"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            <span className="hidden sm:inline">Feedback</span>
+          </button>
           <ThemeToggle />
           <div className="flex items-center gap-2.5 border-l border-navy-100 pl-2.5 dark:border-navy-700 sm:pl-3">
             <Avatar name={account.fullName} />
