@@ -921,8 +921,16 @@ function AuthedApp({
         <div className="flex-1 min-w-0">
           <Topbar
             account={account}
-            brandName={brandName}
             branding={store.state.branding}
+            orgs={orgs}
+            currentOrg={org}
+            onSelectOrg={(id) => {
+              selectOrg(id);
+              setSelectedPotId(null);
+              setSelectedGroupId(null);
+            }}
+            onCreateOrg={() => setShowNewOrg(true)}
+            onLeaveOrg={leaveOrg}
             onLogout={onLogout}
             onFeedback={() => setShowFeedback(true)}
           />
@@ -1582,29 +1590,41 @@ function NavItem({
 
 function Topbar({
   account,
-  brandName,
   branding,
+  orgs,
+  currentOrg,
+  onSelectOrg,
+  onCreateOrg,
+  onLeaveOrg,
   onLogout,
   onFeedback,
 }: {
   account: Account;
-  brandName: string;
   branding: Branding;
+  orgs: Organisation[];
+  currentOrg: Organisation;
+  onSelectOrg: (id: string) => void;
+  onCreateOrg: () => void;
+  onLeaveOrg?: (id: string) => Promise<{ error: string | null }>;
   onLogout: () => void;
   onFeedback: () => void;
 }) {
   return (
     <header className="border-b border-navy-100 bg-white dark:border-navy-800 dark:bg-navy-900">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-8">
-        <div className="flex min-w-0 items-center gap-2 lg:hidden">
+        <div className="flex min-w-0 flex-1 items-center gap-2 lg:hidden">
           <BrandLogo branding={branding} size={32} />
-          <div className="hidden min-w-0 sm:block">
-            <div className="truncate text-sm font-bold text-navy-900 dark:text-white">
-              {brandName}
-            </div>
-            <div className="truncate text-[10px] text-navy-400 dark:text-navy-300">
-              {account.organizationName}
-            </div>
+          {/* Org-switcher op mobiel: de sidebar (met de switcher) is lg-only,
+              dus zonder dit kunnen mobiele gebruikers niet van org wisselen. */}
+          <div className="min-w-0 flex-1">
+            <OrgSwitcher
+              orgs={orgs}
+              selected={currentOrg}
+              onSelect={onSelectOrg}
+              onCreateNew={onCreateOrg}
+              onLeave={onLeaveOrg}
+              variant="light"
+            />
           </div>
         </div>
         <div className="hidden lg:block" />
