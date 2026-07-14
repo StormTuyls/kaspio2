@@ -5,12 +5,14 @@ import { useForceLight } from "../theme";
 type Props = {
   onLogin: () => void;
   onSignup: () => void;
+  /** Open de read-only demo (geen account nodig). */
+  onDemo: () => void;
   /** Indien gezet: je bekijkt de site terwijl je ingelogd bent. Toont een
    *  terug-naar-app balk bovenaan. */
   onExitPreview?: () => void;
 };
 
-export function Landing({ onLogin, onSignup, onExitPreview }: Props) {
+export function Landing({ onLogin, onSignup, onDemo, onExitPreview }: Props) {
   useForceLight();
   return (
     <div className="min-h-screen bg-white font-display text-slate-900 antialiased">
@@ -26,7 +28,7 @@ export function Landing({ onLogin, onSignup, onExitPreview }: Props) {
         </div>
       )}
       <Header onLogin={onLogin} onSignup={onSignup} />
-      <Hero onSignup={onSignup} />
+      <Hero onSignup={onSignup} onDemo={onDemo} />
       <TrustStrip />
       <Problem />
       <HowItWorks />
@@ -198,7 +200,7 @@ function Header({ onLogin, onSignup }: { onLogin: () => void; onSignup: () => vo
 /* Hero                                                                */
 /* ------------------------------------------------------------------ */
 
-function Hero({ onSignup }: { onSignup: () => void }) {
+function Hero({ onSignup, onDemo }: { onSignup: () => void; onDemo: () => void }) {
   return (
     <section className="relative overflow-hidden px-6 pb-20 pt-16 sm:pt-24">
       {/* soft brand glow + faint grid */}
@@ -272,12 +274,12 @@ function Hero({ onSignup }: { onSignup: () => void }) {
               >
                 Gratis starten →
               </button>
-              <a
-                href="#hoe"
+              <button
+                onClick={onDemo}
                 className="rounded-xl border border-slate-200 bg-white px-7 py-3.5 text-center text-base font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
               >
-                Bekijk hoe het werkt
-              </a>
+                Bekijk de demo
+              </button>
             </div>
           </Reveal>
 
