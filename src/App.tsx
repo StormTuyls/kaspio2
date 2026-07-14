@@ -54,6 +54,9 @@ const Landing = lazy(() =>
 const AuthView = lazy(() =>
   import("./views/AuthView").then((m) => ({ default: m.AuthView })),
 );
+const DemoView = lazy(() =>
+  import("./views/DemoView").then((m) => ({ default: m.DemoView })),
+);
 const PasswordResetView = lazy(() =>
   import("./views/PasswordResetView").then((m) => ({ default: m.PasswordResetView })),
 );
@@ -74,7 +77,7 @@ import { paletteToCssVars } from "./branding";
 import type { Branding } from "./branding";
 import { parseRoute, buildPath, type Tab } from "./routing";
 
-type PublicView = "landing" | "login" | "signup";
+type PublicView = "landing" | "login" | "signup" | "demo";
 
 // Comp-code (?comp=CODE) vroeg inlezen, vóór de invite-parsing de query
 // opschoont. Wordt verzilverd zodra de gebruiker een org-admin is.
@@ -167,6 +170,7 @@ function App() {
     const p = window.location.pathname;
     if (p === "/login") return "login";
     if (p === "/signup") return "signup";
+    if (p === "/demo") return "demo";
     return "landing";
   });
 
@@ -176,7 +180,13 @@ function App() {
   useEffect(() => {
     if (loading || session) return;
     const path =
-      publicView === "login" ? "/login" : publicView === "signup" ? "/signup" : "/";
+      publicView === "login"
+        ? "/login"
+        : publicView === "signup"
+          ? "/signup"
+          : publicView === "demo"
+            ? "/demo"
+            : "/";
     if (path !== window.location.pathname) {
       window.history.replaceState(null, "", path);
     }
@@ -265,6 +275,17 @@ function App() {
           <Landing
             onLogin={() => setPublicView("login")}
             onSignup={() => setPublicView("signup")}
+            onDemo={() => setPublicView("demo")}
+          />
+        </Suspense>
+      );
+    }
+    if (publicView === "demo") {
+      return (
+        <Suspense fallback={routeFallback}>
+          <DemoView
+            onSignup={() => setPublicView("signup")}
+            onExit={() => setPublicView("landing")}
           />
         </Suspense>
       );
@@ -854,6 +875,7 @@ function AuthedApp({
         <Landing
           onLogin={() => setViewSite(false)}
           onSignup={() => setViewSite(false)}
+          onDemo={() => setViewSite(false)}
           onExitPreview={() => setViewSite(false)}
         />
       </Suspense>
