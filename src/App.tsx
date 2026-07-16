@@ -428,6 +428,8 @@ function useBridgedStore(
     addTransaction: addDbTx,
     importTransactions: importDbTx,
     deleteTransaction: deleteDbTx,
+    deleteTransactions: deleteDbTxs,
+    reassignTransactions: reassignDbTxs,
     assignTransaction: assignDbTx,
     transfer: transferDbTx,
   } = useTransactions(orgId);
@@ -513,6 +515,12 @@ function useBridgedStore(
       deleteTransaction: async (id: string) => {
         await deleteDbTx(id);
       },
+      deleteTransactions: async (ids: string[]) => {
+        await deleteDbTxs(ids);
+      },
+      reassignTransactions: async (ids: string[], toPotId: string) => {
+        await reassignDbTxs(ids, toPotId);
+      },
       // Bulk-import (CSV). Geen per-transactie e-mails: dat zou bij een afschrift
       // honderden mails sturen. Eén batch-insert, één refresh.
       importTransactions: importDbTx,
@@ -529,6 +537,8 @@ function useBridgedStore(
     addDbTx,
     importDbTx,
     deleteDbTx,
+    deleteDbTxs,
+    reassignDbTxs,
     assignDbTx,
     transferDbTx,
   ]);
@@ -972,6 +982,7 @@ function AuthedApp({
             {selectedPot ? (
               <PotDetail
                 pot={selectedPot}
+                pots={potsForUser}
                 transactions={store.state.transactions}
                 members={uiMembers}
                 currentUser={currentUser}
@@ -983,6 +994,10 @@ function AuthedApp({
                 onBack={() => setSelectedPotId(null)}
                 onAddTransaction={() => setShowAddTx(true)}
                 onDeleteTransaction={(id) => store.deleteTransaction(id)}
+                onBulkDeleteTransactions={(ids) => store.deleteTransactions(ids)}
+                onReassignTransactions={(ids, toPotId) =>
+                  store.reassignTransactions(ids, toPotId)
+                }
                 onUpdatePot={(patch) => store.updatePot(selectedPot.id, patch)}
                 onDeletePot={() => {
                   store.deletePot(selectedPot.id);
@@ -1205,6 +1220,7 @@ function AuthedApp({
         {showTransfer && (
           <TransferForm
             pots={potsForUser}
+            transactions={store.state.transactions}
             initialFromPotId={selectedPot?.id ?? null}
             onSubmit={async (values) => {
               const res = await store.transfer(values);
@@ -1283,6 +1299,7 @@ function AuthedApp({
           pots={potsForUser}
           onAssign={(txId, parts) => store.assignTransaction(txId, parts)}
           onDelete={(txId) => store.deleteTransaction(txId)}
+          onBulkDelete={(txIds) => store.deleteTransactions(txIds)}
         />
       </Modal>
 
