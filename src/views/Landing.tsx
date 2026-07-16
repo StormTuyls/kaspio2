@@ -483,7 +483,13 @@ function Txn({
 /* ------------------------------------------------------------------ */
 
 function TrustStrip() {
-  const items = ["Gratis te starten", "Geen kaart nodig", "Onbeperkt potjes op Pro", "Data exporteerbaar"];
+  const items = [
+    "Gratis te starten",
+    "Geen kaart nodig",
+    "Importeer je bankafschrift",
+    "Onbeperkt potjes op Pro",
+    "Data exporteerbaar",
+  ];
   return (
     <section className="border-y border-slate-100 bg-slate-50/60 py-6">
       <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-center gap-x-8 gap-y-3 px-6">
