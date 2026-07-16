@@ -22,6 +22,8 @@ type Props = {
   onNavigate?: (tab: "potjes" | "groepen" | "leden") => void;
   /** Open de "Nog toe te wijzen" inbox (admin). */
   onOpenInbox?: () => void;
+  /** Beginsaldo instellen (admin): startbedrag dat al op de rekening stond. */
+  onSetOpeningBalance?: () => void;
   /** Genereer een financieel rapport (PDF). Alleen aanwezig bij Pro+ admin. */
   onExportReport?: () => void;
   /** Goedkeuren/afwijzen van transacties die op goedkeuring wachten (admin). */
@@ -42,6 +44,7 @@ export function DashboardView({
   onOpenGroup,
   onNavigate,
   onOpenInbox,
+  onSetOpeningBalance,
   onExportReport,
   onApprove,
   onReject,
@@ -120,6 +123,11 @@ export function DashboardView({
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          {onSetOpeningBalance && (
+            <button onClick={onSetOpeningBalance} className="btn-secondary text-sm">
+              Beginsaldo
+            </button>
+          )}
           {onExportReport && (
             <button onClick={onExportReport} className="btn-secondary text-sm">
               Rapport (PDF)

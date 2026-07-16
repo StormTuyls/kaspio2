@@ -63,6 +63,7 @@ const PasswordResetView = lazy(() =>
 import { Modal } from "./components/Modal";
 import { PotForm } from "./components/PotForm";
 import { TransactionForm } from "./components/TransactionForm";
+import { OpeningBalanceForm } from "./components/OpeningBalanceForm";
 const ImportTransactionsModal = lazy(() =>
   import("./components/ImportTransactionsModal").then((m) => ({
     default: m.ImportTransactionsModal,
@@ -638,6 +639,7 @@ function AuthedApp({
   );
   const [showAddPot, setShowAddPot] = useState(false);
   const [showAddTx, setShowAddTx] = useState(false);
+  const [showOpeningBalance, setShowOpeningBalance] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
@@ -1086,6 +1088,9 @@ function AuthedApp({
                   setSelectedGroupId(null);
                 }}
                 onOpenInbox={isAdmin ? () => setShowInbox(true) : undefined}
+                onSetOpeningBalance={
+                  isAdmin ? () => setShowOpeningBalance(true) : undefined
+                }
                 onExportReport={
                   isAdmin && reportsEnabled(tier) ? () => setShowReport(true) : undefined
                 }
@@ -1132,6 +1137,29 @@ function AuthedApp({
               setShowAddTx(false);
             }}
             onCancel={() => setShowAddTx(false)}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        open={showOpeningBalance}
+        title="Beginsaldo instellen"
+        onClose={() => setShowOpeningBalance(false)}
+      >
+        {showOpeningBalance && (
+          <OpeningBalanceForm
+            onSubmit={async ({ amount, occurredOn, memo }) => {
+              await store.addTransaction({
+                potId: null,
+                direction: "in",
+                amount,
+                occurredOn,
+                counterparty: "Beginsaldo",
+                memo,
+              });
+              setShowOpeningBalance(false);
+            }}
+            onCancel={() => setShowOpeningBalance(false)}
           />
         )}
       </Modal>
