@@ -199,6 +199,8 @@ export interface Transaction {
   created_by: string | null;
   /** Verwijst naar de originele transactie als deze uit een splitsing komt. */
   split_from: string | null;
+  /** Gezet op beide benen van een overboeking tussen potjes (uit + in). */
+  transfer_group?: string | null;
   /** 'approved' (telt mee) of 'pending' (wacht op goedkeuring, telt niet mee). */
   status?: "approved" | "pending";
   created_at: string;

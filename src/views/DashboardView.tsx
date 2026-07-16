@@ -70,7 +70,11 @@ export function DashboardView({
     0,
   );
   const flowStart = flowWindowStart(flowPeriod);
-  const flowTx = approvedInScope.filter((t) => t.occurredOn >= flowStart);
+  // Overboekingen tussen potjes (transferGroup) tellen niet mee in in/uit:
+  // er komt netto niks je rekening in of uit, enkel de verdeling verschuift.
+  const flowTx = approvedInScope.filter(
+    (t) => t.occurredOn >= flowStart && !t.transferGroup,
+  );
   // Transacties die op goedkeuring wachten (admin keurt ze goed/af).
   const pendingApprovals = allTransactions.filter((t) => t.status === "pending");
   const totalIn = flowTx

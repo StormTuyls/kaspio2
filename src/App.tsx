@@ -64,6 +64,7 @@ import { Modal } from "./components/Modal";
 import { PotForm } from "./components/PotForm";
 import { TransactionForm } from "./components/TransactionForm";
 import { OpeningBalanceForm } from "./components/OpeningBalanceForm";
+import { TransferForm } from "./components/TransferForm";
 const ImportTransactionsModal = lazy(() =>
   import("./components/ImportTransactionsModal").then((m) => ({
     default: m.ImportTransactionsModal,
@@ -404,6 +405,7 @@ function dbTxToUiTx(t: DbTransaction): Transaction {
     counterparty: t.counterparty ?? "",
     memo: t.memo ?? undefined,
     status: t.status ?? "approved",
+    transferGroup: t.transfer_group ?? null,
     createdAt: t.created_at,
   };
 }
@@ -425,6 +427,7 @@ function useBridgedStore(
     importTransactions: importDbTx,
     deleteTransaction: deleteDbTx,
     assignTransaction: assignDbTx,
+    transfer: transferDbTx,
   } = useTransactions(orgId);
 
   const pots = useMemo(
@@ -512,6 +515,7 @@ function useBridgedStore(
       // honderden mails sturen. Eén batch-insert, één refresh.
       importTransactions: importDbTx,
       assignTransaction: assignDbTx,
+      transfer: transferDbTx,
     };
   }, [
     localStore,
@@ -524,6 +528,7 @@ function useBridgedStore(
     importDbTx,
     deleteDbTx,
     assignDbTx,
+    transferDbTx,
   ]);
 }
 
@@ -640,6 +645,7 @@ function AuthedApp({
   const [showAddPot, setShowAddPot] = useState(false);
   const [showAddTx, setShowAddTx] = useState(false);
   const [showOpeningBalance, setShowOpeningBalance] = useState(false);
+  const [showTransfer, setShowTransfer] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
@@ -1002,6 +1008,11 @@ function AuthedApp({
                 onSelect={(id) => setSelectedPotId(id)}
                 onAddPot={() => setShowAddPot(true)}
                 onAddTransaction={isAdmin ? () => setShowAddTx(true) : undefined}
+                onTransfer={
+                  isAdmin && potsForUser.length >= 2
+                    ? () => setShowTransfer(true)
+                    : undefined
+                }
                 onImport={
                   isAdmin && importEnabled(tier) ? () => setShowImport(true) : undefined
                 }
@@ -1160,6 +1171,25 @@ function AuthedApp({
               setShowOpeningBalance(false);
             }}
             onCancel={() => setShowOpeningBalance(false)}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        open={showTransfer}
+        title="Verplaats tussen potjes"
+        onClose={() => setShowTransfer(false)}
+      >
+        {showTransfer && (
+          <TransferForm
+            pots={potsForUser}
+            initialFromPotId={selectedPot?.id ?? null}
+            onSubmit={async (values) => {
+              const res = await store.transfer(values);
+              if (!res.error) setShowTransfer(false);
+              return res;
+            }}
+            onCancel={() => setShowTransfer(false)}
           />
         )}
       </Modal>
