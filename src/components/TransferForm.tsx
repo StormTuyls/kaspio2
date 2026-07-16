@@ -44,9 +44,11 @@ export function TransferForm({
 
   const fromBalance = calcBalance(transactions, fromPotId);
   const toBalance = calcBalance(transactions, toPotId);
-  const parsedAmount = Number(amount.replace(",", "."));
-  const overBalance =
-    Number.isFinite(parsedAmount) && parsedAmount > 0 && parsedAmount > fromBalance;
+  // Absoluut: een minteken (bv. bij het overnemen van een negatief saldo) mag
+  // je niet blokkeren. Je verplaatst altijd een positief bedrag.
+  const parsedAmount = Math.abs(Number(amount.replace(",", ".")));
+  const willGoNegative =
+    Number.isFinite(parsedAmount) && parsedAmount > 0 && fromBalance - parsedAmount < 0;
 
   if (pots.length < 2) {
     return (
@@ -66,17 +68,17 @@ export function TransferForm({
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    const parsed = Number(amount.replace(",", "."));
+    const value = Math.abs(Number(amount.replace(",", ".")));
     if (fromPotId === toPotId) {
       setError("Kies twee verschillende potjes.");
       return;
     }
-    if (!Number.isFinite(parsed) || parsed <= 0) {
-      setError("Vul een positief bedrag in.");
+    if (!Number.isFinite(value) || value === 0) {
+      setError("Vul een bedrag in.");
       return;
     }
     setBusy(true);
-    const res = await onSubmit({ fromPotId, toPotId, amount: parsed, occurredOn, memo: memo.trim() || undefined });
+    const res = await onSubmit({ fromPotId, toPotId, amount: value, occurredOn, memo: memo.trim() || undefined });
     setBusy(false);
     if (res.error) setError(res.error);
   }
@@ -133,13 +135,13 @@ export function TransferForm({
         <label className="block">
           <span className="mb-1.5 flex items-center justify-between gap-2 text-sm font-medium text-navy-700 dark:text-navy-200">
             Bedrag
-            {fromBalance > 0 && (
+            {fromBalance !== 0 && (
               <button
                 type="button"
-                onClick={() => setAmount(String(fromBalance).replace(".", ","))}
+                onClick={() => setAmount(String(Math.abs(fromBalance)).replace(".", ","))}
                 className="text-xs font-semibold text-teal-700 hover:underline dark:text-teal-300"
               >
-                Alles ({formatEuro(fromBalance)})
+                Alles ({formatEuro(Math.abs(fromBalance))})
               </button>
             )}
           </span>
@@ -170,10 +172,10 @@ export function TransferForm({
         </label>
       </div>
 
-      {overBalance && (
+      {willGoNegative && (
         <p className="text-xs text-amber-700 dark:text-amber-400">
-          Dat is meer dan het saldo van dit potje ({formatEuro(fromBalance)}). Het
-          bronpotje komt dan onder nul.
+          Het bronpotje komt hiermee onder nul (saldo nu {formatEuro(fromBalance)}).
+          Dat mag, maar goed om te weten.
         </p>
       )}
 
