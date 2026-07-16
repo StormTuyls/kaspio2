@@ -1299,6 +1299,7 @@ function AuthedApp({
           pots={potsForUser}
           onAssign={(txId, parts) => store.assignTransaction(txId, parts)}
           onDelete={(txId) => store.deleteTransaction(txId)}
+          onBulkDelete={(txIds) => store.deleteTransactions(txIds)}
         />
       </Modal>
 

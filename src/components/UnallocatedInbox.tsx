@@ -11,14 +11,55 @@ type Props = {
     parts: { potId: string; amount: number }[],
   ) => Promise<{ error: string | null }>;
   onDelete: (txId: string) => void;
+  /** Bulk verwijderen van geselecteerde onverdeelde transacties. */
+  onBulkDelete?: (txIds: string[]) => void | Promise<unknown>;
 };
 
 /**
  * "Toe te wijzen" inbox: lijst van transacties zonder potje. Per transactie
- * kan de admin toewijzen aan één potje of splitsen over meerdere.
+ * kan de admin toewijzen aan één potje of splitsen over meerdere, of ze snel
+ * (in bulk) verwijderen.
  */
-export function UnallocatedInbox({ transactions, pots, onAssign, onDelete }: Props) {
+export function UnallocatedInbox({
+  transactions,
+  pots,
+  onAssign,
+  onDelete,
+  onBulkDelete,
+}: Props) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const allSelected =
+    transactions.length > 0 && transactions.every((t) => selected.has(t.id));
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    setSelected((prev) =>
+      transactions.every((t) => prev.has(t.id))
+        ? new Set()
+        : new Set(transactions.map((t) => t.id)),
+    );
+  }
+
+  async function bulkDelete() {
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    if (!confirm(`${ids.length} ${ids.length === 1 ? "transactie" : "transacties"} verwijderen?`)) {
+      return;
+    }
+    if (onBulkDelete) await onBulkDelete(ids);
+    else ids.forEach((id) => onDelete(id));
+    setSelected(new Set());
+  }
 
   if (transactions.length === 0) {
     return (
@@ -34,10 +75,48 @@ export function UnallocatedInbox({ transactions, pots, onAssign, onDelete }: Pro
         Dit geld staat op de rekening maar heeft nog geen potje. Wijs het toe,
         of splits het over meerdere potjes.
       </p>
+      {onBulkDelete && (
+        <div className="flex items-center justify-between gap-3">
+          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-navy-500 dark:text-navy-300">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={toggleAll}
+              className="h-4 w-4 accent-teal-600"
+            />
+            Alles selecteren
+          </label>
+          {selected.size > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-navy-500 dark:text-navy-300">
+                {selected.size} geselecteerd
+              </span>
+              <button
+                onClick={() => setSelected(new Set())}
+                className="btn-secondary px-3 py-1.5 text-xs"
+              >
+                Wis
+              </button>
+              <button onClick={bulkDelete} className="btn-danger px-3 py-1.5 text-xs">
+                Verwijderen
+              </button>
+            </div>
+          )}
+        </div>
+      )}
       <ul className="divide-y divide-navy-100 dark:divide-navy-700/60">
         {transactions.map((tx) => (
           <li key={tx.id} className="py-3">
             <div className="flex items-center gap-3">
+              {onBulkDelete && (
+                <input
+                  type="checkbox"
+                  checked={selected.has(tx.id)}
+                  onChange={() => toggle(tx.id)}
+                  className="h-4 w-4 flex-shrink-0 accent-teal-600"
+                  aria-label="Selecteer transactie"
+                />
+              )}
               <div
                 className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
                   tx.direction === "in"
@@ -67,6 +146,15 @@ export function UnallocatedInbox({ transactions, pots, onAssign, onDelete }: Pro
                 className="btn-accent flex-shrink-0 px-3 py-1.5 text-xs"
               >
                 {openId === tx.id ? "Sluit" : "Toewijzen"}
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm("Transactie verwijderen?")) onDelete(tx.id);
+                }}
+                className="flex-shrink-0 rounded-md px-2 py-1 text-navy-300 hover:bg-rose-50 hover:text-rose-600 dark:text-navy-500 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
+                aria-label="Verwijderen"
+              >
+                ✕
               </button>
             </div>
 
