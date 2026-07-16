@@ -136,6 +136,15 @@ export function parseDate(raw: string): string | null {
   return null;
 }
 
+/**
+ * Normaliseer een tegenpartij zodat kleine verschillen (hoofdletters, dubbele
+ * spaties) hetzelfde matchen. Gebruikt om import-rijen te koppelen aan het
+ * potje waar je eerdere transacties van dezelfde tegenpartij aan toewees.
+ */
+export function normalizeCounterparty(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
 export type ColumnKey = "date" | "amount" | "counterparty" | "memo";
 
 /** Raad welke kolom-index bij welk veld hoort op basis van de header-naam. */

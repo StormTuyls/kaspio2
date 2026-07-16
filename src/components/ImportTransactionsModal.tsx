@@ -3,6 +3,7 @@ import type { Pot } from "../types";
 import type { TransactionInput } from "../data";
 import {
   guessColumns,
+  normalizeCounterparty,
   parseAmount,
   parseCsv,
   parseDate,
@@ -14,6 +15,11 @@ type Props = {
   pots: Pot[];
   /** Admins mogen "Onverdeeld" laten staan (komt in de inbox). */
   allowUnallocated: boolean;
+  /**
+   * Genormaliseerde tegenpartij → potje-id, op basis van eerdere toewijzingen.
+   * Rijen met een bekende tegenpartij worden zo automatisch voorgesteld.
+   */
+  counterpartyPotHints?: Record<string, string>;
   onImport: (
     inputs: TransactionInput[],
   ) => Promise<{ error: string | null; count: number }>;
@@ -56,6 +62,7 @@ export function ImportTransactionsModal({
   open,
   pots,
   allowUnallocated,
+  counterpartyPotHints = {},
   onImport,
   onClose,
 }: Props) {
@@ -79,10 +86,24 @@ export function ImportTransactionsModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Bij nieuw bestand of als de bulk-keuze verandert: alle rijen op die waarde.
+  // Seed het potje per rij. Standaard volgt elke rij de bulk-keuze. Staat die
+  // op "Onverdeeld" en is de tegenpartij bekend uit eerdere toewijzingen, dan
+  // stellen we dat potje meteen voor. Kies je expliciet een bulk-potje, dan
+  // gaan alle rijen daarheen.
   useEffect(() => {
-    setRowPot(rows.map(() => targetPot));
-  }, [rows, targetPot]);
+    setRowPot(
+      rows.map((r) => {
+        if (targetPot === UNALLOCATED && cols.counterparty >= 0) {
+          const cp = (r[cols.counterparty] ?? "").trim();
+          const hint = cp
+            ? counterpartyPotHints[normalizeCounterparty(cp)]
+            : undefined;
+          if (hint && pots.some((p) => p.id === hint)) return hint;
+        }
+        return targetPot;
+      }),
+    );
+  }, [rows, cols, targetPot, counterpartyPotHints, pots]);
 
   // Reset bij sluiten zodat een volgende import schoon start.
   useEffect(() => {
@@ -339,7 +360,18 @@ export function ImportTransactionsModal({
                 <div className="max-h-56 overflow-y-auto">
                   <table className="w-full text-sm">
                     <tbody className="divide-y divide-navy-100 dark:divide-navy-700/60">
-                      {preview.slice(0, 50).map((p, i) => (
+                      {preview.slice(0, 50).map((p, i) => {
+                        const cpNorm = p.counterparty
+                          ? normalizeCounterparty(p.counterparty)
+                          : "";
+                        const hintPotId = cpNorm
+                          ? counterpartyPotHints[cpNorm]
+                          : undefined;
+                        const suggested =
+                          !!hintPotId &&
+                          pots.some((pt) => pt.id === hintPotId) &&
+                          (rowPot[i] ?? targetPot) === hintPotId;
+                        return (
                         <tr
                           key={i}
                           className={p.valid ? "" : "opacity-40"}
@@ -366,30 +398,38 @@ export function ImportTransactionsModal({
                           </td>
                           <td className="px-3 py-1.5">
                             {p.valid ? (
-                              <select
-                                value={rowPot[i] ?? targetPot}
-                                onChange={(e) => {
-                                  const next = [...rowPot];
-                                  next[i] = e.target.value;
-                                  setRowPot(next);
-                                }}
-                                className="max-w-[9rem] rounded-md border border-navy-200 bg-white px-1.5 py-1 text-xs dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50"
-                              >
-                                {allowUnallocated && (
-                                  <option value={UNALLOCATED}>Onverdeeld</option>
+                              <div className="flex flex-col items-start gap-0.5">
+                                <select
+                                  value={rowPot[i] ?? targetPot}
+                                  onChange={(e) => {
+                                    const next = [...rowPot];
+                                    next[i] = e.target.value;
+                                    setRowPot(next);
+                                  }}
+                                  className="max-w-[9rem] rounded-md border border-navy-200 bg-white px-1.5 py-1 text-xs dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50"
+                                >
+                                  {allowUnallocated && (
+                                    <option value={UNALLOCATED}>Onverdeeld</option>
+                                  )}
+                                  {pots.map((pot) => (
+                                    <option key={pot.id} value={pot.id}>
+                                      {pot.name}
+                                    </option>
+                                  ))}
+                                </select>
+                                {suggested && (
+                                  <span className="text-[10px] font-medium text-teal-600 dark:text-teal-400">
+                                    ✨ voorstel
+                                  </span>
                                 )}
-                                {pots.map((pot) => (
-                                  <option key={pot.id} value={pot.id}>
-                                    {pot.name}
-                                  </option>
-                                ))}
-                              </select>
+                              </div>
                             ) : (
                               <span className="text-xs text-navy-300 dark:text-navy-600">—</span>
                             )}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

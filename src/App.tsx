@@ -81,6 +81,7 @@ import { Mark } from "./components/Logo";
 import { paletteToCssVars } from "./branding";
 import type { Branding } from "./branding";
 import { parseRoute, buildPath, type Tab } from "./routing";
+import { normalizeCounterparty } from "./csvImport";
 
 type PublicView = "landing" | "login" | "signup" | "demo";
 
@@ -827,6 +828,34 @@ function AuthedApp({
   );
   const selectedGroup = uiGroups.find((g) => g.id === selectedGroupId) ?? null;
 
+  // Import-voorstellen: per (genormaliseerde) tegenpartij het potje waar je die
+  // eerder het vaakst aan toewees. Puur client-side uit je eigen transacties.
+  const counterpartyPotHints = useMemo(() => {
+    const valid = new Set(potsForUser.map((p) => p.id));
+    const tally = new Map<string, Map<string, number>>();
+    for (const t of store.state.transactions) {
+      if (!t.potId || !valid.has(t.potId)) continue;
+      const key = normalizeCounterparty(t.counterparty ?? "");
+      if (!key) continue;
+      const m = tally.get(key) ?? new Map<string, number>();
+      m.set(t.potId, (m.get(t.potId) ?? 0) + 1);
+      tally.set(key, m);
+    }
+    const out: Record<string, string> = {};
+    for (const [key, m] of tally) {
+      let best = "";
+      let bestN = 0;
+      for (const [pid, n] of m) {
+        if (n > bestN) {
+          bestN = n;
+          best = pid;
+        }
+      }
+      if (best) out[key] = best;
+    }
+    return out;
+  }, [store.state.transactions, potsForUser]);
+
   // Licentie-limiet: kan er nog een potje bij? (server dwingt 't ook af)
   const canAddPot = store.state.pots.length < limits.pots;
   const goToUpgrade = () => {
@@ -1276,6 +1305,7 @@ function AuthedApp({
             open={showImport}
             pots={potsForUser}
             allowUnallocated={!!isAdmin}
+            counterpartyPotHints={counterpartyPotHints}
             onImport={(inputs) => store.importTransactions(inputs)}
             onClose={() => setShowImport(false)}
           />
