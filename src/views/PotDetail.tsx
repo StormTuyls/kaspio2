@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { calcBalance, formatDate, formatEuro } from "../storage";
 import type { Member, Pot, PotGroup, Transaction, TransactionDirection } from "../types";
 import type { SubTier } from "../supabase";
@@ -29,6 +29,8 @@ type Props = {
   onBack: () => void;
   onAddTransaction: () => void;
   onDeleteTransaction: (id: string) => void;
+  /** Meerdere transacties in één keer verwijderen (bulk). */
+  onBulkDeleteTransactions?: (ids: string[]) => void | Promise<unknown>;
   onUpdatePot: (patch: {
     name: string;
     color?: string;
@@ -54,6 +56,7 @@ export function PotDetail({
   onBack,
   onAddTransaction,
   onDeleteTransaction,
+  onBulkDeleteTransactions,
   onUpdatePot,
   onDeletePot,
 }: Props) {
@@ -61,6 +64,7 @@ export function PotDetail({
   const [search, setSearch] = useState("");
   const [direction, setDirection] = useState<DirectionFilter>("all");
   const [expandedTx, setExpandedTx] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const isAdmin = currentUser.role === "admin";
   // Bijlagen (bonnetjes/facturen) zijn een Team-feature en vereisen een org-id.
   const canUseAttachments = attachmentsEnabled(tier) && !!orgId;
@@ -97,6 +101,46 @@ export function PotDetail({
       return true;
     });
   }, [potTx, search, direction]);
+
+  // Selectie resetten wanneer je naar een ander potje kijkt.
+  useEffect(() => {
+    setSelected(new Set());
+  }, [pot.id]);
+
+  const allFilteredSelected =
+    filtered.length > 0 && filtered.every((t) => selected.has(t.id));
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (filtered.every((t) => next.has(t.id))) {
+        filtered.forEach((t) => next.delete(t.id));
+      } else {
+        filtered.forEach((t) => next.add(t.id));
+      }
+      return next;
+    });
+  }
+
+  async function bulkDelete() {
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    if (!confirm(`${ids.length} ${ids.length === 1 ? "transactie" : "transacties"} verwijderen?`)) {
+      return;
+    }
+    if (onBulkDeleteTransactions) await onBulkDeleteTransactions(ids);
+    else ids.forEach((id) => onDeleteTransaction(id));
+    setSelected(new Set());
+  }
 
   return (
     <div className="space-y-6">
@@ -246,6 +290,24 @@ export function PotDetail({
           </div>
         ) : (
           <div className="card overflow-hidden">
+            {isAdmin && selected.size > 0 && (
+              <div className="flex items-center justify-between gap-3 border-b border-navy-100 bg-canvas px-4 py-2.5 dark:border-navy-700/60 dark:bg-navy-800/40">
+                <span className="text-sm font-medium text-navy-700 dark:text-navy-100">
+                  {selected.size} geselecteerd
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setSelected(new Set())}
+                    className="btn-secondary px-3 py-1.5 text-xs"
+                  >
+                    Wis selectie
+                  </button>
+                  <button onClick={bulkDelete} className="btn-danger px-3 py-1.5 text-xs">
+                    Verwijderen
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="flex flex-col gap-2 border-b border-navy-100 px-4 py-3 sm:flex-row sm:items-center sm:gap-3 dark:border-navy-700/60">
               <div className="relative flex-1">
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-navy-300 dark:text-navy-500">
@@ -287,7 +349,17 @@ export function PotDetail({
               <>
                 <ul className="divide-y divide-navy-100 sm:hidden dark:divide-navy-700/60">
                   {filtered.map((tx) => (
-                    <li key={tx.id} className="px-4 py-3.5">
+                    <li key={tx.id} className="flex gap-3 px-4 py-3.5">
+                      {isAdmin && (
+                        <input
+                          type="checkbox"
+                          checked={selected.has(tx.id)}
+                          onChange={() => toggleOne(tx.id)}
+                          className="mt-1 h-4 w-4 flex-shrink-0 accent-teal-600"
+                          aria-label="Selecteer transactie"
+                        />
+                      )}
+                      <div className="min-w-0 flex-1">
                       <div className="mb-1 flex items-baseline justify-between gap-3">
                         <span className="truncate font-semibold text-navy-900 dark:text-navy-50">
                           {tx.counterparty}
@@ -341,6 +413,7 @@ export function PotDetail({
                           )}
                         </div>
                       )}
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -348,6 +421,17 @@ export function PotDetail({
                 <table className="hidden w-full text-sm sm:table">
                   <thead className="bg-canvas text-xs font-semibold uppercase tracking-wider text-navy-400 dark:bg-navy-800/50 dark:text-navy-300">
                     <tr>
+                      {isAdmin && (
+                        <th className="w-10 px-4 py-3 text-left">
+                          <input
+                            type="checkbox"
+                            checked={allFilteredSelected}
+                            onChange={toggleAll}
+                            className="h-4 w-4 accent-teal-600"
+                            aria-label="Selecteer alle transacties"
+                          />
+                        </th>
+                      )}
                       <th className="px-4 py-3 text-left">Datum</th>
                       <th className="px-4 py-3 text-left">Tegenpartij</th>
                       <th className="px-4 py-3 text-left">Memo</th>
@@ -359,8 +443,21 @@ export function PotDetail({
                     {filtered.map((tx) => (
                       <Fragment key={tx.id}>
                       <tr
-                        className="transition hover:bg-canvas dark:hover:bg-navy-800/40"
+                        className={`transition hover:bg-canvas dark:hover:bg-navy-800/40 ${
+                          selected.has(tx.id) ? "bg-teal-50/60 dark:bg-teal-900/10" : ""
+                        }`}
                       >
+                        {isAdmin && (
+                          <td className="px-4 py-3">
+                            <input
+                              type="checkbox"
+                              checked={selected.has(tx.id)}
+                              onChange={() => toggleOne(tx.id)}
+                              className="h-4 w-4 accent-teal-600"
+                              aria-label="Selecteer transactie"
+                            />
+                          </td>
+                        )}
                         <td className="whitespace-nowrap px-4 py-3 text-navy-500 dark:text-navy-300">
                           {formatDate(tx.occurredOn)}
                         </td>
@@ -414,7 +511,7 @@ export function PotDetail({
                       </tr>
                       {canUseAttachments && expandedTx === tx.id && orgId && (
                         <tr className="bg-canvas dark:bg-navy-800/40">
-                          <td colSpan={5} className="px-4 py-3">
+                          <td colSpan={isAdmin ? 6 : 5} className="px-4 py-3">
                             <TransactionAttachments
                               orgId={orgId}
                               transactionId={tx.id}

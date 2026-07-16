@@ -428,6 +428,7 @@ function useBridgedStore(
     addTransaction: addDbTx,
     importTransactions: importDbTx,
     deleteTransaction: deleteDbTx,
+    deleteTransactions: deleteDbTxs,
     assignTransaction: assignDbTx,
     transfer: transferDbTx,
   } = useTransactions(orgId);
@@ -513,6 +514,9 @@ function useBridgedStore(
       deleteTransaction: async (id: string) => {
         await deleteDbTx(id);
       },
+      deleteTransactions: async (ids: string[]) => {
+        await deleteDbTxs(ids);
+      },
       // Bulk-import (CSV). Geen per-transactie e-mails: dat zou bij een afschrift
       // honderden mails sturen. Eén batch-insert, één refresh.
       importTransactions: importDbTx,
@@ -529,6 +533,7 @@ function useBridgedStore(
     addDbTx,
     importDbTx,
     deleteDbTx,
+    deleteDbTxs,
     assignDbTx,
     transferDbTx,
   ]);
@@ -983,6 +988,7 @@ function AuthedApp({
                 onBack={() => setSelectedPotId(null)}
                 onAddTransaction={() => setShowAddTx(true)}
                 onDeleteTransaction={(id) => store.deleteTransaction(id)}
+                onBulkDeleteTransactions={(ids) => store.deleteTransactions(ids)}
                 onUpdatePot={(patch) => store.updatePot(selectedPot.id, patch)}
                 onDeletePot={() => {
                   store.deletePot(selectedPot.id);
@@ -1205,6 +1211,7 @@ function AuthedApp({
         {showTransfer && (
           <TransferForm
             pots={potsForUser}
+            transactions={store.state.transactions}
             initialFromPotId={selectedPot?.id ?? null}
             onSubmit={async (values) => {
               const res = await store.transfer(values);

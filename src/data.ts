@@ -439,6 +439,35 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
   }
 
   /**
+   * Verwijder meerdere transacties in één keer (één request + één refresh,
+   * i.p.v. per transactie). Neemt transfer-tegenbenen automatisch mee.
+   */
+  async function deleteTransactions(
+    ids: string[],
+  ): Promise<{ error: string | null }> {
+    if (ids.length === 0) return { error: null };
+    const idSet = new Set(ids);
+    // Zit er een been van een overboeking bij? Voeg dan het andere been toe.
+    const groups = new Set(
+      transactions
+        .filter((t) => idSet.has(t.id) && t.transfer_group)
+        .map((t) => t.transfer_group as string),
+    );
+    if (groups.size > 0) {
+      for (const t of transactions) {
+        if (t.transfer_group && groups.has(t.transfer_group)) idSet.add(t.id);
+      }
+    }
+    const { error: err } = await supabase
+      .from("transactions")
+      .delete()
+      .in("id", [...idSet]);
+    if (err) return { error: err.message };
+    await fetchTransactions();
+    return { error: null };
+  }
+
+  /**
    * Wijs een onverdeelde transactie toe aan één of meerdere potjes.
    * Bij splitsen: de originele rij krijgt deel 1 (id blijft stabiel),
    * de overige delen worden nieuwe rijen met split_from = origineel.
@@ -553,6 +582,7 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
     addTransaction,
     importTransactions,
     deleteTransaction,
+    deleteTransactions,
     assignTransaction,
     transfer,
     refresh: fetchTransactions,
