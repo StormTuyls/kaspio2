@@ -9,6 +9,8 @@ type Props = {
   title?: string;
   description?: string;
   submitLabel?: string;
+  /** Voor-ingevulde naam (bv. "Persoonlijk" voor solo-gebruikers). */
+  defaultName?: string;
 };
 
 /**
@@ -21,8 +23,9 @@ export function CreateOrgForm({
   title = "Maak een organisatie aan",
   description = "Container voor je potjes en transacties. Je kunt er later leden bij uitnodigen.",
   submitLabel = "Organisatie aanmaken",
+  defaultName = "",
 }: Props) {
-  const [name, setName] = useState("");
+  const [name, setName] = useState(defaultName);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

@@ -65,6 +65,8 @@ import { PotForm } from "./components/PotForm";
 import { TransactionForm } from "./components/TransactionForm";
 import { OpeningBalanceForm } from "./components/OpeningBalanceForm";
 import { TransferForm } from "./components/TransferForm";
+import { OnboardingChecklist } from "./components/OnboardingChecklist";
+import { SetupWizard } from "./components/SetupWizard";
 const ImportTransactionsModal = lazy(() =>
   import("./components/ImportTransactionsModal").then((m) => ({
     default: m.ImportTransactionsModal,
@@ -646,6 +648,7 @@ function AuthedApp({
   const [showAddTx, setShowAddTx] = useState(false);
   const [showOpeningBalance, setShowOpeningBalance] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
@@ -1013,6 +1016,7 @@ function AuthedApp({
                     ? () => setShowTransfer(true)
                     : undefined
                 }
+                onUseTemplate={isAdmin ? () => setShowWizard(true) : undefined}
                 onImport={
                   isAdmin && importEnabled(tier) ? () => setShowImport(true) : undefined
                 }
@@ -1078,9 +1082,26 @@ function AuthedApp({
                 }}
               />
             ) : (
-              <DashboardView
-                pots={potsForUser}
-                allTransactions={store.state.transactions}
+              <>
+                {isAdmin && (
+                  <div className="mb-6">
+                    <OnboardingChecklist
+                      orgId={org.id}
+                      pots={potsForUser}
+                      transactions={store.state.transactions}
+                      onAddPot={() => setShowAddPot(true)}
+                      onSetOpeningBalance={() => setShowOpeningBalance(true)}
+                      onImport={
+                        importEnabled(tier) ? () => setShowImport(true) : undefined
+                      }
+                      onOpenInbox={() => setShowInbox(true)}
+                      onUseTemplate={() => setShowWizard(true)}
+                    />
+                  </div>
+                )}
+                <DashboardView
+                  pots={potsForUser}
+                  allTransactions={store.state.transactions}
                 members={uiMembers}
                 currentUser={currentUser}
                 organizationName={org.name}
@@ -1107,7 +1128,8 @@ function AuthedApp({
                 }
                 onApprove={isAdmin ? (id) => void approveTransaction(id) : undefined}
                 onReject={isAdmin ? (id) => void rejectTransaction(id) : undefined}
-              />
+                />
+              </>
             )}
           </main>
         </div>
@@ -1190,6 +1212,39 @@ function AuthedApp({
               return res;
             }}
             onCancel={() => setShowTransfer(false)}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        open={showWizard}
+        title="Snel opzetten"
+        onClose={() => setShowWizard(false)}
+      >
+        {showWizard && (
+          <SetupWizard
+            tier={tier}
+            availableSlots={limits.pots - store.state.pots.length}
+            onApply={async ({ groups, pots }) => {
+              const useGroups = groupsEnabled(tier);
+              const idByName = new Map<string, string>();
+              if (useGroups) {
+                for (const name of groups) {
+                  const res = await addGroup(name);
+                  if (res.groupId) idByName.set(name, res.groupId);
+                }
+              }
+              for (const p of pots) {
+                await store.addPot({
+                  name: p.name,
+                  color: p.color,
+                  groupId:
+                    useGroups && p.group ? idByName.get(p.group) ?? null : null,
+                });
+              }
+              return { error: null };
+            }}
+            onClose={() => setShowWizard(false)}
           />
         )}
       </Modal>
