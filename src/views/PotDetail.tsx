@@ -31,6 +31,10 @@ type Props = {
   onDeleteTransaction: (id: string) => void;
   /** Meerdere transacties in één keer verwijderen (bulk). */
   onBulkDeleteTransactions?: (ids: string[]) => void | Promise<unknown>;
+  /** Alle (zichtbare) potjes, voor "verplaats naar" bij bulk-selectie. */
+  pots?: Pot[];
+  /** Geselecteerde transacties naar een ander potje verplaatsen (herverdelen). */
+  onReassignTransactions?: (ids: string[], toPotId: string) => void | Promise<unknown>;
   onUpdatePot: (patch: {
     name: string;
     color?: string;
@@ -54,9 +58,11 @@ export function PotDetail({
   groups,
   onCreateGroup,
   onBack,
+  pots = [],
   onAddTransaction,
   onDeleteTransaction,
   onBulkDeleteTransactions,
+  onReassignTransactions,
   onUpdatePot,
   onDeletePot,
 }: Props) {
@@ -139,6 +145,15 @@ export function PotDetail({
     }
     if (onBulkDeleteTransactions) await onBulkDeleteTransactions(ids);
     else ids.forEach((id) => onDeleteTransaction(id));
+    setSelected(new Set());
+  }
+
+  const otherPots = pots.filter((p) => p.id !== pot.id);
+
+  async function reassignSelected(toPotId: string) {
+    const ids = [...selected];
+    if (ids.length === 0 || !toPotId || !onReassignTransactions) return;
+    await onReassignTransactions(ids, toPotId);
     setSelected(new Set());
   }
 
@@ -295,7 +310,24 @@ export function PotDetail({
                 <span className="text-sm font-medium text-navy-700 dark:text-navy-100">
                   {selected.size} geselecteerd
                 </span>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {onReassignTransactions && otherPots.length > 0 && (
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) void reassignSelected(e.target.value);
+                      }}
+                      className="input py-1.5 text-xs"
+                      aria-label="Verplaats geselecteerde naar potje"
+                    >
+                      <option value="">Verplaats naar…</option>
+                      {otherPots.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   <button
                     onClick={() => setSelected(new Set())}
                     className="btn-secondary px-3 py-1.5 text-xs"

@@ -468,6 +468,30 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
   }
 
   /**
+   * Verplaats meerdere transacties naar een ander potje (herverdelen van
+   * verkeerd toegewezen transacties). Wijzigt enkel pot_id, in één request.
+   */
+  async function reassignTransactions(
+    ids: string[],
+    toPotId: string,
+  ): Promise<{ error: string | null }> {
+    if (ids.length === 0) return { error: null };
+    if (!toPotId) return { error: "Kies een doelpotje." };
+    const { error: err } = await (
+      supabase.from("transactions") as unknown as {
+        update: (v: Record<string, unknown>) => {
+          in: (k: string, v: string[]) => Promise<{ error: Error | null }>;
+        };
+      }
+    )
+      .update({ pot_id: toPotId })
+      .in("id", ids);
+    if (err) return { error: err.message };
+    await fetchTransactions();
+    return { error: null };
+  }
+
+  /**
    * Wijs een onverdeelde transactie toe aan één of meerdere potjes.
    * Bij splitsen: de originele rij krijgt deel 1 (id blijft stabiel),
    * de overige delen worden nieuwe rijen met split_from = origineel.
@@ -583,6 +607,7 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
     importTransactions,
     deleteTransaction,
     deleteTransactions,
+    reassignTransactions,
     assignTransaction,
     transfer,
     refresh: fetchTransactions,
