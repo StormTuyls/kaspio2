@@ -18,6 +18,8 @@ type PotsViewProps = {
   onAddPot: () => void;
   /** Org-brede transactie toevoegen (admin). */
   onAddTransaction?: () => void;
+  /** Geld verplaatsen tussen potjes (admin, minstens 2 potjes). */
+  onTransfer?: () => void;
   /** CSV-import (Pro). Alleen aanwezig als de licentie het toelaat. */
   onImport?: () => void;
   /** Licentie: kan er nog een potje bij? Anders upgrade-prompt. */
@@ -40,6 +42,7 @@ export function PotsView({
   onSelect,
   onAddPot,
   onAddTransaction,
+  onTransfer,
   onImport,
   canAddPot = true,
   potLimit,
@@ -104,6 +107,11 @@ export function PotsView({
             {onAddTransaction && (
               <button onClick={onAddTransaction} className="btn-secondary text-sm">
                 + Transactie
+              </button>
+            )}
+            {onTransfer && (
+              <button onClick={onTransfer} className="btn-secondary text-sm">
+                Verplaats
               </button>
             )}
             {canAddPot ? (

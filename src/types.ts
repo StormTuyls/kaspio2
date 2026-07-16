@@ -36,6 +36,8 @@ export type Transaction = {
   memo?: string;
   /** 'pending' = wacht op goedkeuring (telt niet mee in saldo). */
   status?: "approved" | "pending";
+  /** Gezet op beide benen van een overboeking tussen potjes (uit + in). */
+  transferGroup?: string | null;
   createdAt: string;
 };
 
