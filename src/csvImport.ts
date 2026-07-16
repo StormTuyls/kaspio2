@@ -147,10 +147,34 @@ export function guessColumns(headers: string[]): Record<ColumnKey, number> {
     }
     return -1;
   };
+  // Probeer groepen op volgorde: de eerste groep die iets vindt, wint. Zo laten
+  // we specifieke patronen (bv. "naam tegenpartij") voorgaan op generieke
+  // ("naam"), wat anders op je eigen rekeningnaam botst (o.a. bij KBC).
+  const findFirst = (...groups: RegExp[][]): number => {
+    for (const g of groups) {
+      const idx = find(g);
+      if (idx >= 0) return idx;
+    }
+    return -1;
+  };
   return {
-    date: find([/datum/, /date/, /boekdatum/, /valuta/]),
+    // Boekdatum vóór valutadatum.
+    date: findFirst([/boekdatum/, /datum/, /date/], [/valuta/]),
     amount: find([/bedrag/, /amount/, /som/, /mutatie/]),
-    counterparty: find([/tegenpartij/, /naam/, /begunstigde/, /counterpart/, /payee/]),
+    // Eerst een echte tegenpartij-/begunstigde-NAAM; pas als die er niet is,
+    // val terug op een generieke naamkolom. "rekeningnummer/bic tegenpartij"
+    // worden bewust overgeslagen (dat is geen naam).
+    counterparty: findFirst(
+      [
+        /naam.*tegenpartij/,
+        /tegenpartij.*naam/,
+        /naam.*begunstigde/,
+        /begunstigde/,
+        /counterpart/,
+        /payee/,
+      ],
+      [/naam/, /name/],
+    ),
     memo: find([/mededeling/, /omschrijving/, /memo/, /communicatie/, /detail/, /description/]),
   };
 }
