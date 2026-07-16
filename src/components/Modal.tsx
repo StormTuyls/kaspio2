@@ -26,10 +26,10 @@ export function Modal({ open, title, onClose, children }: Props) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl bg-white shadow-2xl dark:bg-navy-900 dark:ring-1 dark:ring-navy-700/60"
+        className="flex max-h-[85vh] w-full max-w-md flex-col rounded-2xl bg-white shadow-2xl dark:bg-navy-900 dark:ring-1 dark:ring-navy-700/60"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-navy-100 px-5 py-4 dark:border-navy-700/60">
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-navy-100 px-5 py-4 dark:border-navy-700/60">
           <h2 className="text-lg font-bold text-navy-900 dark:text-white">{title}</h2>
           <button
             onClick={onClose}
@@ -41,7 +41,7 @@ export function Modal({ open, title, onClose, children }: Props) {
             </svg>
           </button>
         </div>
-        <div className="px-5 py-5">{children}</div>
+        <div className="overflow-y-auto px-5 py-5">{children}</div>
       </div>
     </div>
   );
