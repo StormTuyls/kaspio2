@@ -20,6 +20,8 @@ type PotsViewProps = {
   onAddTransaction?: () => void;
   /** Geld verplaatsen tussen potjes (admin, minstens 2 potjes). */
   onTransfer?: () => void;
+  /** Open de opzet-wizard (sjablonen) vanuit de lege staat. */
+  onUseTemplate?: () => void;
   /** CSV-import (Pro). Alleen aanwezig als de licentie het toelaat. */
   onImport?: () => void;
   /** Licentie: kan er nog een potje bij? Anders upgrade-prompt. */
@@ -43,6 +45,7 @@ export function PotsView({
   onAddPot,
   onAddTransaction,
   onTransfer,
+  onUseTemplate,
   onImport,
   canAddPot = true,
   potLimit,
@@ -147,9 +150,19 @@ export function PotsView({
               : "Vraag de admin om je een potje toe te wijzen."}
           </p>
           {isAdmin && (
-            <button onClick={onAddPot} className="btn-accent">
-              + Eerste potje aanmaken
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {onUseTemplate && (
+                <button onClick={onUseTemplate} className="btn-accent">
+                  Kies een sjabloon
+                </button>
+              )}
+              <button
+                onClick={onAddPot}
+                className={onUseTemplate ? "btn-secondary" : "btn-accent"}
+              >
+                + Eerste potje aanmaken
+              </button>
+            </div>
           )}
         </div>
       ) : !hasGroups ? (
