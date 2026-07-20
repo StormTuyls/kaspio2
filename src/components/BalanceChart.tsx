@@ -6,6 +6,8 @@ type Props = {
   transactions: Transaction[];
 };
 
+type Mode = "saldo" | "flow" | "samen";
+
 const WIDTH = 600;
 const HEIGHT = 220;
 const PAD_X = 52;
@@ -23,92 +25,96 @@ function niceCeil(v: number): number {
 
 export function BalanceChart({ transactions }: Props) {
   const [hover, setHover] = useState<number | null>(null);
-  const [mode, setMode] = useState<"day" | "tx">("day");
+  const [mode, setMode] = useState<Mode>("saldo");
 
   if (transactions.length === 0) return null;
 
-  type Point = { date: string; balance: number; label?: string };
-  let points: Point[];
-
-  if (mode === "tx") {
-    // Per transactie: elk punt is een transactie, cumulatief. Zelfde dag wordt
-    // in invoervolgorde getoond (er is geen exact tijdstip in de data).
-    const sorted = [...transactions].sort((a, b) => {
-      const d = a.occurredOn.localeCompare(b.occurredOn);
-      return d !== 0 ? d : (a.createdAt ?? "").localeCompare(b.createdAt ?? "");
-    });
-    let running = 0;
-    points = sorted.map((tx) => {
-      running += tx.direction === "in" ? tx.amount : -tx.amount;
-      return { date: tx.occurredOn, balance: running, label: tx.counterparty || tx.memo || undefined };
-    });
-  } else {
-    // Per dag: één punt per dag = het saldo op het einde van die dag. Zo maakt
-    // de volgorde van transacties binnen dezelfde dag niet uit. Anders zou bv.
-    // een uitgave vóór een even grote inkomst een misleidende dip tonen,
-    // terwijl het dagsaldo netto niet verandert.
-    const netByDay = new Map<string, number>();
-    for (const tx of transactions) {
-      const net = tx.direction === "in" ? tx.amount : -tx.amount;
-      netByDay.set(tx.occurredOn, (netByDay.get(tx.occurredOn) ?? 0) + net);
-    }
-    const days = [...netByDay.keys()].sort((a, b) => a.localeCompare(b));
-    let running = 0;
-    points = days.map((date) => {
-      running += netByDay.get(date) ?? 0;
-      return { date, balance: running };
-    });
+  // Per dag: totaal inkomend, totaal uitgaand en het cumulatieve eind-van-dag
+  // saldo. Per dag samenvatten vermijdt dat de volgorde binnen één dag een
+  // misleidende dip toont (uitgave vóór een even grote inkomst).
+  const inByDay = new Map<string, number>();
+  const outByDay = new Map<string, number>();
+  for (const tx of transactions) {
+    const m = tx.direction === "in" ? inByDay : outByDay;
+    m.set(tx.occurredOn, (m.get(tx.occurredOn) ?? 0) + tx.amount);
   }
-  if (points.length === 1) {
-    points.unshift({ date: points[0].date, balance: 0 });
-  }
+  const dates = [...new Set([...inByDay.keys(), ...outByDay.keys()])].sort((a, b) =>
+    a.localeCompare(b),
+  );
+  let acc = 0;
+  const days = dates.map((date) => {
+    const din = inByDay.get(date) ?? 0;
+    const dout = outByDay.get(date) ?? 0;
+    acc += din - dout;
+    return { date, in: din, out: dout, balance: acc };
+  });
 
-  const ys = points.map((p) => p.balance);
-  const rawMax = Math.max(0, ...ys);
-  const rawMin = Math.min(0, ...ys);
-  const maxY = niceCeil(rawMax) || (rawMin < 0 ? 0 : 1);
+  const showLine = mode !== "flow";
+  const showBars = mode !== "saldo";
+
+  // Y-bereik op basis van wat getoond wordt (alles in euro, één as).
+  const vals: number[] = [0];
+  if (showLine) vals.push(...days.map((d) => d.balance));
+  if (showBars) {
+    vals.push(...days.map((d) => d.in));
+    vals.push(...days.map((d) => -d.out));
+  }
+  const rawMax = Math.max(...vals);
+  const rawMin = Math.min(...vals);
+  const maxY = niceCeil(rawMax) || 1;
   const minY = rawMin < 0 ? -niceCeil(-rawMin) : 0;
   const yRange = Math.max(1, maxY - minY);
-  const xMax = Math.max(1, points.length - 1);
+  const xMax = Math.max(1, days.length - 1);
 
   const toX = (i: number) => PAD_X + (i / xMax) * (WIDTH - PAD_X * 2);
   const toY = (v: number) =>
     PAD_TOP + (1 - (v - minY) / yRange) * (HEIGHT - PAD_TOP - PAD_BOTTOM);
   const zeroY = toY(0);
+  const seg = (WIDTH - PAD_X * 2) / xMax;
+  const barW = Math.max(4, Math.min(seg * 0.4, 22));
 
-  const line = points
-    .map((p, i) => `${i === 0 ? "M" : "L"} ${toX(i).toFixed(1)} ${toY(p.balance).toFixed(1)}`)
+  const linePath = days
+    .map((d, i) => `${i === 0 ? "M" : "L"} ${toX(i).toFixed(1)} ${toY(d.balance).toFixed(1)}`)
     .join(" ");
-
-  const area =
+  const areaPath =
     `M ${toX(0).toFixed(1)} ${zeroY.toFixed(1)} ` +
-    points.map((p, i) => `L ${toX(i).toFixed(1)} ${toY(p.balance).toFixed(1)}`).join(" ") +
-    ` L ${toX(points.length - 1).toFixed(1)} ${zeroY.toFixed(1)} Z`;
+    days.map((d, i) => `L ${toX(i).toFixed(1)} ${toY(d.balance).toFixed(1)}`).join(" ") +
+    ` L ${toX(days.length - 1).toFixed(1)} ${zeroY.toFixed(1)} Z`;
 
-  const last = points[points.length - 1];
+  const last = days[days.length - 1];
   const negative = last.balance < 0;
-  // Teal bij positief saldo, amber bij negatief (consistent met de app-kleuren).
+  // In "saldo" kleurt de lijn mee met het saldo; in "samen" tekenen we de lijn
+  // in inkt zodat ze losstaat van de teal/amber staven.
   const accent = negative ? "text-amber-600" : "text-teal-500";
 
-  // Y-as ticks: max, 0 (indien in bereik), min
   const yTicks = [maxY, ...(minY < 0 ? [0, minY] : minY === 0 && maxY > 0 ? [0] : [])];
+  const hd = hover != null ? days[hover] : null;
 
-  const seg = (WIDTH - PAD_X * 2) / xMax;
-  const hp = hover != null ? points[hover] : null;
-
-  // Tooltip-box afmetingen + clamping binnen het plotgebied. Bij "per
-  // transactie" tonen we ook de tegenpartij, dus dan een hogere/bredere box.
-  const tipLabel = hp?.label
-    ? hp.label.length > 22
-      ? hp.label.slice(0, 21) + "…"
-      : hp.label
-    : null;
-  const tipW = tipLabel ? 160 : 124;
-  const tipH = tipLabel ? 54 : 38;
-  let tipX = hp ? toX(hover!) - tipW / 2 : 0;
+  // Tooltip: regels afhankelijk van de modus.
+  const tipRows: { t: string; kind: "bold" | "muted" | "in" | "out" }[] = hd
+    ? mode === "saldo"
+      ? [
+          { t: formatEuro(hd.balance), kind: "bold" },
+          { t: formatDate(hd.date), kind: "muted" },
+        ]
+      : mode === "flow"
+        ? [
+            { t: formatDate(hd.date), kind: "muted" },
+            { t: `+ ${formatEuro(hd.in)}`, kind: "in" },
+            { t: `− ${formatEuro(hd.out)}`, kind: "out" },
+          ]
+        : [
+            { t: formatDate(hd.date), kind: "muted" },
+            { t: `Saldo ${formatEuro(hd.balance)}`, kind: "bold" },
+            { t: `+ ${formatEuro(hd.in)}`, kind: "in" },
+            { t: `− ${formatEuro(hd.out)}`, kind: "out" },
+          ]
+    : [];
+  const tipW = 156;
+  const tipH = 12 + tipRows.length * 15;
+  let tipX = hd ? toX(hover!) - tipW / 2 : 0;
   tipX = Math.max(PAD_X - 8, Math.min(WIDTH - PAD_X - tipW + 8, tipX));
-  let tipY = hp ? toY(hp.balance) - tipH - 12 : 0;
-  if (tipY < PAD_TOP) tipY = hp ? toY(hp.balance) + 12 : 0;
+  const tipY = PAD_TOP + 4;
 
   return (
     <div className="card p-5">
@@ -118,10 +124,16 @@ export function BalanceChart({ transactions }: Props) {
             Saldo over tijd
           </h3>
           <p className="text-xs text-navy-400 dark:text-navy-300">
-            Cumulatief verloop , beweeg over de lijn voor details
+            Beweeg over de grafiek voor details
           </p>
           <div className="mt-2 inline-flex rounded-lg bg-canvas p-0.5 text-xs dark:bg-navy-800">
-            {(["day", "tx"] as const).map((m) => (
+            {(
+              [
+                ["saldo", "Saldo"],
+                ["flow", "In & uit"],
+                ["samen", "Samen"],
+              ] as const
+            ).map(([m, label]) => (
               <button
                 key={m}
                 onClick={() => {
@@ -134,10 +146,25 @@ export function BalanceChart({ transactions }: Props) {
                     : "text-navy-500 hover:text-navy-900 dark:text-navy-300 dark:hover:text-white"
                 }`}
               >
-                {m === "day" ? "Per dag" : "Per transactie"}
+                {label}
               </button>
             ))}
           </div>
+          {showBars && (
+            <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-navy-500 dark:text-navy-300">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-sm bg-teal-500" /> Inkomend
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-sm bg-amber-500" /> Uitgaand
+              </span>
+              {mode === "samen" && (
+                <span className="flex items-center gap-1.5">
+                  <span className="h-0.5 w-3.5 rounded bg-navy-800 dark:bg-white" /> Saldo
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <span
           className={`text-base font-bold tabular-nums ${
@@ -187,34 +214,67 @@ export function BalanceChart({ transactions }: Props) {
           </g>
         ))}
 
-        {/* Vlak + lijn */}
-        <path d={area} fill="url(#bal-area-grad)" />
-        <path
-          d={line}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
+        {/* Staven: inkomend omhoog (teal), uitgaand omlaag (amber). */}
+        {showBars &&
+          days.map((d, i) => (
+            <g key={d.date}>
+              {d.in > 0 && (
+                <rect
+                  x={toX(i) - barW / 2}
+                  y={toY(d.in)}
+                  width={barW}
+                  height={Math.max(0, zeroY - toY(d.in))}
+                  rx={2}
+                  className="fill-teal-500"
+                />
+              )}
+              {d.out > 0 && (
+                <rect
+                  x={toX(i) - barW / 2}
+                  y={zeroY}
+                  width={barW}
+                  height={Math.max(0, toY(-d.out) - zeroY)}
+                  rx={2}
+                  className="fill-amber-500"
+                />
+              )}
+            </g>
+          ))}
 
-        {/* Datapunten (verborgen bij lange reeksen om rommel te vermijden) */}
-        {points.length <= 40 &&
-          points.map((p, i) => (
+        {/* Saldolijn (+ vlak in "saldo"-modus). */}
+        {showLine && mode === "saldo" && <path d={areaPath} fill="url(#bal-area-grad)" />}
+        {showLine && (
+          <path
+            d={linePath}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            className={mode === "samen" ? "text-navy-800 dark:text-white" : undefined}
+          />
+        )}
+        {showLine &&
+          days.length <= 40 &&
+          days.map((d, i) => (
             <circle
-              key={i}
+              key={d.date}
               cx={toX(i)}
-              cy={toY(p.balance)}
+              cy={toY(d.balance)}
               r={3}
-              fill="currentColor"
-              className="stroke-white dark:stroke-navy-900"
+              className={
+                mode === "samen"
+                  ? "fill-navy-800 stroke-white dark:fill-white dark:stroke-navy-900"
+                  : "stroke-white dark:stroke-navy-900"
+              }
+              fill={mode === "samen" ? undefined : "currentColor"}
               strokeWidth="1.5"
             />
           ))}
 
         {/* Datumlabels aan de uiteinden */}
         <text x={PAD_X} y={HEIGHT - 8} className="fill-navy-400 text-[10px] dark:fill-navy-400">
-          {formatDate(points[0].date)}
+          {formatDate(days[0].date)}
         </text>
         <text
           x={WIDTH - PAD_X}
@@ -225,8 +285,8 @@ export function BalanceChart({ transactions }: Props) {
           {formatDate(last.date)}
         </text>
 
-        {/* Hover: verticale gids + highlight-punt */}
-        {hp && (
+        {/* Hover: verticale gids + tooltip */}
+        {hd && (
           <>
             <line
               x1={toX(hover!)}
@@ -237,14 +297,20 @@ export function BalanceChart({ transactions }: Props) {
               stroke="currentColor"
               strokeDasharray="3 3"
             />
-            <circle
-              cx={toX(hover!)}
-              cy={toY(hp.balance)}
-              r={5}
-              fill="currentColor"
-              className="stroke-white dark:stroke-navy-900"
-              strokeWidth="2.5"
-            />
+            {showLine && (
+              <circle
+                cx={toX(hover!)}
+                cy={toY(hd.balance)}
+                r={5}
+                className={
+                  mode === "samen"
+                    ? "fill-navy-800 stroke-white dark:fill-white dark:stroke-navy-900"
+                    : "stroke-white dark:stroke-navy-900"
+                }
+                fill={mode === "samen" ? undefined : "currentColor"}
+                strokeWidth="2.5"
+              />
+            )}
             <g>
               <rect
                 x={tipX}
@@ -254,40 +320,33 @@ export function BalanceChart({ transactions }: Props) {
                 rx={8}
                 className="fill-navy-900 dark:fill-navy-700"
               />
-              {tipLabel && (
+              {tipRows.map((r, idx) => (
                 <text
+                  key={idx}
                   x={tipX + tipW / 2}
-                  y={tipY + 16}
+                  y={tipY + 16 + idx * 15}
                   textAnchor="middle"
-                  className="fill-white text-[10px] font-medium"
+                  className={
+                    r.kind === "in"
+                      ? "fill-teal-300 text-[11px] font-semibold tabular-nums"
+                      : r.kind === "out"
+                        ? "fill-amber-300 text-[11px] font-semibold tabular-nums"
+                        : r.kind === "bold"
+                          ? "fill-white text-[11px] font-semibold tabular-nums"
+                          : "fill-navy-300 text-[10px]"
+                  }
                 >
-                  {tipLabel}
+                  {r.t}
                 </text>
-              )}
-              <text
-                x={tipX + tipW / 2}
-                y={tipY + (tipLabel ? 32 : 15)}
-                textAnchor="middle"
-                className="fill-white text-[11px] font-semibold tabular-nums"
-              >
-                {formatEuro(hp.balance)}
-              </text>
-              <text
-                x={tipX + tipW / 2}
-                y={tipY + (tipLabel ? 46 : 29)}
-                textAnchor="middle"
-                className="fill-navy-300 text-[10px]"
-              >
-                {formatDate(hp.date)}
-              </text>
+              ))}
             </g>
           </>
         )}
 
-        {/* Onzichtbare hit-zones per punt voor hover */}
-        {points.map((_, i) => (
+        {/* Onzichtbare hit-zones per dag voor hover */}
+        {days.map((d, i) => (
           <rect
-            key={i}
+            key={d.date}
             x={toX(i) - seg / 2}
             y={PAD_TOP}
             width={seg}
