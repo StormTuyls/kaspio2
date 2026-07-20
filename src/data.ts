@@ -426,10 +426,66 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
   async function deleteTransaction(
     id: string,
   ): Promise<{ error: string | null }> {
+    // Is dit één been van een overboeking? Verwijder dan beide benen samen,
+    // anders blijft er een losse "in" of "uit" achter.
+    const tx = transactions.find((t) => t.id === id);
+    const query = tx?.transfer_group
+      ? supabase.from("transactions").delete().eq("transfer_group", tx.transfer_group)
+      : supabase.from("transactions").delete().eq("id", id);
+    const { error: err } = await query;
+    if (err) return { error: err.message };
+    await fetchTransactions();
+    return { error: null };
+  }
+
+  /**
+   * Verwijder meerdere transacties in één keer (één request + één refresh,
+   * i.p.v. per transactie). Neemt transfer-tegenbenen automatisch mee.
+   */
+  async function deleteTransactions(
+    ids: string[],
+  ): Promise<{ error: string | null }> {
+    if (ids.length === 0) return { error: null };
+    const idSet = new Set(ids);
+    // Zit er een been van een overboeking bij? Voeg dan het andere been toe.
+    const groups = new Set(
+      transactions
+        .filter((t) => idSet.has(t.id) && t.transfer_group)
+        .map((t) => t.transfer_group as string),
+    );
+    if (groups.size > 0) {
+      for (const t of transactions) {
+        if (t.transfer_group && groups.has(t.transfer_group)) idSet.add(t.id);
+      }
+    }
     const { error: err } = await supabase
       .from("transactions")
       .delete()
-      .eq("id", id);
+      .in("id", [...idSet]);
+    if (err) return { error: err.message };
+    await fetchTransactions();
+    return { error: null };
+  }
+
+  /**
+   * Verplaats meerdere transacties naar een ander potje (herverdelen van
+   * verkeerd toegewezen transacties). Wijzigt enkel pot_id, in één request.
+   */
+  async function reassignTransactions(
+    ids: string[],
+    toPotId: string,
+  ): Promise<{ error: string | null }> {
+    if (ids.length === 0) return { error: null };
+    if (!toPotId) return { error: "Kies een doelpotje." };
+    const { error: err } = await (
+      supabase.from("transactions") as unknown as {
+        update: (v: Record<string, unknown>) => {
+          in: (k: string, v: string[]) => Promise<{ error: Error | null }>;
+        };
+      }
+    )
+      .update({ pot_id: toPotId })
+      .in("id", ids);
     if (err) return { error: err.message };
     await fetchTransactions();
     return { error: null };
@@ -499,6 +555,50 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
     return { error: null };
   }
 
+  /**
+   * Verplaats geld van het ene potje naar het andere. Maakt twee gekoppelde
+   * regels (uit op bron, in op doel) met hetzelfde transfer_group. Netto nul op
+   * de rekening; enkel de verdeling over de potjes verschuift.
+   */
+  async function transfer(input: {
+    fromPotId: string;
+    toPotId: string;
+    amount: number;
+    occurredOn: string;
+    memo?: string;
+  }): Promise<{ error: string | null }> {
+    if (!orgId) return { error: "Geen organisatie geselecteerd." };
+    if (!input.fromPotId || !input.toPotId) {
+      return { error: "Kies een bron- en een doelpotje." };
+    }
+    if (input.fromPotId === input.toPotId) {
+      return { error: "Kies twee verschillende potjes." };
+    }
+    if (!Number.isFinite(input.amount) || input.amount <= 0) {
+      return { error: "Bedrag moet groter zijn dan 0." };
+    }
+    const group = crypto.randomUUID();
+    const base = {
+      organisation_id: orgId,
+      amount: input.amount,
+      occurred_on: input.occurredOn,
+      memo: input.memo ?? null,
+      counterparty: "Overboeking",
+      transfer_group: group,
+    };
+    const rows = [
+      { ...base, pot_id: input.fromPotId, direction: "out" as const },
+      { ...base, pot_id: input.toPotId, direction: "in" as const },
+    ];
+    const { error: err } = await supabase
+      .from("transactions")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .insert(rows as any);
+    if (err) return { error: err.message };
+    await fetchTransactions();
+    return { error: null };
+  }
+
   return {
     transactions,
     loading,
@@ -506,7 +606,10 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
     addTransaction,
     importTransactions,
     deleteTransaction,
+    deleteTransactions,
+    reassignTransactions,
     assignTransaction,
+    transfer,
     refresh: fetchTransactions,
   };
 }

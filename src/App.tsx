@@ -54,12 +54,19 @@ const Landing = lazy(() =>
 const AuthView = lazy(() =>
   import("./views/AuthView").then((m) => ({ default: m.AuthView })),
 );
+const DemoView = lazy(() =>
+  import("./views/DemoView").then((m) => ({ default: m.DemoView })),
+);
 const PasswordResetView = lazy(() =>
   import("./views/PasswordResetView").then((m) => ({ default: m.PasswordResetView })),
 );
 import { Modal } from "./components/Modal";
 import { PotForm } from "./components/PotForm";
 import { TransactionForm } from "./components/TransactionForm";
+import { OpeningBalanceForm } from "./components/OpeningBalanceForm";
+import { TransferForm } from "./components/TransferForm";
+import { OnboardingChecklist } from "./components/OnboardingChecklist";
+import { SetupWizard } from "./components/SetupWizard";
 const ImportTransactionsModal = lazy(() =>
   import("./components/ImportTransactionsModal").then((m) => ({
     default: m.ImportTransactionsModal,
@@ -74,7 +81,7 @@ import { paletteToCssVars } from "./branding";
 import type { Branding } from "./branding";
 import { parseRoute, buildPath, type Tab } from "./routing";
 
-type PublicView = "landing" | "login" | "signup";
+type PublicView = "landing" | "login" | "signup" | "demo";
 
 // Comp-code (?comp=CODE) vroeg inlezen, vóór de invite-parsing de query
 // opschoont. Wordt verzilverd zodra de gebruiker een org-admin is.
@@ -167,6 +174,7 @@ function App() {
     const p = window.location.pathname;
     if (p === "/login") return "login";
     if (p === "/signup") return "signup";
+    if (p === "/demo") return "demo";
     return "landing";
   });
 
@@ -176,7 +184,13 @@ function App() {
   useEffect(() => {
     if (loading || session) return;
     const path =
-      publicView === "login" ? "/login" : publicView === "signup" ? "/signup" : "/";
+      publicView === "login"
+        ? "/login"
+        : publicView === "signup"
+          ? "/signup"
+          : publicView === "demo"
+            ? "/demo"
+            : "/";
     if (path !== window.location.pathname) {
       window.history.replaceState(null, "", path);
     }
@@ -265,6 +279,17 @@ function App() {
           <Landing
             onLogin={() => setPublicView("login")}
             onSignup={() => setPublicView("signup")}
+            onDemo={() => setPublicView("demo")}
+          />
+        </Suspense>
+      );
+    }
+    if (publicView === "demo") {
+      return (
+        <Suspense fallback={routeFallback}>
+          <DemoView
+            onSignup={() => setPublicView("signup")}
+            onExit={() => setPublicView("landing")}
           />
         </Suspense>
       );
@@ -382,6 +407,7 @@ function dbTxToUiTx(t: DbTransaction): Transaction {
     counterparty: t.counterparty ?? "",
     memo: t.memo ?? undefined,
     status: t.status ?? "approved",
+    transferGroup: t.transfer_group ?? null,
     createdAt: t.created_at,
   };
 }
@@ -402,7 +428,10 @@ function useBridgedStore(
     addTransaction: addDbTx,
     importTransactions: importDbTx,
     deleteTransaction: deleteDbTx,
+    deleteTransactions: deleteDbTxs,
+    reassignTransactions: reassignDbTxs,
     assignTransaction: assignDbTx,
+    transfer: transferDbTx,
   } = useTransactions(orgId);
 
   const pots = useMemo(
@@ -486,10 +515,17 @@ function useBridgedStore(
       deleteTransaction: async (id: string) => {
         await deleteDbTx(id);
       },
+      deleteTransactions: async (ids: string[]) => {
+        await deleteDbTxs(ids);
+      },
+      reassignTransactions: async (ids: string[], toPotId: string) => {
+        await reassignDbTxs(ids, toPotId);
+      },
       // Bulk-import (CSV). Geen per-transactie e-mails: dat zou bij een afschrift
       // honderden mails sturen. Eén batch-insert, één refresh.
       importTransactions: importDbTx,
       assignTransaction: assignDbTx,
+      transfer: transferDbTx,
     };
   }, [
     localStore,
@@ -501,7 +537,10 @@ function useBridgedStore(
     addDbTx,
     importDbTx,
     deleteDbTx,
+    deleteDbTxs,
+    reassignDbTxs,
     assignDbTx,
+    transferDbTx,
   ]);
 }
 
@@ -617,6 +656,9 @@ function AuthedApp({
   );
   const [showAddPot, setShowAddPot] = useState(false);
   const [showAddTx, setShowAddTx] = useState(false);
+  const [showOpeningBalance, setShowOpeningBalance] = useState(false);
+  const [showTransfer, setShowTransfer] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
@@ -854,6 +896,7 @@ function AuthedApp({
         <Landing
           onLogin={() => setViewSite(false)}
           onSignup={() => setViewSite(false)}
+          onDemo={() => setViewSite(false)}
           onExitPreview={() => setViewSite(false)}
         />
       </Suspense>
@@ -939,6 +982,7 @@ function AuthedApp({
             {selectedPot ? (
               <PotDetail
                 pot={selectedPot}
+                pots={potsForUser}
                 transactions={store.state.transactions}
                 members={uiMembers}
                 currentUser={currentUser}
@@ -950,6 +994,10 @@ function AuthedApp({
                 onBack={() => setSelectedPotId(null)}
                 onAddTransaction={() => setShowAddTx(true)}
                 onDeleteTransaction={(id) => store.deleteTransaction(id)}
+                onBulkDeleteTransactions={(ids) => store.deleteTransactions(ids)}
+                onReassignTransactions={(ids, toPotId) =>
+                  store.reassignTransactions(ids, toPotId)
+                }
                 onUpdatePot={(patch) => store.updatePot(selectedPot.id, patch)}
                 onDeletePot={() => {
                   store.deletePot(selectedPot.id);
@@ -978,6 +1026,12 @@ function AuthedApp({
                 onSelect={(id) => setSelectedPotId(id)}
                 onAddPot={() => setShowAddPot(true)}
                 onAddTransaction={isAdmin ? () => setShowAddTx(true) : undefined}
+                onTransfer={
+                  isAdmin && potsForUser.length >= 2
+                    ? () => setShowTransfer(true)
+                    : undefined
+                }
+                onUseTemplate={isAdmin ? () => setShowWizard(true) : undefined}
                 onImport={
                   isAdmin && importEnabled(tier) ? () => setShowImport(true) : undefined
                 }
@@ -1043,9 +1097,26 @@ function AuthedApp({
                 }}
               />
             ) : (
-              <DashboardView
-                pots={potsForUser}
-                allTransactions={store.state.transactions}
+              <>
+                {isAdmin && (
+                  <div className="mb-6">
+                    <OnboardingChecklist
+                      orgId={org.id}
+                      pots={potsForUser}
+                      transactions={store.state.transactions}
+                      onAddPot={() => setShowAddPot(true)}
+                      onSetOpeningBalance={() => setShowOpeningBalance(true)}
+                      onImport={
+                        importEnabled(tier) ? () => setShowImport(true) : undefined
+                      }
+                      onOpenInbox={() => setShowInbox(true)}
+                      onUseTemplate={() => setShowWizard(true)}
+                    />
+                  </div>
+                )}
+                <DashboardView
+                  pots={potsForUser}
+                  allTransactions={store.state.transactions}
                 members={uiMembers}
                 currentUser={currentUser}
                 organizationName={org.name}
@@ -1064,12 +1135,16 @@ function AuthedApp({
                   setSelectedGroupId(null);
                 }}
                 onOpenInbox={isAdmin ? () => setShowInbox(true) : undefined}
+                onSetOpeningBalance={
+                  isAdmin ? () => setShowOpeningBalance(true) : undefined
+                }
                 onExportReport={
                   isAdmin && reportsEnabled(tier) ? () => setShowReport(true) : undefined
                 }
                 onApprove={isAdmin ? (id) => void approveTransaction(id) : undefined}
                 onReject={isAdmin ? (id) => void rejectTransaction(id) : undefined}
-              />
+                />
+              </>
             )}
           </main>
         </div>
@@ -1114,6 +1189,82 @@ function AuthedApp({
         )}
       </Modal>
 
+      <Modal
+        open={showOpeningBalance}
+        title="Beginsaldo instellen"
+        onClose={() => setShowOpeningBalance(false)}
+      >
+        {showOpeningBalance && (
+          <OpeningBalanceForm
+            onSubmit={async ({ amount, occurredOn, memo }) => {
+              await store.addTransaction({
+                potId: null,
+                direction: "in",
+                amount,
+                occurredOn,
+                counterparty: "Beginsaldo",
+                memo,
+              });
+              setShowOpeningBalance(false);
+            }}
+            onCancel={() => setShowOpeningBalance(false)}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        open={showTransfer}
+        title="Verplaats tussen potjes"
+        onClose={() => setShowTransfer(false)}
+      >
+        {showTransfer && (
+          <TransferForm
+            pots={potsForUser}
+            transactions={store.state.transactions}
+            initialFromPotId={selectedPot?.id ?? null}
+            onSubmit={async (values) => {
+              const res = await store.transfer(values);
+              if (!res.error) setShowTransfer(false);
+              return res;
+            }}
+            onCancel={() => setShowTransfer(false)}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        open={showWizard}
+        title="Snel opzetten"
+        onClose={() => setShowWizard(false)}
+      >
+        {showWizard && (
+          <SetupWizard
+            tier={tier}
+            availableSlots={limits.pots - store.state.pots.length}
+            onApply={async ({ groups, pots }) => {
+              const useGroups = groupsEnabled(tier);
+              const idByName = new Map<string, string>();
+              if (useGroups) {
+                for (const name of groups) {
+                  const res = await addGroup(name);
+                  if (res.groupId) idByName.set(name, res.groupId);
+                }
+              }
+              for (const p of pots) {
+                await store.addPot({
+                  name: p.name,
+                  color: p.color,
+                  groupId:
+                    useGroups && p.group ? idByName.get(p.group) ?? null : null,
+                });
+              }
+              return { error: null };
+            }}
+            onClose={() => setShowWizard(false)}
+          />
+        )}
+      </Modal>
+
       {showImport && (
         <Suspense fallback={null}>
           <ImportTransactionsModal
@@ -1148,6 +1299,7 @@ function AuthedApp({
           pots={potsForUser}
           onAssign={(txId, parts) => store.assignTransaction(txId, parts)}
           onDelete={(txId) => store.deleteTransaction(txId)}
+          onBulkDelete={(txIds) => store.deleteTransactions(txIds)}
         />
       </Modal>
 

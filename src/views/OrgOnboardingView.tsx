@@ -55,7 +55,9 @@ export function OrgOnboardingView({ fullName, onCreate, onJoinWithCode }: Props)
           {mode === "create" ? (
             <CreateOrgForm
               title={`Welkom ${fullName.split(" ")[0]}!`}
-              description="Maak je eerste organisatie aan. Je kunt er later leden bij uitnodigen of een tweede organisatie maken."
+              description="Je geld hoort bij een organisatie. Ben je alleen bezig? Hou gewoon 'Persoonlijk' aan. Voor een club, vereniging of bureau: geef je groep een naam. Later aanpassen kan altijd."
+              defaultName="Persoonlijk"
+              submitLabel="Aan de slag"
               onCreate={onCreate}
             />
           ) : (
