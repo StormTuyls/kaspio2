@@ -5,6 +5,7 @@ import type { SubTier } from "../supabase";
 import { chartsEnabled } from "../data";
 import { CashflowChart } from "../components/CashflowChart";
 import { UpgradeHint } from "../components/UpgradeHint";
+import { BankCard } from "../components/BankCard";
 
 type Props = {
   pots: Pot[];
@@ -22,6 +23,8 @@ type Props = {
   onNavigate?: (tab: "potjes" | "groepen" | "leden") => void;
   /** Open de "Nog toe te wijzen" inbox (admin). */
   onOpenInbox?: () => void;
+  /** Verdeel het geld op de kaart volgens de percentages (admin). */
+  onDistribute?: () => void;
   /** Beginsaldo instellen (admin): startbedrag dat al op de rekening stond. */
   onSetOpeningBalance?: () => void;
   /** Genereer een financieel rapport (PDF). Alleen aanwezig bij Pro+ admin. */
@@ -44,6 +47,7 @@ export function DashboardView({
   onOpenGroup,
   onNavigate,
   onOpenInbox,
+  onDistribute,
   onSetOpeningBalance,
   onExportReport,
   onApprove,
@@ -141,16 +145,22 @@ export function DashboardView({
         </div>
       </div>
 
-      {/* Hoofd-statistieken */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <HeroBalance
-          label={seesAll ? "Totaal saldo" : "Mijn saldo"}
-          value={formatEuro(total)}
-          potCount={pots.length}
-          groupCount={groups.length}
-        />
-        <FlowStat label="Inkomend" sub={FLOW_LABELS[flowPeriod]} value={formatEuro(totalIn)} tone="in" />
-        <FlowStat label="Uitgaand" sub={FLOW_LABELS[flowPeriod]} value={formatEuro(totalOut)} tone="out" />
+      {/* Hoofd-statistieken: de bankkaart + in/uit-stromen */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <BankCard
+            label={seesAll ? "Totaal saldo" : "Mijn saldo"}
+            total={total}
+            unallocated={unallocatedTotal}
+            potCount={pots.length}
+            groupCount={groups.length}
+            onDistribute={isAdmin ? onDistribute : undefined}
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+          <FlowStat label="Inkomend" sub={FLOW_LABELS[flowPeriod]} value={formatEuro(totalIn)} tone="in" />
+          <FlowStat label="Uitgaand" sub={FLOW_LABELS[flowPeriod]} value={formatEuro(totalOut)} tone="out" />
+        </div>
       </div>
 
       {/* Tellers */}
@@ -419,41 +429,6 @@ function Icon({
     >
       {children}
     </svg>
-  );
-}
-
-function HeroBalance({
-  label,
-  value,
-  potCount,
-  groupCount,
-}: {
-  label: string;
-  value: string;
-  potCount: number;
-  groupCount: number;
-}) {
-  return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-700 p-5 text-white shadow-lg shadow-indigo-600/20">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(16,185,129,0.45) 0%, transparent 70%)",
-        }}
-      />
-      <p className="relative font-num text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-100">
-        {label}
-      </p>
-      <p className="relative mt-1 font-num text-3xl font-extrabold tracking-tight tabular-nums">
-        {value}
-      </p>
-      <p className="relative mt-3 text-xs text-indigo-100">
-        {potCount} {potCount === 1 ? "potje" : "potjes"} · {groupCount}{" "}
-        {groupCount === 1 ? "groep" : "groepen"}
-      </p>
-    </div>
   );
 }
 

@@ -603,6 +603,52 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
     return { error: null };
   }
 
+  /**
+   * Verdeel geld van de kaart (het onverdeelde geld, pot_id = null) over één of
+   * meerdere potjes. Maakt gekoppelde regels met hetzelfde transfer_group: één
+   * 'out' op de kaart voor het totaal, en één 'in' per potje. Netto nul op de
+   * rekening; enkel de verdeling verschuift. Gebruikt door de %-verdeling en
+   * (later) de maandelijkse storting. Enkel admins (RLS op onverdeeld geld).
+   */
+  async function allocateFromCard(input: {
+    allocations: { toPotId: string; amount: number }[];
+    occurredOn: string;
+    counterparty?: string;
+    memo?: string;
+  }): Promise<{ error: string | null }> {
+    if (!orgId) return { error: "Geen organisatie geselecteerd." };
+    const allocations = input.allocations.filter(
+      (a) => a.toPotId && Number.isFinite(a.amount) && a.amount > 0,
+    );
+    if (allocations.length === 0) return { error: "Niets om te verdelen." };
+    const total = allocations.reduce((s, a) => s + a.amount, 0);
+    if (!(total > 0)) return { error: "Bedrag moet groter zijn dan 0." };
+    const group = crypto.randomUUID();
+    const base = {
+      organisation_id: orgId,
+      occurred_on: input.occurredOn,
+      memo: input.memo ?? null,
+      counterparty: input.counterparty ?? "Verdeling",
+      transfer_group: group,
+    };
+    const rows = [
+      { ...base, pot_id: null, direction: "out" as const, amount: total },
+      ...allocations.map((a) => ({
+        ...base,
+        pot_id: a.toPotId,
+        direction: "in" as const,
+        amount: a.amount,
+      })),
+    ];
+    const { error: err } = await supabase
+      .from("transactions")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .insert(rows as any);
+    if (err) return { error: err.message };
+    await fetchTransactions();
+    return { error: null };
+  }
+
   return {
     transactions,
     loading,
@@ -614,8 +660,128 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
     reassignTransactions,
     assignTransaction,
     transfer,
+    allocateFromCard,
     refresh: fetchTransactions,
   };
+}
+
+// =============================================================================
+// useDistributionShares , de verdeel-preset (percentage per potje) van een org
+// =============================================================================
+
+/** Eén regel van de verdeel-preset: percentage van de kaart naar een potje. */
+export type DistributionShare = {
+  id: string;
+  potId: string;
+  percent: number;
+};
+
+/**
+ * Reken uit hoeveel van `amount` naar elk potje gaat op basis van de preset.
+ * Puur en testbaar. Werkt in centen om floating-point ruis te vermijden.
+ *
+ * - Elke post krijgt round(amount * percent / 100).
+ * - Tellen de percentages samen exact 100% op, dan vangt de laatste post de
+ *   centen-afronding op zodat de som exact `amount` is (niks blijft op de kaart).
+ * - Tellen ze op tot minder dan 100%, dan blijft de rest gewoon op de kaart.
+ */
+export function computeShares(
+  amount: number,
+  shares: { potId: string; percent: number }[],
+): { potId: string; amount: number }[] {
+  const cents = Math.round(amount * 100);
+  const active = shares.filter((s) => s.potId && s.percent > 0);
+  if (cents <= 0 || active.length === 0) return [];
+  const out = active.map((s) => ({
+    potId: s.potId,
+    cents: Math.round((cents * s.percent) / 100),
+  }));
+  const totalPct = active.reduce((a, s) => a + s.percent, 0);
+  // Som exact 100%? Laat de laatste post het verschil opvangen (afrondingsrest).
+  if (Math.abs(totalPct - 100) < 1e-9) {
+    const sumC = out.reduce((a, o) => a + o.cents, 0);
+    out[out.length - 1].cents += cents - sumC;
+  }
+  return out
+    .filter((o) => o.cents > 0)
+    .map((o) => ({ potId: o.potId, amount: o.cents / 100 }));
+}
+
+export function useDistributionShares(orgId: string | null) {
+  const [shares, setShares] = useState<DistributionShare[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchShares = useCallback(async () => {
+    if (!orgId) {
+      setShares([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    // distribution_shares staat (nog) niet in de gegenereerde types; cast zoals elders.
+    const { data, error } = await (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      supabase.from("distribution_shares") as any
+    )
+      .select("id, pot_id, percent")
+      .eq("organisation_id", orgId);
+    if (error) {
+      console.warn("[Kaspio] useDistributionShares fetch failed:", error.message);
+    } else if (data) {
+      setShares(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (data as any[]).map((d) => ({
+          id: d.id,
+          potId: d.pot_id,
+          percent: Number(d.percent),
+        })),
+      );
+    }
+    setLoading(false);
+  }, [orgId]);
+
+  useEffect(() => {
+    fetchShares();
+  }, [fetchShares]);
+  useRealtimeRefresh("distribution_shares", orgId, fetchShares);
+
+  /**
+   * Vervang de volledige preset (delete-all + insert). De app bewaakt dat de
+   * som van de percentages niet boven 100% gaat.
+   */
+  async function saveShares(
+    next: { potId: string; percent: number }[],
+  ): Promise<{ error: string | null }> {
+    if (!orgId) return { error: "Geen organisatie geselecteerd." };
+    const clean = next.filter((s) => s.potId && s.percent > 0);
+    const total = clean.reduce((a, s) => a + s.percent, 0);
+    if (total > 100.0001) {
+      return { error: "De percentages samen mogen niet meer dan 100% zijn." };
+    }
+    const { error: delErr } = await (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      supabase.from("distribution_shares") as any
+    )
+      .delete()
+      .eq("organisation_id", orgId);
+    if (delErr) return { error: delErr.message };
+    if (clean.length > 0) {
+      const rows = clean.map((s) => ({
+        organisation_id: orgId,
+        pot_id: s.potId,
+        percent: s.percent,
+      }));
+      const { error: insErr } = await (
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        supabase.from("distribution_shares") as any
+      ).insert(rows);
+      if (insErr) return { error: insErr.message };
+    }
+    await fetchShares();
+    return { error: null };
+  }
+
+  return { shares, loading, saveShares, refresh: fetchShares };
 }
 
 // =============================================================================
