@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { formatDate, formatEuro } from "../storage";
 import type { Pot, Transaction } from "../types";
+import { useConfirm } from "./ConfirmDialog";
 
 type Props = {
   /** Alleen de onverdeelde transacties (potId === null). */
@@ -27,6 +28,7 @@ export function UnallocatedInbox({
   onDelete,
   onBulkDelete,
 }: Props) {
+  const confirm = useConfirm();
   const [openId, setOpenId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -53,7 +55,13 @@ export function UnallocatedInbox({
   async function bulkDelete() {
     const ids = [...selected];
     if (ids.length === 0) return;
-    if (!confirm(`${ids.length} ${ids.length === 1 ? "transactie" : "transacties"} verwijderen?`)) {
+    if (
+      !(await confirm({
+        title: `${ids.length} ${ids.length === 1 ? "transactie" : "transacties"} verwijderen?`,
+        confirmLabel: "Verwijderen",
+        danger: true,
+      }))
+    ) {
       return;
     }
     if (onBulkDelete) await onBulkDelete(ids);
@@ -148,8 +156,9 @@ export function UnallocatedInbox({
                 {openId === tx.id ? "Sluit" : "Toewijzen"}
               </button>
               <button
-                onClick={() => {
-                  if (confirm("Transactie verwijderen?")) onDelete(tx.id);
+                onClick={async () => {
+                  if (await confirm({ title: "Transactie verwijderen?", confirmLabel: "Verwijderen", danger: true }))
+                    onDelete(tx.id);
                 }}
                 className="flex-shrink-0 rounded-md px-2 py-1 text-navy-300 hover:bg-rose-50 hover:text-rose-600 dark:text-navy-500 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
                 aria-label="Verwijderen"
@@ -167,8 +176,9 @@ export function UnallocatedInbox({
                   if (!res.error) setOpenId(null);
                   return res;
                 }}
-                onDelete={() => {
-                  if (confirm("Transactie verwijderen?")) onDelete(tx.id);
+                onDelete={async () => {
+                  if (await confirm({ title: "Transactie verwijderen?", confirmLabel: "Verwijderen", danger: true }))
+                    onDelete(tx.id);
                 }}
               />
             )}

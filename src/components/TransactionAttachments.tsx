@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useAttachments, type Attachment } from "../data";
+import { useConfirm } from "./ConfirmDialog";
 
 type Props = {
   orgId: string;
@@ -24,6 +25,7 @@ export function TransactionAttachments({ orgId, transactionId, isAdmin }: Props)
     orgId,
     transactionId,
   );
+  const confirm = useConfirm();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +51,7 @@ export function TransactionAttachments({ orgId, transactionId, isAdmin }: Props)
   }
 
   async function handleRemove(att: Attachment) {
-    if (!confirm(`Bijlage "${att.name}" verwijderen?`)) return;
+    if (!(await confirm({ title: `Bijlage "${att.name}" verwijderen?`, confirmLabel: "Verwijderen", danger: true }))) return;
     setBusy(true);
     setError(null);
     try {

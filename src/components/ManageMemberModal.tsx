@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { GroupedMember } from "../data";
 import type { MemberRole, Pot } from "../supabase";
+import { useConfirm } from "./ConfirmDialog";
 
 type Props = {
   orgId: string;
@@ -31,6 +32,7 @@ export function ManageMemberModal({
   onRemove,
   onClose,
 }: Props) {
+  const confirm = useConfirm();
   const [role, setRole] = useState<MemberRole>(member.effectiveRole);
   const [potIds, setPotIds] = useState<string[]>(member.potIds);
   const [busy, setBusy] = useState(false);
@@ -50,7 +52,15 @@ export function ManageMemberModal({
   }
 
   async function remove() {
-    if (!confirm(`Verwijder ${member.full_name} uit de organisatie?`)) return;
+    if (
+      !(await confirm({
+        title: `${member.full_name} verwijderen?`,
+        message: "Dit lid wordt uit de organisatie verwijderd.",
+        confirmLabel: "Verwijderen",
+        danger: true,
+      }))
+    )
+      return;
     setError(null);
     setBusy(true);
     const res = await onRemove(member.user_id, orgId);

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Organisation } from "../supabase";
+import { useConfirm } from "./ConfirmDialog";
 
 type Props = {
   orgs: Organisation[];
@@ -20,6 +21,7 @@ export function OrgSwitcher({
   onLeave,
   variant = "dark",
 }: Props) {
+  const confirm = useConfirm();
   const [open, setOpen] = useState(false);
   const [leaveErr, setLeaveErr] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
@@ -27,9 +29,12 @@ export function OrgSwitcher({
   async function handleLeave() {
     if (!onLeave || leaving) return;
     if (
-      !window.confirm(
-        `Wil je "${selected.name}" verlaten? Je verliest je toegang tot deze organisatie.`,
-      )
+      !(await confirm({
+        title: `"${selected.name}" verlaten?`,
+        message: "Je verliest je toegang tot deze organisatie.",
+        confirmLabel: "Verlaten",
+        danger: true,
+      }))
     )
       return;
     setLeaveErr(null);

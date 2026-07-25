@@ -61,6 +61,7 @@ const PasswordResetView = lazy(() =>
   import("./views/PasswordResetView").then((m) => ({ default: m.PasswordResetView })),
 );
 import { Modal } from "./components/Modal";
+import { useAlert, useConfirm } from "./components/ConfirmDialog";
 import { PotForm } from "./components/PotForm";
 import { TransactionForm } from "./components/TransactionForm";
 import { OpeningBalanceForm } from "./components/OpeningBalanceForm";
@@ -565,6 +566,8 @@ function AuthedApp({
     createdAt: session.user.created_at,
   };
 
+  const confirm = useConfirm();
+  const alert = useAlert();
   const localStore = useAppState(account.id, account.fullName);
   const {
     orgs,
@@ -728,9 +731,11 @@ function AuthedApp({
     const code = pendingComp;
     setPendingComp(null); // niet opnieuw proberen
     (async () => {
-      const ok = window.confirm(
-        `Gratis testabonnement activeren voor "${org?.name ?? "deze organisatie"}" met code ${code}?`,
-      );
+      const ok = await confirm({
+        title: "Gratis testabonnement activeren?",
+        message: `Voor "${org?.name ?? "deze organisatie"}" met code ${code}.`,
+        confirmLabel: "Activeren",
+      });
       if (!ok || cancelled) return;
       const res = await redeemCompCode(code, orgId);
       if (cancelled) return;
@@ -745,13 +750,13 @@ function AuthedApp({
           expired: "Deze testcode is vervallen.",
           used_up: "Deze testcode is al volledig gebruikt.",
         };
-        alert(msg[res.status] ?? "Code inwisselen mislukt.");
+        await alert({ title: "Activeren mislukt", message: msg[res.status] ?? "Code inwisselen mislukt." });
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [pendingComp, orgId, isAdmin, org?.name, refreshSub]);
+  }, [pendingComp, orgId, isAdmin, org?.name, refreshSub, confirm, alert]);
 
   // Synthetische currentUser, altijd gedefinieerd zolang session bestaat.
   const currentUser = {
