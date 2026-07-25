@@ -27,6 +27,7 @@ import {
   usePots,
   useSubscription,
   useTransactions,
+  useDistributionShares,
 } from "./data";
 import { UnallocatedInbox } from "./components/UnallocatedInbox";
 import { FeedbackModal } from "./components/FeedbackModal";
@@ -65,6 +66,8 @@ import { PotForm } from "./components/PotForm";
 import { TransactionForm } from "./components/TransactionForm";
 import { OpeningBalanceForm } from "./components/OpeningBalanceForm";
 import { TransferForm } from "./components/TransferForm";
+import { DistributeModal } from "./components/DistributeModal";
+import { DistributionPresetForm } from "./components/DistributionPresetForm";
 import { OnboardingChecklist } from "./components/OnboardingChecklist";
 import { SetupWizard } from "./components/SetupWizard";
 const ImportTransactionsModal = lazy(() =>
@@ -432,6 +435,7 @@ function useBridgedStore(
     reassignTransactions: reassignDbTxs,
     assignTransaction: assignDbTx,
     transfer: transferDbTx,
+    allocateFromCard: allocateDbCard,
   } = useTransactions(orgId);
 
   const pots = useMemo(
@@ -526,6 +530,7 @@ function useBridgedStore(
       importTransactions: importDbTx,
       assignTransaction: assignDbTx,
       transfer: transferDbTx,
+      allocateFromCard: allocateDbCard,
     };
   }, [
     localStore,
@@ -541,6 +546,7 @@ function useBridgedStore(
     reassignDbTxs,
     assignDbTx,
     transferDbTx,
+    allocateDbCard,
   ]);
 }
 
@@ -623,6 +629,8 @@ function AuthedApp({
   } = useOrgMembers(orgId);
   const { entries: auditEntries, loading: auditLoading } = useAuditLog(orgId);
   const { subscription, tier, limits, refresh: refreshSub } = useSubscription(orgId);
+  const { shares: distShares, saveShares: saveDistShares } =
+    useDistributionShares(orgId);
   // Terugkeer van Stripe Checkout: ?upgrade=success|cancel. Toon een melding,
   // ververs het abonnement (realtime pikt de tier-wissel ook op) en maak de URL
   // schoon zodat de melding niet blijft plakken.
@@ -658,6 +666,8 @@ function AuthedApp({
   const [showAddTx, setShowAddTx] = useState(false);
   const [showOpeningBalance, setShowOpeningBalance] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
+  const [showDistribute, setShowDistribute] = useState(false);
+  const [showDistributionPreset, setShowDistributionPreset] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showReport, setShowReport] = useState(false);
@@ -834,6 +844,15 @@ function AuthedApp({
   const unallocatedTx = useMemo(
     () => store.state.transactions.filter((t) => t.potId === null),
     [store.state.transactions],
+  );
+  // Saldo op de kaart dat nog verdeeld kan worden ("nog te verdelen").
+  const unallocatedTotal = useMemo(
+    () =>
+      unallocatedTx.reduce(
+        (s, t) => s + (t.direction === "in" ? t.amount : -t.amount),
+        0,
+      ),
+    [unallocatedTx],
   );
 
   // Wacht op de eerste org-fetch én op het afhandelen van openstaande invites,
@@ -1135,6 +1154,7 @@ function AuthedApp({
                   setSelectedGroupId(null);
                 }}
                 onOpenInbox={isAdmin ? () => setShowInbox(true) : undefined}
+                onDistribute={isAdmin ? () => setShowDistribute(true) : undefined}
                 onSetOpeningBalance={
                   isAdmin ? () => setShowOpeningBalance(true) : undefined
                 }
@@ -1228,6 +1248,47 @@ function AuthedApp({
               return res;
             }}
             onCancel={() => setShowTransfer(false)}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        open={showDistribute}
+        title="Verdeel volgens %"
+        onClose={() => setShowDistribute(false)}
+      >
+        {showDistribute && (
+          <DistributeModal
+            pots={potsForUser}
+            shares={distShares}
+            available={unallocatedTotal}
+            onDistribute={async (allocations) =>
+              store.allocateFromCard({
+                allocations,
+                occurredOn: new Date().toISOString().slice(0, 10),
+                counterparty: "Verdeling",
+              })
+            }
+            onManagePreset={() => {
+              setShowDistribute(false);
+              setShowDistributionPreset(true);
+            }}
+            onCancel={() => setShowDistribute(false)}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        open={showDistributionPreset}
+        title="Verdeling instellen"
+        onClose={() => setShowDistributionPreset(false)}
+      >
+        {showDistributionPreset && (
+          <DistributionPresetForm
+            pots={potsForUser}
+            initialShares={distShares}
+            onSave={saveDistShares}
+            onCancel={() => setShowDistributionPreset(false)}
           />
         )}
       </Modal>
