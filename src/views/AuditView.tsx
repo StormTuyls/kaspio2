@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { AuditEntityType, AuditEntry } from "../types";
 import { formatDateTime } from "../storage";
+import { useConfirm } from "../components/ConfirmDialog";
 import { Avatar } from "./Overview";
 
 type Filter = "all" | AuditEntityType;
@@ -11,6 +12,7 @@ type Props = {
 };
 
 export function AuditView({ entries, onClear }: Props) {
+  const confirm = useConfirm();
   const [filter, setFilter] = useState<Filter>("all");
 
   const filtered = useMemo(
@@ -32,8 +34,9 @@ export function AuditView({ entries, onClear }: Props) {
         </div>
         {entries.length > 0 && (
           <button
-            onClick={() => {
-              if (confirm("Volledige activiteitenlog wissen?")) onClear();
+            onClick={async () => {
+              if (await confirm({ title: "Volledige activiteitenlog wissen?", confirmLabel: "Wissen", danger: true }))
+                onClear();
             }}
             className="btn-secondary text-sm"
           >

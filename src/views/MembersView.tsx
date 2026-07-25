@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Member } from "../types";
 import { Modal } from "../components/Modal";
+import { useAlert, useConfirm } from "../components/ConfirmDialog";
 import { MemberForm } from "../components/MemberForm";
 import { Avatar } from "./Overview";
 
@@ -13,6 +14,8 @@ type Props = {
 };
 
 export function MembersView({ members, currentUserId, onAdd, onUpdate, onDelete }: Props) {
+  const confirm = useConfirm();
+  const alert = useAlert();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Member | null>(null);
 
@@ -66,12 +69,13 @@ export function MembersView({ members, currentUserId, onAdd, onUpdate, onDelete 
                   Bewerken
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (m.id === currentUserId) {
-                      alert("Je kan jezelf niet verwijderen.");
+                      await alert({ title: "Je kan jezelf niet verwijderen." });
                       return;
                     }
-                    if (confirm(`Lid "${m.name}" verwijderen?`)) onDelete(m.id);
+                    if (await confirm({ title: `Lid "${m.name}" verwijderen?`, confirmLabel: "Verwijderen", danger: true }))
+                      onDelete(m.id);
                   }}
                   className="btn-danger flex-1 text-sm sm:flex-initial"
                 >

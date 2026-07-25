@@ -7,10 +7,13 @@ import "@fontsource-variable/inter";
 import "@fontsource-variable/plus-jakarta-sans";
 import "@fontsource-variable/jetbrains-mono";
 import App from "./App.tsx";
+import { DialogProvider } from "./components/ConfirmDialog";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <DialogProvider>
+      <App />
+    </DialogProvider>
     <Analytics />
     <SpeedInsights />
   </StrictMode>

@@ -4,6 +4,7 @@ import type { Member, Pot, PotGroup, Transaction, TransactionDirection } from ".
 import type { SubTier } from "../supabase";
 import { attachmentsEnabled, chartsEnabled } from "../data";
 import { Modal } from "../components/Modal";
+import { useConfirm } from "../components/ConfirmDialog";
 import { PotForm } from "../components/PotForm";
 import { BalanceChart } from "../components/BalanceChart";
 import { UpgradeHint } from "../components/UpgradeHint";
@@ -66,6 +67,7 @@ export function PotDetail({
   onUpdatePot,
   onDeletePot,
 }: Props) {
+  const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
   const [search, setSearch] = useState("");
   const [direction, setDirection] = useState<DirectionFilter>("all");
@@ -140,7 +142,13 @@ export function PotDetail({
   async function bulkDelete() {
     const ids = [...selected];
     if (ids.length === 0) return;
-    if (!confirm(`${ids.length} ${ids.length === 1 ? "transactie" : "transacties"} verwijderen?`)) {
+    if (
+      !(await confirm({
+        title: `${ids.length} ${ids.length === 1 ? "transactie" : "transacties"} verwijderen?`,
+        confirmLabel: "Verwijderen",
+        danger: true,
+      }))
+    ) {
       return;
     }
     if (onBulkDeleteTransactions) await onBulkDeleteTransactions(ids);
@@ -213,8 +221,15 @@ export function PotDetail({
                 Bewerken
               </button>
               <button
-                onClick={() => {
-                  if (confirm(`Potje "${pot.name}" en alle transacties verwijderen?`)) {
+                onClick={async () => {
+                  if (
+                    await confirm({
+                      title: `Potje "${pot.name}" verwijderen?`,
+                      message: "Alle transacties in dit potje worden ook verwijderd.",
+                      confirmLabel: "Verwijderen",
+                      danger: true,
+                    })
+                  ) {
                     onDeletePot();
                   }
                 }}
@@ -411,8 +426,9 @@ export function PotDetail({
                         <span>{formatDate(tx.occurredOn)}</span>
                         {isAdmin && (
                           <button
-                            onClick={() => {
-                              if (confirm("Transactie verwijderen?")) onDeleteTransaction(tx.id);
+                            onClick={async () => {
+                              if (await confirm({ title: "Transactie verwijderen?", confirmLabel: "Verwijderen", danger: true }))
+                                onDeleteTransaction(tx.id);
                             }}
                             className="rounded-md px-2 py-1 text-navy-300 hover:bg-rose-50 hover:text-rose-600 dark:text-navy-500 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
                             aria-label="Verwijderen"
@@ -529,8 +545,9 @@ export function PotDetail({
                             )}
                             {isAdmin && (
                               <button
-                                onClick={() => {
-                                  if (confirm("Transactie verwijderen?")) onDeleteTransaction(tx.id);
+                                onClick={async () => {
+                                  if (await confirm({ title: "Transactie verwijderen?", confirmLabel: "Verwijderen", danger: true }))
+                                    onDeleteTransaction(tx.id);
                                 }}
                                 className="text-xs text-navy-300 hover:text-rose-600 dark:text-navy-500 dark:hover:text-rose-400"
                                 aria-label="Verwijderen"

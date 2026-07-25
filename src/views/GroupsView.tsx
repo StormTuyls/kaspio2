@@ -2,6 +2,7 @@ import { useState } from "react";
 import { calcBalance, formatEuro } from "../storage";
 import type { Pot, PotGroup, Transaction } from "../types";
 import { UpgradeHint } from "../components/UpgradeHint";
+import { useConfirm } from "../components/ConfirmDialog";
 
 type Props = {
   groups: PotGroup[];
@@ -186,6 +187,7 @@ function GroupCard({
   onSelectPot: (potId: string) => void;
   onOpen?: () => void;
 }) {
+  const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(group.name);
   const [busy, setBusy] = useState(false);
@@ -208,9 +210,12 @@ function GroupCard({
 
   async function remove() {
     if (
-      !window.confirm(
-        `Groep "${group.name}" verwijderen? De potjes blijven bestaan en worden groepsloos.`,
-      )
+      !(await confirm({
+        title: `Groep "${group.name}" verwijderen?`,
+        message: "De potjes blijven bestaan en worden groepsloos.",
+        confirmLabel: "Verwijderen",
+        danger: true,
+      }))
     )
       return;
     await onDelete(group.id);
