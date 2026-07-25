@@ -785,6 +785,250 @@ export function useDistributionShares(orgId: string | null) {
 }
 
 // =============================================================================
+// useRecurringPlans , terugkerende boekingen (stortingen + domiciliëringen)
+// =============================================================================
+
+export type RecurringPlanKind = "storting" | "domiciliering";
+
+export type RecurringPlan = {
+  id: string;
+  organisation_id: string;
+  pot_id: string;
+  kind: RecurringPlanKind;
+  amount: number;
+  day_of_month: number;
+  counterparty: string | null;
+  match_window_days: number;
+  active: boolean;
+  last_run_on: string | null;
+  created_at: string;
+};
+
+export type RecurringPlanInput = {
+  potId: string;
+  kind: RecurringPlanKind;
+  amount: number;
+  dayOfMonth: number;
+  counterparty?: string | null;
+  matchWindowDays?: number;
+};
+
+/** Normaliseer een tegenpartij-naam voor herkenning (kleine letters, trim, spaties). */
+export function normalizeCounterparty(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function daysBetween(a: string, b: string): number {
+  const da = new Date(`${a}T00:00:00`).getTime();
+  const db = new Date(`${b}T00:00:00`).getTime();
+  return Math.abs(Math.round((da - db) / 86_400_000));
+}
+
+/** Verwachte voorkomens van day_of_month in de maand van `ymd` en de buurmaanden
+ *  (voor datum-matching over maandgrenzen heen). Dag wordt geclamped op de
+ *  maandlengte (bv. 31 in februari -> 28/29). */
+function expectedDatesAround(ymd: string, dayOfMonth: number): string[] {
+  const d = new Date(`${ymd}T00:00:00`);
+  const mk = (y: number, m: number) => {
+    const last = new Date(y, m + 1, 0).getDate();
+    const day = Math.min(dayOfMonth, last);
+    return `${y}-${String(m + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  };
+  const prev = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+  const next = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+  return [
+    mk(prev.getFullYear(), prev.getMonth()),
+    mk(d.getFullYear(), d.getMonth()),
+    mk(next.getFullYear(), next.getMonth()),
+  ];
+}
+
+/**
+ * Zoek de domiciliëring die bij een geïmporteerde transactie hoort (pure, testbaar).
+ * Match op: uitgaand + tegenpartij (gelijk of deelstring) + datum binnen het
+ * venster rond day_of_month + bedrag binnen tolerantie (max €1 of 5%). Bij meerdere
+ * kandidaten wint het kleinste bedragverschil. Geen match -> null.
+ */
+export function matchRecurringPlan(
+  tx: {
+    counterparty: string;
+    amount: number;
+    direction: "in" | "out";
+    occurredOn: string;
+  },
+  plans: RecurringPlan[],
+): RecurringPlan | null {
+  if (tx.direction !== "out") return null;
+  const cp = normalizeCounterparty(tx.counterparty);
+  if (!cp) return null;
+  const candidates = plans.filter((p) => {
+    if (!p.active || p.kind !== "domiciliering" || !p.counterparty) return false;
+    const pcp = normalizeCounterparty(p.counterparty);
+    if (!(cp === pcp || cp.includes(pcp) || pcp.includes(cp))) return false;
+    const nearDate = expectedDatesAround(tx.occurredOn, p.day_of_month).some(
+      (ed) => daysBetween(tx.occurredOn, ed) <= p.match_window_days,
+    );
+    if (!nearDate) return false;
+    const tol = Math.max(1, p.amount * 0.05);
+    return Math.abs(tx.amount - p.amount) <= tol;
+  });
+  if (candidates.length === 0) return null;
+  candidates.sort(
+    (a, b) => Math.abs(tx.amount - a.amount) - Math.abs(tx.amount - b.amount),
+  );
+  return candidates[0];
+}
+
+/** Is deze storting deze maand "te bevestigen"? (dag bereikt + nog niet geboekt) */
+export function isStortingDue(plan: RecurringPlan, today: string): boolean {
+  if (!plan.active || plan.kind !== "storting") return false;
+  const d = new Date(`${today}T00:00:00`);
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  const dueDay = Math.min(plan.day_of_month, last);
+  if (d.getDate() < dueDay) return false;
+  if (plan.last_run_on) {
+    const lr = new Date(`${plan.last_run_on}T00:00:00`);
+    if (lr.getFullYear() === d.getFullYear() && lr.getMonth() === d.getMonth()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function useRecurringPlans(orgId: string | null) {
+  const [plans, setPlans] = useState<RecurringPlan[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchPlans = useCallback(async () => {
+    if (!orgId) {
+      setPlans([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const { data, error } = await (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      supabase.from("recurring_plans") as any
+    )
+      .select("*")
+      .eq("organisation_id", orgId)
+      .order("day_of_month", { ascending: true });
+    if (error) {
+      console.warn("[Kaspio] useRecurringPlans fetch failed:", error.message);
+    } else if (data) {
+      setPlans(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (data as any[]).map((r) => ({
+          id: r.id,
+          organisation_id: r.organisation_id,
+          pot_id: r.pot_id,
+          kind: r.kind,
+          amount: Number(r.amount),
+          day_of_month: r.day_of_month,
+          counterparty: r.counterparty ?? null,
+          match_window_days: r.match_window_days ?? 5,
+          active: r.active ?? true,
+          last_run_on: r.last_run_on ?? null,
+          created_at: r.created_at,
+        })),
+      );
+    }
+    setLoading(false);
+  }, [orgId]);
+
+  useEffect(() => {
+    fetchPlans();
+  }, [fetchPlans]);
+  useRealtimeRefresh("recurring_plans", orgId, fetchPlans);
+
+  async function addPlan(
+    input: RecurringPlanInput,
+  ): Promise<{ error: string | null }> {
+    if (!orgId) return { error: "Geen organisatie geselecteerd." };
+    if (input.kind === "domiciliering" && !input.counterparty?.trim()) {
+      return { error: "Geef de tegenpartij op zodat we de domiciliëring kunnen herkennen." };
+    }
+    const row = {
+      organisation_id: orgId,
+      pot_id: input.potId,
+      kind: input.kind,
+      amount: input.amount,
+      day_of_month: input.dayOfMonth,
+      counterparty: input.counterparty?.trim() || null,
+      match_window_days: input.matchWindowDays ?? 5,
+    };
+    const { error } = await (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      supabase.from("recurring_plans") as any
+    ).insert(row);
+    if (error) return { error: error.message };
+    await fetchPlans();
+    return { error: null };
+  }
+
+  async function updatePlan(
+    id: string,
+    patch: Partial<RecurringPlanInput> & { active?: boolean },
+  ): Promise<{ error: string | null }> {
+    const row: Record<string, unknown> = {};
+    if (patch.potId !== undefined) row.pot_id = patch.potId;
+    if (patch.kind !== undefined) row.kind = patch.kind;
+    if (patch.amount !== undefined) row.amount = patch.amount;
+    if (patch.dayOfMonth !== undefined) row.day_of_month = patch.dayOfMonth;
+    if (patch.counterparty !== undefined)
+      row.counterparty = patch.counterparty?.trim() || null;
+    if (patch.matchWindowDays !== undefined)
+      row.match_window_days = patch.matchWindowDays;
+    if (patch.active !== undefined) row.active = patch.active;
+    const { error } = await (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      supabase.from("recurring_plans") as any
+    )
+      .update(row)
+      .eq("id", id);
+    if (error) return { error: error.message };
+    await fetchPlans();
+    return { error: null };
+  }
+
+  async function removePlan(id: string): Promise<{ error: string | null }> {
+    const { error } = await supabase
+      .from("recurring_plans")
+      .delete()
+      .eq("id", id);
+    if (error) return { error: error.message };
+    await fetchPlans();
+    return { error: null };
+  }
+
+  /** Markeer een storting als geboekt voor deze maand (voorkomt dubbel boeken). */
+  async function markStortingBooked(
+    id: string,
+    date: string,
+  ): Promise<{ error: string | null }> {
+    const { error } = await (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      supabase.from("recurring_plans") as any
+    )
+      .update({ last_run_on: date })
+      .eq("id", id);
+    if (error) return { error: error.message };
+    await fetchPlans();
+    return { error: null };
+  }
+
+  return {
+    plans,
+    loading,
+    addPlan,
+    updatePlan,
+    removePlan,
+    markStortingBooked,
+    refresh: fetchPlans,
+  };
+}
+
+// =============================================================================
 // usePotGroups , platte groepen (takken, ploegen) binnen een org
 // =============================================================================
 

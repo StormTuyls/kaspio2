@@ -28,6 +28,8 @@ import {
   useSubscription,
   useTransactions,
   useDistributionShares,
+  useRecurringPlans,
+  type RecurringPlan,
 } from "./data";
 import { UnallocatedInbox } from "./components/UnallocatedInbox";
 import { FeedbackModal } from "./components/FeedbackModal";
@@ -69,6 +71,7 @@ import { OpeningBalanceForm } from "./components/OpeningBalanceForm";
 import { TransferForm } from "./components/TransferForm";
 import { DistributeModal } from "./components/DistributeModal";
 import { DistributionPresetForm } from "./components/DistributionPresetForm";
+import { RecurringPlansPanel } from "./components/RecurringPlansPanel";
 import { OnboardingChecklist } from "./components/OnboardingChecklist";
 import { SetupWizard } from "./components/SetupWizard";
 const ImportTransactionsModal = lazy(() =>
@@ -639,6 +642,13 @@ function AuthedApp({
   const { subscription, tier, limits, refresh: refreshSub } = useSubscription(orgId);
   const { shares: distShares, saveShares: saveDistShares } =
     useDistributionShares(orgId);
+  const {
+    plans: recurringPlans,
+    addPlan,
+    updatePlan,
+    removePlan,
+    markStortingBooked,
+  } = useRecurringPlans(orgId);
   // Terugkeer van Stripe Checkout: ?upgrade=success|cancel. Toon een melding,
   // ververs het abonnement (realtime pikt de tier-wissel ook op) en maak de URL
   // schoon zodat de melding niet blijft plakken.
@@ -676,6 +686,7 @@ function AuthedApp({
   const [showTransfer, setShowTransfer] = useState(false);
   const [showDistribute, setShowDistribute] = useState(false);
   const [showDistributionPreset, setShowDistributionPreset] = useState(false);
+  const [showRecurring, setShowRecurring] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showReport, setShowReport] = useState(false);
@@ -893,6 +904,22 @@ function AuthedApp({
     [unallocatedTx],
   );
 
+  // Boek een openstaande maandelijkse storting: reserveer geld van de kaart in
+  // het potje (net-nul move) en markeer 'm als geboekt zodat 'ie deze maand niet
+  // opnieuw verschijnt.
+  const handleBookStorting = useCallback(
+    async (plan: RecurringPlan) => {
+      const today = new Date().toISOString().slice(0, 10);
+      const res = await store.allocateFromCard({
+        allocations: [{ toPotId: plan.pot_id, amount: plan.amount }],
+        occurredOn: today,
+        counterparty: plan.counterparty || "Storting",
+      });
+      if (!res.error) await markStortingBooked(plan.id, today);
+    },
+    [store, markStortingBooked],
+  );
+
   // Wacht op de eerste org-fetch én op het afhandelen van openstaande invites,
   // zodat een net-uitgenodigde user niet kortstondig het onboarding-scherm ziet
   // voordat accepteren + refetch klaar zijn.
@@ -1060,6 +1087,7 @@ function AuthedApp({
                   store.deletePot(selectedPot.id);
                   setSelectedPotId(null);
                 }}
+                recurringPlans={recurringPlans}
               />
             ) : selectedGroup ? (
               <GroupDetail
@@ -1193,6 +1221,11 @@ function AuthedApp({
                 }}
                 onOpenInbox={isAdmin ? () => setShowInbox(true) : undefined}
                 onDistribute={isAdmin ? () => setShowDistribute(true) : undefined}
+                recurringPlans={recurringPlans}
+                onBookStorting={isAdmin ? handleBookStorting : undefined}
+                onManageRecurring={
+                  isAdmin ? () => setShowRecurring(true) : undefined
+                }
                 onSetOpeningBalance={
                   isAdmin ? () => setShowOpeningBalance(true) : undefined
                 }
@@ -1332,6 +1365,22 @@ function AuthedApp({
       </Modal>
 
       <Modal
+        open={showRecurring}
+        title="Terugkerende boekingen"
+        onClose={() => setShowRecurring(false)}
+      >
+        {showRecurring && (
+          <RecurringPlansPanel
+            pots={potsForUser}
+            plans={recurringPlans}
+            onAdd={addPlan}
+            onUpdate={updatePlan}
+            onRemove={removePlan}
+          />
+        )}
+      </Modal>
+
+      <Modal
         open={showWizard}
         title="Snel opzetten"
         onClose={() => setShowWizard(false)}
@@ -1371,6 +1420,7 @@ function AuthedApp({
             pots={potsForUser}
             allowUnallocated={!!isAdmin}
             counterpartyPotHints={counterpartyPotHints}
+            recurringPlans={recurringPlans}
             onImport={(inputs) => store.importTransactions(inputs)}
             onClose={() => setShowImport(false)}
           />
