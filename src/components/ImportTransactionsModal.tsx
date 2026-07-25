@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Pot } from "../types";
-import type { TransactionInput } from "../data";
+import { matchRecurringPlan, type RecurringPlan, type TransactionInput } from "../data";
 import {
   guessColumns,
   normalizeCounterparty,
@@ -20,6 +20,8 @@ type Props = {
    * Rijen met een bekende tegenpartij worden zo automatisch voorgesteld.
    */
   counterpartyPotHints?: Record<string, string>;
+  /** Actieve domiciliëringen, om afhoudingen automatisch te herkennen. */
+  recurringPlans?: RecurringPlan[];
   onImport: (
     inputs: TransactionInput[],
   ) => Promise<{ error: string | null; count: number }>;
@@ -63,6 +65,7 @@ export function ImportTransactionsModal({
   pots,
   allowUnallocated,
   counterpartyPotHints = {},
+  recurringPlans = [],
   onImport,
   onClose,
 }: Props) {
@@ -85,25 +88,6 @@ export function ImportTransactionsModal({
   const [rowPot, setRowPot] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Seed het potje per rij. Standaard volgt elke rij de bulk-keuze. Staat die
-  // op "Onverdeeld" en is de tegenpartij bekend uit eerdere toewijzingen, dan
-  // stellen we dat potje meteen voor. Kies je expliciet een bulk-potje, dan
-  // gaan alle rijen daarheen.
-  useEffect(() => {
-    setRowPot(
-      rows.map((r) => {
-        if (targetPot === UNALLOCATED && cols.counterparty >= 0) {
-          const cp = (r[cols.counterparty] ?? "").trim();
-          const hint = cp
-            ? counterpartyPotHints[normalizeCounterparty(cp)]
-            : undefined;
-          if (hint && pots.some((p) => p.id === hint)) return hint;
-        }
-        return targetPot;
-      }),
-    );
-  }, [rows, cols, targetPot, counterpartyPotHints, pots]);
 
   // Reset bij sluiten zodat een volgende import schoon start.
   useEffect(() => {
@@ -151,6 +135,53 @@ export function ImportTransactionsModal({
       return { occurredOn, amount, counterparty, memo, valid };
     });
   }, [step, rows, cols]);
+
+  // Herken domiciliëringen: per rij de bijhorende actieve domiciliëring (of null).
+  const matches = useMemo(() => {
+    if (recurringPlans.length === 0) return preview.map(() => null);
+    return preview.map((p) => {
+      if (!p.valid || p.amount === null || !p.occurredOn) return null;
+      const dir =
+        dirMode === "all_in"
+          ? "in"
+          : dirMode === "all_out"
+            ? "out"
+            : p.amount < 0
+              ? "out"
+              : "in";
+      return matchRecurringPlan(
+        {
+          counterparty: p.counterparty,
+          amount: Math.abs(p.amount),
+          direction: dir,
+          occurredOn: p.occurredOn,
+        },
+        recurringPlans,
+      );
+    });
+  }, [preview, recurringPlans, dirMode]);
+
+  // Seed de per-rij toewijzing, in volgorde van zekerheid:
+  //   1. een herkende domiciliëring (bedrag + datum + tegenpartij kloppen),
+  //   2. een tegenpartij die je eerder al aan een potje toewees,
+  //   3. de bulk-keuze.
+  // Een expliciet gekozen bulk-potje overstemt de hints (2), maar niet een
+  // herkende domiciliëring (1): die hoort per definitie bij één potje.
+  useEffect(() => {
+    setRowPot(
+      preview.map((p, i) => {
+        const match = matches[i];
+        if (match && pots.some((pot) => pot.id === match.pot_id)) {
+          return match.pot_id;
+        }
+        if (targetPot === UNALLOCATED && p.counterparty) {
+          const hint = counterpartyPotHints[normalizeCounterparty(p.counterparty)];
+          if (hint && pots.some((pot) => pot.id === hint)) return hint;
+        }
+        return targetPot;
+      }),
+    );
+  }, [preview, matches, targetPot, counterpartyPotHints, pots]);
 
   const validRows = preview.filter((p) => p.valid);
   const invalidCount = preview.length - validRows.length;
@@ -367,7 +398,10 @@ export function ImportTransactionsModal({
                         const hintPotId = cpNorm
                           ? counterpartyPotHints[cpNorm]
                           : undefined;
+                        // Bij een herkende domiciliëring toont die badge al; geen
+                        // tweede "voorstel"-label erbij.
                         const suggested =
+                          !matches[i] &&
                           !!hintPotId &&
                           pots.some((pt) => pt.id === hintPotId) &&
                           (rowPot[i] ?? targetPot) === hintPotId;
@@ -384,6 +418,11 @@ export function ImportTransactionsModal({
                             <span className="block max-w-[14rem] truncate">
                               {p.counterparty || p.memo || "—"}
                             </span>
+                            {matches[i] && (
+                              <span className="mt-0.5 inline-block rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                                ✨ herkende domiciliëring
+                              </span>
+                            )}
                           </td>
                           <td
                             className={`whitespace-nowrap px-3 py-1.5 text-right font-semibold tabular-nums ${

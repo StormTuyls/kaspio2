@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { calcBalance, formatDate, formatEuro } from "../storage";
 import type { Member, Pot, PotGroup, Transaction, TransactionDirection } from "../types";
 import type { SubTier } from "../supabase";
-import { attachmentsEnabled, chartsEnabled } from "../data";
+import { attachmentsEnabled, chartsEnabled, type RecurringPlan } from "../data";
 import { Modal } from "../components/Modal";
 import { useConfirm } from "../components/ConfirmDialog";
 import { PotForm } from "../components/PotForm";
@@ -44,6 +44,8 @@ type Props = {
     groupId?: string | null;
   }) => void | Promise<void>;
   onDeletePot: () => void;
+  /** Actieve terugkerende boekingen (voor de reservering-indicator). */
+  recurringPlans?: RecurringPlan[];
 };
 
 type DirectionFilter = "all" | TransactionDirection;
@@ -66,6 +68,7 @@ export function PotDetail({
   onReassignTransactions,
   onUpdatePot,
   onDeletePot,
+  recurringPlans = [],
 }: Props) {
   const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
@@ -81,6 +84,11 @@ export function PotDetail({
   const canAddTransaction = currentUser.role !== "reader";
 
   const balance = calcBalance(transactions, pot.id);
+  // Domiciliëringen die op dit potje gereserveerd zijn (verwachte afhoudingen).
+  const domicilieringen = recurringPlans.filter(
+    (p) => p.active && p.kind === "domiciliering" && p.pot_id === pot.id,
+  );
+  const reservedTotal = domicilieringen.reduce((s, p) => s + p.amount, 0);
   const potTx = useMemo(
     () =>
       transactions
@@ -267,6 +275,24 @@ export function PotDetail({
             </p>
           </div>
         </div>
+
+        {reservedTotal > 0 && (
+          <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-2.5 text-sm dark:border-amber-900/50 dark:bg-amber-900/15">
+            <span className="font-num font-bold tabular-nums text-amber-800 dark:text-amber-200">
+              {formatEuro(reservedTotal)}
+            </span>
+            <span className="text-amber-700 dark:text-amber-300">
+              gereserveerd voor{" "}
+              {domicilieringen.length === 1
+                ? domicilieringen[0].counterparty || "een domiciliëring"
+                : `${domicilieringen.length} domiciliëringen`}
+              {domicilieringen.length === 1
+                ? ` (rond de ${domicilieringen[0].day_of_month}e)`
+                : ""}
+              . Komt binnen via je bankimport.
+            </span>
+          </div>
+        )}
 
         {progress !== null && (
           <div className="mt-5">

@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { calcBalance, formatDate, formatEuro } from "../storage";
 import type { Member, Pot, PotGroup, Transaction } from "../types";
 import type { SubTier } from "../supabase";
-import { chartsEnabled } from "../data";
+import { chartsEnabled, isStortingDue, type RecurringPlan } from "../data";
 import { CashflowChart } from "../components/CashflowChart";
 import { UpgradeHint } from "../components/UpgradeHint";
 import { BankCard } from "../components/BankCard";
@@ -25,6 +25,12 @@ type Props = {
   onOpenInbox?: () => void;
   /** Verdeel het geld op de kaart volgens de percentages (admin). */
   onDistribute?: () => void;
+  /** Terugkerende boekingen (stortingen/domiciliëringen). */
+  recurringPlans?: RecurringPlan[];
+  /** Boek een openstaande maandelijkse storting (admin). */
+  onBookStorting?: (plan: RecurringPlan) => void | Promise<void>;
+  /** Open het beheer van terugkerende boekingen (admin). */
+  onManageRecurring?: () => void;
   /** Beginsaldo instellen (admin): startbedrag dat al op de rekening stond. */
   onSetOpeningBalance?: () => void;
   /** Genereer een financieel rapport (PDF). Alleen aanwezig bij Pro+ admin. */
@@ -48,6 +54,9 @@ export function DashboardView({
   onNavigate,
   onOpenInbox,
   onDistribute,
+  recurringPlans = [],
+  onBookStorting,
+  onManageRecurring,
   onSetOpeningBalance,
   onExportReport,
   onApprove,
@@ -95,6 +104,17 @@ export function DashboardView({
   );
 
   const potById = new Map(pots.map((p) => [p.id, p] as const));
+
+  // Openstaande maandelijkse stortingen ("te bevestigen"). Alleen admins boeken.
+  const todayIso = (() => {
+    const d = new Date();
+    const p = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  })();
+  const dueStortingen = isAdmin
+    ? recurringPlans.filter((p) => isStortingDue(p, todayIso))
+    : [];
+
   const recent = [...txInScope]
     .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn))
     .slice(0, 8);
@@ -134,6 +154,11 @@ export function DashboardView({
           {onSetOpeningBalance && (
             <button onClick={onSetOpeningBalance} className="btn-secondary text-sm">
               Beginsaldo
+            </button>
+          )}
+          {onManageRecurring && (
+            <button onClick={onManageRecurring} className="btn-secondary text-sm">
+              Terugkerend
             </button>
           )}
           {onExportReport && (
@@ -181,6 +206,49 @@ export function DashboardView({
           onClick={onNavigate && isAdmin ? () => onNavigate("leden") : undefined}
         />
       </div>
+
+      {/* Te bevestigen: openstaande maandelijkse stortingen */}
+      {dueStortingen.length > 0 && onBookStorting && (
+        <div className="rounded-2xl border border-teal-200 bg-teal-50/70 p-4 dark:border-teal-900/50 dark:bg-teal-900/15">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-bold tracking-tight text-teal-900 dark:text-teal-200">
+            Te bevestigen
+            <span className="rounded-full bg-teal-100 px-2 py-0.5 font-num text-xs font-bold text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">
+              {dueStortingen.length}
+            </span>
+          </h2>
+          <ul className="space-y-2">
+            {dueStortingen.map((plan) => {
+              const potName = potById.get(plan.pot_id)?.name ?? "potje";
+              return (
+                <li
+                  key={plan.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-teal-100 bg-white px-3.5 py-2.5 dark:border-teal-900/40 dark:bg-navy-900"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-navy-900 dark:text-navy-50">
+                      Storting in {potName}
+                    </p>
+                    <p className="font-num text-xs text-navy-400 dark:text-navy-300">
+                      {plan.counterparty || "Maandelijkse storting"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-num text-sm font-bold tabular-nums text-teal-700 dark:text-teal-300">
+                      {formatEuro(plan.amount)}
+                    </span>
+                    <button
+                      onClick={() => onBookStorting(plan)}
+                      className="rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-teal-700"
+                    >
+                      Boek
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       {/* Onverdeeld geld */}
       {isAdmin && onOpenInbox && unallocated.length > 0 && (
