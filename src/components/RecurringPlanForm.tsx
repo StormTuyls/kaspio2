@@ -24,6 +24,12 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
     String(initial?.day_of_month ?? 1),
   );
   const [counterparty, setCounterparty] = useState(initial?.counterparty ?? "");
+  // Zelf-financierende domiciliëring: Kaspio zet het geld vooraf klaar.
+  const [reserve, setReserve] = useState(initial?.reserve_day != null);
+  const [reserveDay, setReserveDay] = useState(
+    String(initial?.reserve_day ?? 1),
+  );
+  const [autoBook, setAutoBook] = useState(initial?.auto_book ?? true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,6 +54,11 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
       setError("Geef de tegenpartij op zodat we de domiciliëring bij import herkennen.");
       return;
     }
+    const rDay = Math.round(Number(reserveDay));
+    if (isDom && reserve && (!Number.isFinite(rDay) || rDay < 1 || rDay > 31)) {
+      setError("Kies een reserveerdag tussen 1 en 31.");
+      return;
+    }
     setBusy(true);
     setError(null);
     const res = await onSubmit({
@@ -56,6 +67,8 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
       amount: amt,
       dayOfMonth: day,
       counterparty: counterparty.trim() || null,
+      reserveDay: isDom && reserve ? rDay : null,
+      autoBook,
     });
     if (res.error) {
       setError(res.error);
@@ -164,6 +177,68 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
           className="input"
         />
       </label>
+
+      {/* Zelf-financierende domiciliëring: kaart -> potje, vóór de afhouding. */}
+      {isDom && (
+        <div className="rounded-xl border border-navy-100 p-3.5 dark:border-navy-700">
+          <label className="flex cursor-pointer items-start gap-2.5">
+            <input
+              type="checkbox"
+              checked={reserve}
+              onChange={(e) => setReserve(e.target.checked)}
+              className="mt-0.5 h-4 w-4 flex-shrink-0 accent-teal-600"
+            />
+            <span className="text-sm">
+              <span className="font-medium text-navy-800 dark:text-navy-100">
+                Zet het geld vooraf klaar in dit potje
+              </span>
+              <span className="mt-0.5 block text-xs text-ink-muted dark:text-navy-300">
+                Kaspio verschuift het bedrag van de kaart naar dit potje. De
+                afhouding haalt het er daarna weer uit, dus het potje eindigt op
+                nul. Zonder dit hoef je zelf een aparte storting te maken.
+              </span>
+            </span>
+          </label>
+
+          {reserve && (
+            <label className="mt-3 flex items-center justify-between gap-3">
+              <span className="text-sm text-navy-700 dark:text-navy-200">
+                Klaarzetten op dag
+              </span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={31}
+                value={reserveDay}
+                onChange={(e) => setReserveDay(e.target.value)}
+                className="input w-20 text-right font-num tabular-nums"
+              />
+            </label>
+          )}
+        </div>
+      )}
+
+      {/* Automatisch boeken van de reservering (nooit van de echte afhouding). */}
+      {(!isDom || reserve) && (
+        <label className="flex cursor-pointer items-start gap-2.5">
+          <input
+            type="checkbox"
+            checked={autoBook}
+            onChange={(e) => setAutoBook(e.target.checked)}
+            className="mt-0.5 h-4 w-4 flex-shrink-0 accent-teal-600"
+          />
+          <span className="text-sm">
+            <span className="font-medium text-navy-800 dark:text-navy-100">
+              Automatisch boeken
+            </span>
+            <span className="mt-0.5 block text-xs text-ink-muted dark:text-navy-300">
+              Kaspio boekt dit zelf zodra de dag bereikt is. Uit? Dan verschijnt
+              het onder "Te bevestigen" en klik jij op Boek.
+            </span>
+          </span>
+        </label>
+      )}
 
       {error && (
         <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">

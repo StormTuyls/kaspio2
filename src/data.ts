@@ -797,6 +797,11 @@ export type RecurringPlan = {
   match_window_days: number;
   active: boolean;
   last_run_on: string | null;
+  /** Alleen bij 'domiciliering': dag waarop Kaspio het bedrag vanuit de kaart in
+   *  het potje reserveert. null = geen automatische financiering. */
+  reserve_day: number | null;
+  /** true = Kaspio boekt de reservering zelf; false = jij bevestigt met 1 klik. */
+  auto_book: boolean;
   created_at: string;
 };
 
@@ -807,6 +812,8 @@ export type RecurringPlanInput = {
   dayOfMonth: number;
   counterparty?: string | null;
   matchWindowDays?: number;
+  reserveDay?: number | null;
+  autoBook?: boolean;
 };
 
 /** Normaliseer een tegenpartij-naam voor herkenning (kleine letters, trim, spaties). */
@@ -875,13 +882,28 @@ export function matchRecurringPlan(
   return candidates[0];
 }
 
-/** Is deze storting deze maand "te bevestigen"? (dag bereikt + nog niet geboekt) */
-export function isStortingDue(plan: RecurringPlan, today: string): boolean {
-  if (!plan.active || plan.kind !== "storting") return false;
+/**
+ * Op welke dag van de maand hoort de reservering (kaart -> potje) te gebeuren?
+ * - 'storting': altijd, op day_of_month.
+ * - 'domiciliering': enkel als reserve_day gezet is (zelf-financierende
+ *   domiciliëring). Zonder reserve_day reserveert Kaspio niks en toont ze de
+ *   verwachte afhouding alleen als indicatie.
+ * null = deze regel reserveert nooit.
+ */
+export function reservationDay(plan: RecurringPlan): number | null {
+  if (plan.kind === "storting") return plan.day_of_month;
+  return plan.reserve_day ?? null;
+}
+
+/** Is de reservering van deze regel deze maand nog te boeken? */
+export function isReservationDue(plan: RecurringPlan, today: string): boolean {
+  if (!plan.active) return false;
+  const day = reservationDay(plan);
+  if (day === null) return false;
   const d = new Date(`${today}T00:00:00`);
-  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-  const dueDay = Math.min(plan.day_of_month, last);
-  if (d.getDate() < dueDay) return false;
+  const lastOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  // Dag 31 in een korte maand valt terug op de laatste dag.
+  if (d.getDate() < Math.min(day, lastOfMonth)) return false;
   if (plan.last_run_on) {
     const lr = new Date(`${plan.last_run_on}T00:00:00`);
     if (lr.getFullYear() === d.getFullYear() && lr.getMonth() === d.getMonth()) {
@@ -925,6 +947,8 @@ export function useRecurringPlans(orgId: string | null) {
           match_window_days: r.match_window_days ?? 5,
           active: r.active ?? true,
           last_run_on: r.last_run_on ?? null,
+          reserve_day: r.reserve_day ?? null,
+          auto_book: r.auto_book ?? true,
           created_at: r.created_at,
         })),
       );
@@ -952,6 +976,9 @@ export function useRecurringPlans(orgId: string | null) {
       day_of_month: input.dayOfMonth,
       counterparty: input.counterparty?.trim() || null,
       match_window_days: input.matchWindowDays ?? 5,
+      // Alleen een domiciliëring kan zichzelf financieren vanuit de kaart.
+      reserve_day: input.kind === "domiciliering" ? input.reserveDay ?? null : null,
+      auto_book: input.autoBook ?? true,
     };
     const { error } = await (
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -975,7 +1002,11 @@ export function useRecurringPlans(orgId: string | null) {
       row.counterparty = patch.counterparty?.trim() || null;
     if (patch.matchWindowDays !== undefined)
       row.match_window_days = patch.matchWindowDays;
+    if (patch.reserveDay !== undefined) row.reserve_day = patch.reserveDay;
+    if (patch.autoBook !== undefined) row.auto_book = patch.autoBook;
     if (patch.active !== undefined) row.active = patch.active;
+    // Een storting reserveert via day_of_month; reserve_day hoort daar niet.
+    if (patch.kind === "storting") row.reserve_day = null;
     const { error } = await (
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       supabase.from("recurring_plans") as any
@@ -997,20 +1028,43 @@ export function useRecurringPlans(orgId: string | null) {
     return { error: null };
   }
 
-  /** Markeer een storting als geboekt voor deze maand (voorkomt dubbel boeken). */
-  async function markStortingBooked(
-    id: string,
-    date: string,
-  ): Promise<{ error: string | null }> {
-    const { error } = await (
+  /**
+   * Claim de reservering van deze maand, atomair. Zet last_run_on maar ALLEEN
+   * als die nog niet in de huidige maand valt; de voorwaarde zit in de WHERE,
+   * dus twee tabbladen of twee beheerders kunnen nooit allebei winnen.
+   * Returnt true als wij de claim wonnen en dus mogen boeken.
+   */
+  async function claimReservation(id: string, date: string): Promise<boolean> {
+    const monthStart = `${date.slice(0, 7)}-01`;
+    const { data, error } = await (
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       supabase.from("recurring_plans") as any
     )
       .update({ last_run_on: date })
+      .eq("id", id)
+      .or(`last_run_on.is.null,last_run_on.lt.${monthStart}`)
+      .select("id");
+    if (error) {
+      console.warn("[Kaspio] claimReservation failed:", error.message);
+      return false;
+    }
+    const won = Array.isArray(data) && data.length === 1;
+    if (won) await fetchPlans();
+    return won;
+  }
+
+  /** Geef de claim terug als het boeken zelf faalde (anders blijft 'ie hangen). */
+  async function releaseReservation(
+    id: string,
+    previous: string | null,
+  ): Promise<void> {
+    await (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      supabase.from("recurring_plans") as any
+    )
+      .update({ last_run_on: previous })
       .eq("id", id);
-    if (error) return { error: error.message };
     await fetchPlans();
-    return { error: null };
   }
 
   return {
@@ -1019,7 +1073,8 @@ export function useRecurringPlans(orgId: string | null) {
     addPlan,
     updatePlan,
     removePlan,
-    markStortingBooked,
+    claimReservation,
+    releaseReservation,
     refresh: fetchPlans,
   };
 }
