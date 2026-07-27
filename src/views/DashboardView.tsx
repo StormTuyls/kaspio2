@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { calcBalance, formatDate, formatEuro } from "../storage";
 import type { Member, Pot, PotGroup, Transaction } from "../types";
 import type { SubTier } from "../supabase";
-import { chartsEnabled, isStortingDue, type RecurringPlan } from "../data";
+import { chartsEnabled, isReservationDue, type RecurringPlan } from "../data";
 import { CashflowChart } from "../components/CashflowChart";
 import { UpgradeHint } from "../components/UpgradeHint";
 import { BankCard } from "../components/BankCard";
@@ -111,8 +111,9 @@ export function DashboardView({
     const p = (n: number) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
   })();
+  // Enkel de handmatige regels; automatische boekt de app zelf (zie App.tsx).
   const dueStortingen = isAdmin
-    ? recurringPlans.filter((p) => isStortingDue(p, todayIso))
+    ? recurringPlans.filter((p) => !p.auto_book && isReservationDue(p, todayIso))
     : [];
 
   const recent = [...txInScope]
@@ -226,7 +227,9 @@ export function DashboardView({
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-navy-900 dark:text-navy-50">
-                      Storting in {potName}
+                      {plan.kind === "domiciliering"
+                        ? `Zet ${plan.counterparty || "de domiciliëring"} klaar in ${potName}`
+                        : `Storting in ${potName}`}
                     </p>
                     <p className="font-num text-xs text-navy-400 dark:text-navy-300">
                       {plan.counterparty || "Maandelijkse storting"}
