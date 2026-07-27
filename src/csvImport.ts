@@ -136,6 +136,15 @@ export function parseDate(raw: string): string | null {
   return null;
 }
 
+/**
+ * Normaliseer een tegenpartij zodat kleine verschillen (hoofdletters, dubbele
+ * spaties) hetzelfde matchen. Gebruikt om import-rijen te koppelen aan het
+ * potje waar je eerdere transacties van dezelfde tegenpartij aan toewees.
+ */
+export function normalizeCounterparty(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
 export type ColumnKey = "date" | "amount" | "counterparty" | "memo";
 
 /** Raad welke kolom-index bij welk veld hoort op basis van de header-naam. */
@@ -161,9 +170,10 @@ export function guessColumns(headers: string[]): Record<ColumnKey, number> {
     // Boekdatum vóór valutadatum.
     date: findFirst([/boekdatum/, /datum/, /date/], [/valuta/]),
     amount: find([/bedrag/, /amount/, /som/, /mutatie/]),
-    // Eerst een echte tegenpartij-/begunstigde-NAAM; pas als die er niet is,
-    // val terug op een generieke naamkolom. "rekeningnummer/bic tegenpartij"
-    // worden bewust overgeslagen (dat is geen naam).
+    // Eerst een echte tegenpartij-/begunstigde-NAAM; dan een kolom die exact
+    // "tegenpartij" heet (ons eigen voorbeeldformaat); pas daarna een generieke
+    // naamkolom. "rekeningnummer/bic tegenpartij" worden bewust overgeslagen
+    // (dat is geen naam), daarom matcht groep 2 exact en niet met /tegenpartij/.
     counterparty: findFirst(
       [
         /naam.*tegenpartij/,
@@ -173,6 +183,7 @@ export function guessColumns(headers: string[]): Record<ColumnKey, number> {
         /counterpart/,
         /payee/,
       ],
+      [/^\s*tegenpartij\s*$/],
       [/naam/, /name/],
     ),
     memo: find([/mededeling/, /omschrijving/, /memo/, /communicatie/, /detail/, /description/]),
