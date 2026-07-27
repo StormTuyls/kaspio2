@@ -170,9 +170,10 @@ export function guessColumns(headers: string[]): Record<ColumnKey, number> {
     // Boekdatum vóór valutadatum.
     date: findFirst([/boekdatum/, /datum/, /date/], [/valuta/]),
     amount: find([/bedrag/, /amount/, /som/, /mutatie/]),
-    // Eerst een echte tegenpartij-/begunstigde-NAAM; pas als die er niet is,
-    // val terug op een generieke naamkolom. "rekeningnummer/bic tegenpartij"
-    // worden bewust overgeslagen (dat is geen naam).
+    // Eerst een echte tegenpartij-/begunstigde-NAAM; dan een kolom die exact
+    // "tegenpartij" heet (ons eigen voorbeeldformaat); pas daarna een generieke
+    // naamkolom. "rekeningnummer/bic tegenpartij" worden bewust overgeslagen
+    // (dat is geen naam), daarom matcht groep 2 exact en niet met /tegenpartij/.
     counterparty: findFirst(
       [
         /naam.*tegenpartij/,
@@ -182,6 +183,7 @@ export function guessColumns(headers: string[]): Record<ColumnKey, number> {
         /counterpart/,
         /payee/,
       ],
+      [/^\s*tegenpartij\s*$/],
       [/naam/, /name/],
     ),
     memo: find([/mededeling/, /omschrijving/, /memo/, /communicatie/, /detail/, /description/]),
