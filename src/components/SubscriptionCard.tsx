@@ -30,6 +30,9 @@ export function SubscriptionCard({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const limits = TIER_LIMITS[tier];
+  // Zelfde regel als in de create-checkout-session function: een org die nog
+  // nooit een Stripe-abonnement had, krijgt de proefmaand.
+  const trialEligible = tier === "free" && !hasStripeBilling;
 
   async function upgrade(target: "pro" | "team") {
     setError(null);
@@ -117,7 +120,8 @@ export function SubscriptionCard({
               price={yearly ? "€3,20" : "€4"}
               suffix="/maand"
               features={["Onbeperkt potjes", "Onbeperkt leden", "Grafieken & bankkoppeling"]}
-              cta="Upgrade naar Pro"
+              cta={trialEligible ? "Start gratis maand" : "Upgrade naar Pro"}
+              trial={trialEligible}
               ctaStyle="fill"
               disabled={!isAdmin || busy !== null}
               busy={busy === "pro"}
@@ -134,13 +138,21 @@ export function SubscriptionCard({
                 "Bijlagen (bonnetjes & facturen)",
                 "Meerdere beheerders",
               ]}
-              cta="Upgrade naar Team"
+              cta={trialEligible ? "Start gratis maand" : "Upgrade naar Team"}
+              trial={trialEligible}
               ctaStyle="amber"
               disabled={!isAdmin || busy !== null}
               busy={busy === "team"}
               onClick={() => upgrade("team")}
             />
           </div>
+          {trialEligible && (
+            <p className="mt-3 text-xs text-navy-400 dark:text-navy-500">
+              Je geeft je kaartgegevens nu al op, maar de eerste maand wordt
+              niets aangerekend. Opzeggen tijdens de proefmaand kan altijd, dan
+              betaal je niks.
+            </p>
+          )}
           {!isAdmin && (
             <p className="mt-3 text-xs text-navy-400">
               Alleen een beheerder kan het abonnement wijzigen.
@@ -194,6 +206,7 @@ function PlanOption({
   features,
   cta,
   ctaStyle,
+  trial = false,
   disabled,
   busy,
   onClick,
@@ -204,6 +217,8 @@ function PlanOption({
   features: string[];
   cta: string;
   ctaStyle: "fill" | "amber";
+  /** Toon de proefmaand bij dit plan. */
+  trial?: boolean;
   disabled: boolean;
   busy: boolean;
   onClick: () => void;
@@ -215,6 +230,12 @@ function PlanOption({
         <span className="text-lg font-extrabold text-navy-900 dark:text-white">{price}</span>
         <span className="text-xs text-navy-400">{suffix}</span>
       </div>
+      {trial && (
+        <p className="mb-2 text-xs font-semibold text-teal-600 dark:text-teal-400">
+          Eerste maand gratis, daarna {price}
+          {suffix}
+        </p>
+      )}
       <ul className="mb-3 space-y-1 text-xs text-navy-500 dark:text-navy-300">
         {features.map((f) => (
           <li key={f} className="flex items-center gap-1.5">

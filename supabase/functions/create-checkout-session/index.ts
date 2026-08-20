@@ -4,6 +4,9 @@
 // Maakt een Stripe Checkout-sessie voor een org-upgrade (Pro/Team, maand/jaar)
 // en geeft de checkout-URL terug. Alleen een admin van de org mag dit.
 //
+// Orgs die nog nooit een Stripe-abonnement hadden krijgen een proefperiode van
+// TRIAL_DAYS dagen (zie trialEligible hieronder).
+//
 // Aangeroepen vanuit de frontend via supabase.functions.invoke(
 //   "create-checkout-session", { body: { orgId, tier, interval } }).
 // JWT-verificatie staat AAN (alleen ingelogde users).
@@ -20,6 +23,9 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@16?target=deno";
+
+/** Proefperiode voor een eerste betaald abonnement (Pro én Team, maand én jaar). */
+const TRIAL_DAYS = 30;
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -92,9 +98,14 @@ Deno.serve(async (req: Request) => {
     // Bestaande Stripe-customer hergebruiken of aanmaken
     const { data: sub } = await admin
       .from("subscriptions")
-      .select("stripe_customer_id")
+      .select("stripe_customer_id, stripe_subscription_id")
       .eq("organisation_id", orgId)
       .maybeSingle();
+
+    // Eén proefmaand per org. Had deze org al eens een Stripe-abonnement, dan
+    // geen trial meer, anders kan je met opzeggen + opnieuw starten eindeloos
+    // gratis blijven. Zelfde signaal als `hasStripeBilling` in de frontend.
+    const trialEligible = !sub?.stripe_subscription_id;
 
     let customerId = sub?.stripe_customer_id as string | null | undefined;
     if (!customerId) {
@@ -116,7 +127,13 @@ Deno.serve(async (req: Request) => {
       success_url: `${appUrl}/?upgrade=success`,
       cancel_url: `${appUrl}/?upgrade=cancel`,
       metadata: { organisation_id: orgId, tier },
-      subscription_data: { metadata: { organisation_id: orgId, tier } },
+      subscription_data: {
+        metadata: { organisation_id: orgId, tier },
+        // Checkout blijft een betaalmethode vragen (default
+        // payment_method_collection: "always"), dus na de proefmaand loopt de
+        // eerste afrekening automatisch.
+        ...(trialEligible ? { trial_period_days: TRIAL_DAYS } : {}),
+      },
       allow_promotion_codes: true,
     });
 
