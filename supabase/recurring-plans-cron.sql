@@ -28,10 +28,19 @@ create extension if not exists pg_cron;
 -- clients (zie de grants onderaan): er is geen org-parameter, dus wie ze mag
 -- draaien, draait ze voor alle organisaties.
 --
--- p_run_date bestaat om te kunnen testen ("wat zou er op 15 september gebeuren?")
--- zonder de systeemklok aan te raken.
-create or replace function public.book_due_reservations(p_run_date date default current_date)
-returns integer
+-- p_run_date verschuift de "vandaag" van de functie. Gebruik die ALTIJD samen met
+-- p_dry_run => true: zonder dry run boekt een datum in de toekomst er ook echt
+-- op, en zet ze last_run_on vooruit, waardoor die maand later overgeslagen wordt.
+-- Dry run schrijft niets en geeft enkel terug wat er geboekt zou worden.
+-- Oude versie met enkel een datum-parameter opruimen: die gaf een integer terug,
+-- en zolang beide bestaan is een aanroep zonder argumenten dubbelzinnig.
+drop function if exists public.book_due_reservations(date);
+
+create or replace function public.book_due_reservations(
+  p_run_date date    default current_date,
+  p_dry_run  boolean default false
+)
+returns table (plan_id uuid, potje_id uuid, omschrijving text, bedrag numeric, boekdatum date, geboekt boolean)
 language plpgsql
 security definer
 set search_path = public
@@ -42,7 +51,6 @@ declare
   v_due_on      date;
   v_group       uuid;
   v_label       text;
-  v_count       int  := 0;
   v_month_start date := date_trunc('month', p_run_date)::date;
   v_last_day    int  := extract(day from (date_trunc('month', p_run_date) + interval '1 month - 1 day'))::int;
 begin
@@ -68,6 +76,16 @@ begin
     -- Nog niet aan de beurt deze maand.
     continue when v_due_on > p_run_date;
 
+    v_label := coalesce(nullif(btrim(v_plan.counterparty), ''), 'Reservering');
+
+    -- Dry run: enkel rapporteren, niets claimen en niets boeken.
+    if p_dry_run then
+      plan_id := v_plan.id; potje_id := v_plan.pot_id; omschrijving := v_label;
+      bedrag := v_plan.amount; boekdatum := v_due_on; geboekt := false;
+      return next;
+      continue;
+    end if;
+
     -- Claim eerst, boek daarna. De voorwaarde staat in de WHERE, dus twee
     -- gelijktijdige runs (of een run naast een klik in de browser) kunnen nooit
     -- allebei winnen.
@@ -78,7 +96,6 @@ begin
     continue when not found;
 
     v_group := gen_random_uuid();
-    v_label := coalesce(nullif(btrim(v_plan.counterparty), ''), 'Reservering');
 
     -- occurred_on is de reserveerdag zelf, niet de dag waarop de cron draait.
     -- Draait de cron een dag te laat, dan staat de boeking toch op de juiste dag.
@@ -88,18 +105,18 @@ begin
       (v_plan.organisation_id, null,          v_plan.amount, 'out', v_due_on, v_label, v_group),
       (v_plan.organisation_id, v_plan.pot_id, v_plan.amount, 'in',  v_due_on, v_label, v_group);
 
-    v_count := v_count + 1;
+    plan_id := v_plan.id; potje_id := v_plan.pot_id; omschrijving := v_label;
+    bedrag := v_plan.amount; boekdatum := v_due_on; geboekt := true;
+    return next;
   end loop;
-
-  return v_count;
 end;
 $$;
 
-comment on function public.book_due_reservations(date) is
-  'Boekt de maandelijkse reserveringen (hoofdpot -> potje) van alle actieve recurring_plans met auto_book. Draait via pg_cron; niet aanroepbaar door clients.';
+comment on function public.book_due_reservations(date, boolean) is
+  'Boekt de maandelijkse reserveringen (hoofdpot -> potje) van alle actieve recurring_plans met auto_book, en geeft per regel terug wat er gebeurde. Met p_dry_run => true schrijft ze niets. Draait via pg_cron; niet aanroepbaar door clients.';
 
 -- Clients mogen dit niet draaien: de functie kent geen org-grens.
-revoke all on function public.book_due_reservations(date) from public, anon, authenticated;
+revoke all on function public.book_due_reservations(date, boolean) from public, anon, authenticated;
 
 -- -----------------------------------------------------------------------------
 -- 2. Dagelijks draaien
@@ -112,13 +129,17 @@ select cron.unschedule('kaspio-reserveringen')
 select cron.schedule(
   'kaspio-reserveringen',
   '0 4 * * *',
-  $$ select public.book_due_reservations(); $$
+  $$ select * from public.book_due_reservations(); $$
 );
 
 -- Verificatie:
 --   select jobname, schedule, active from cron.job where jobname = 'kaspio-reserveringen';
---   select public.book_due_reservations();               -- nu draaien, geeft aantal geboekte regels
---   select public.book_due_reservations('2026-09-20');   -- doen alsof het 20 september is
+--   select * from public.book_due_reservations();                       -- nu boeken (schrijft!)
+--   select * from public.book_due_reservations(current_date, true);      -- alleen tonen, schrijft niets
+--   select * from public.book_due_reservations('2026-09-20', true);      -- idem, alsof het 20 september is
+--
+-- LET OP: een datum zonder true erachter boekt die datum ook echt, ook als ze in
+-- de toekomst ligt. Gebruik voor "wat zou er gebeuren" altijd de dry run.
 --   select status, return_message, start_time from cron.job_run_details
 --     where jobid = (select jobid from cron.job where jobname = 'kaspio-reserveringen')
 --     order by start_time desc limit 5;
