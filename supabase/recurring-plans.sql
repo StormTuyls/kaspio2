@@ -4,7 +4,7 @@
 -- =============================================================================
 -- Twee soorten terugkerende geldstromen rond een potje:
 --
---   'storting'      = intern: elke maand geld van de kaart (onverdeeld) naar een
+--   'storting'      = intern: elke maand geld uit de hoofdpot (onverdeeld) naar een
 --                     potje reserveren. Wordt met één klik geboekt (net-nul move,
 --                     via allocateFromCard). last_run_on voorkomt dubbel boeken
 --                     binnen dezelfde maand.
@@ -45,7 +45,7 @@ create index if not exists recurring_plans_pot_idx
 alter table public.recurring_plans enable row level security;
 
 -- Leden van de org zien de plannen (reserveringen zijn zichtbaar); enkel admins
--- beheren ze. Consistent met wie het onverdeelde geld / de kaart beheert.
+-- beheren ze. Consistent met wie het onverdeelde geld / de hoofdpot beheert.
 drop policy if exists "recurring_plans_select_for_members" on public.recurring_plans;
 create policy "recurring_plans_select_for_members"
   on public.recurring_plans for select

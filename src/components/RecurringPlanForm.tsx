@@ -106,7 +106,7 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
       <p className="text-sm text-ink-muted dark:text-navy-300">
         {isDom
           ? "Een vaste afhouding (bv. verzekering) die de bank echt doet. Kaspio boekt ze niet zelf, maar reserveert het bedrag in dit potje en herkent de transactie bij import."
-          : "Reserveer elke maand geld van de kaart in dit potje. Je bevestigt de storting met één klik op het dashboard."}
+          : "Reserveer elke maand geld uit de hoofdpot in dit potje. Je bevestigt de storting met één klik op het dashboard."}
       </p>
 
       <label className="block">
@@ -178,7 +178,7 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
         />
       </label>
 
-      {/* Zelf-financierende domiciliëring: kaart -> potje, vóór de afhouding. */}
+      {/* Zelf-financierende domiciliëring: hoofdpot -> potje, vóór de afhouding. */}
       {isDom && (
         <div className="rounded-xl border border-navy-100 p-3.5 dark:border-navy-700">
           <label className="flex cursor-pointer items-start gap-2.5">
@@ -193,7 +193,7 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
                 Zet het geld vooraf klaar in dit potje
               </span>
               <span className="mt-0.5 block text-xs text-ink-muted dark:text-navy-300">
-                Kaspio verschuift het bedrag van de kaart naar dit potje. De
+                Kaspio verschuift het bedrag uit de hoofdpot naar dit potje. De
                 afhouding haalt het er daarna weer uit, dus het potje eindigt op
                 nul. Zonder dit hoef je zelf een aparte storting te maken.
               </span>

@@ -23,7 +23,7 @@ type Props = {
   onNavigate?: (tab: "potjes" | "groepen" | "leden") => void;
   /** Open de "Nog toe te wijzen" inbox (admin). */
   onOpenInbox?: () => void;
-  /** Verdeel het geld op de kaart volgens de percentages (admin). */
+  /** Verdeel het geld uit de hoofdpot volgens de percentages (admin). */
   onDistribute?: () => void;
   /** Terugkerende boekingen (stortingen/domiciliëringen). */
   recurringPlans?: RecurringPlan[];
@@ -97,7 +97,14 @@ export function DashboardView({
     .filter((t) => t.direction === "out")
     .reduce((s, t) => s + t.amount, 0);
 
-  const unallocated = allTransactions.filter((t) => t.potId === null);
+  // Hoofdpot: alles zonder potje. Het saldo bevat ook de uit-regels van een
+  // verdeling; de "toe te wijzen"-lijst niet, want die regels zijn al verdeeld.
+  const hoofdpotTx = allTransactions.filter((t) => t.potId === null);
+  const hoofdpotTotal = hoofdpotTx.reduce(
+    (s, t) => s + (t.direction === "in" ? t.amount : -t.amount),
+    0,
+  );
+  const unallocated = hoofdpotTx.filter((t) => !t.transferGroup);
   const unallocatedTotal = unallocated.reduce(
     (s, t) => s + (t.direction === "in" ? t.amount : -t.amount),
     0,
@@ -177,7 +184,7 @@ export function DashboardView({
           <BankCard
             label={seesAll ? "Totaal saldo" : "Mijn saldo"}
             total={total}
-            unallocated={unallocatedTotal}
+            unallocated={hoofdpotTotal}
             potCount={pots.length}
             groupCount={groups.length}
             onDistribute={isAdmin ? onDistribute : undefined}

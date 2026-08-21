@@ -5,18 +5,18 @@ type Props = {
   label: string;
   /** Volledig accountsaldo: alle potjes + onverdeeld = het echte banksaldo. */
   total: number;
-  /** Onverdeeld geld dat nog naar potjes moet ("nog te verdelen"). */
+  /** Saldo van de hoofdpot: geld dat nog naar potjes verdeeld moet worden. */
   unallocated: number;
   potCount: number;
   groupCount: number;
-  /** Aanwezig (admin) → toont de "Verdeel volgens %"-knop wanneer er te verdelen is. */
+  /** Aanwezig (admin) → toont de "Verdeel volgens %"-knop wanneer de hoofdpot positief staat. */
   onDistribute?: () => void;
 };
 
 /**
  * Het totaalsaldo als een bankkaart. Toont het volledige banksaldo, met apart
- * het "nog te verdelen" (onverdeelde) deel en, voor admins, de knop om dat in
- * één klik volgens de vaste percentages over de potjes te verdelen.
+ * de hoofdpot (het geld dat nog niet in een potje zit) en, voor admins, de knop
+ * om die in één klik volgens de vaste percentages over de potjes te verdelen.
  */
 export function BankCard({
   label,
@@ -26,8 +26,10 @@ export function BankCard({
   groupCount,
   onDistribute,
 }: Props) {
-  const hasUndistributed = unallocated > 0.004;
-  const showDistribute = Boolean(onDistribute) && hasUndistributed;
+  // Ook een negatieve hoofdpot tonen: dan is er meer verdeeld dan er binnenkwam
+  // en moet je dat kunnen zien. Verdelen kan enkel met geld in de hoofdpot.
+  const hasHoofdpot = Math.abs(unallocated) > 0.004;
+  const showDistribute = Boolean(onDistribute) && unallocated > 0.004;
 
   return (
     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-navy-800 via-navy-800 to-navy-950 p-6 text-white shadow-lg shadow-navy-900/25 sm:p-7">
@@ -68,11 +70,11 @@ export function BankCard({
       </div>
 
       {/* Nog te verdelen + verdeel-actie */}
-      {hasUndistributed && (
+      {hasHoofdpot && (
         <div className="relative mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/10 px-4 py-3 backdrop-blur-sm">
           <div>
             <p className="font-num text-[11px] font-semibold uppercase tracking-[0.16em] text-navy-200">
-              Nog te verdelen
+              Hoofdpot · nog te verdelen
             </p>
             <p className="font-num text-lg font-bold tabular-nums text-white">
               {formatEuro(unallocated)}

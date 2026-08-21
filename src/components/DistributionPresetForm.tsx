@@ -12,7 +12,7 @@ type Props = {
 
 /**
  * Stel de verdeel-preset in: per potje een percentage van het te verdelen geld.
- * De som mag niet boven 100%; wat overblijft blijft op de kaart staan.
+ * De som mag niet boven 100%; wat overblijft blijft in de hoofdpot staan.
  */
 export function DistributionPresetForm({
   pots,
@@ -62,7 +62,7 @@ export function DistributionPresetForm({
     <div className="space-y-4">
       <p className="text-sm text-ink-muted dark:text-navy-300">
         Kies per potje welk deel van het te verdelen geld het krijgt. Wat je niet
-        toewijst blijft op de kaart staan.
+        toewijst blijft in de hoofdpot staan.
       </p>
 
       {pots.length === 0 ? (
@@ -113,7 +113,7 @@ export function DistributionPresetForm({
             over ? "text-rose-600 dark:text-rose-400" : "text-navy-900 dark:text-white"
           }`}
         >
-          {formatPercent(total)} · {formatPercent(remaining)} op de kaart
+          {formatPercent(total)} · {formatPercent(remaining)} in de hoofdpot
         </span>
       </div>
 

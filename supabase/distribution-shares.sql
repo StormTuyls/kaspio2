@@ -3,11 +3,11 @@
 -- Run dit volledig in de Supabase SQL Editor (na schema.sql en de andere files).
 -- =============================================================================
 -- Een org-brede preset: per potje een percentage van het "nog te verdelen" geld
--- op de kaart. Wordt met één klik toegepast ("Verdeel volgens %"): het onverdeelde
+-- in de hoofdpot. Wordt met één klik toegepast ("Verdeel volgens %"): het onverdeelde
 -- geld wordt over de potjes verdeeld op basis van deze percentages.
 --
 -- De verdeling zelf gebeurt in de app als gekoppelde transacties (één 'out' op de
--- kaart / onverdeeld, één 'in' per potje, met hetzelfde transfer_group). Netto nul
+-- hoofdpot / onverdeeld, één 'in' per potje, met hetzelfde transfer_group). Netto nul
 -- op de rekening; enkel de verdeling over de potjes verschuift. Deze tabel bewaart
 -- enkel de standaard-percentages, niet de historiek.
 -- =============================================================================

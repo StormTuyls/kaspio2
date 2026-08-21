@@ -7,7 +7,7 @@
 --
 --   reserve_day  Alleen voor 'domiciliering'. Zet je die, dan hoort de
 --                domiciliëring zichzelf te financieren: op die dag verschuift
---                Kaspio het bedrag van de kaart (onverdeeld) naar het potje.
+--                Kaspio het bedrag uit de hoofdpot (onverdeeld) naar het potje.
 --                De echte afhouding haalt het er later weer uit via de
 --                bankimport. Zo hoef je geen aparte 'storting' meer te maken,
 --                maar dat blijft wél gewoon mogelijk.
@@ -16,7 +16,7 @@
 --                is. Uit = de reservering verschijnt onder "Te bevestigen" op
 --                het dashboard en jij klikt "Boek".
 --
--- Let op: enkel de reservering (kaart -> potje) wordt ooit automatisch geboekt.
+-- Let op: enkel de reservering (hoofdpot -> potje) wordt ooit automatisch geboekt.
 -- De echte afhouding boekt Kaspio nooit zelf; die komt via de bankimport binnen,
 -- anders zou ze dubbel tellen.
 -- =============================================================================

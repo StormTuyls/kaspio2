@@ -7,7 +7,7 @@ type Props = {
   pots: Pot[];
   /** De verdeel-preset: percentage per potje. */
   shares: { potId: string; percent: number }[];
-  /** Onverdeeld geld op de kaart ("nog te verdelen"). */
+  /** Saldo van de hoofdpot ("nog te verdelen"). */
   available: number;
   onDistribute: (
     allocations: { toPotId: string; amount: number }[],
@@ -18,7 +18,7 @@ type Props = {
 };
 
 /**
- * Verdeel het geld op de kaart in één klik volgens de opgeslagen percentages.
+ * Verdeel het geld uit de hoofdpot in één klik volgens de opgeslagen percentages.
  * Toont een voorbeeld (potje → % → bedrag) voor het bevestigen.
  */
 export function DistributeModal({
@@ -68,7 +68,7 @@ export function DistributeModal({
       <div className="space-y-4">
         <p className="text-sm text-ink-muted dark:text-navy-300">
           Je hebt nog geen verdeling ingesteld. Kies eerst per potje welk
-          percentage van het geld op de kaart het krijgt.
+          percentage van het geld in de hoofdpot het krijgt.
         </p>
         <div className="flex justify-end gap-2">
           <button onClick={onCancel} className="btn-secondary">
@@ -103,14 +103,14 @@ export function DistributeModal({
           />
         </div>
         <span className="mt-1 block text-xs text-ink-light">
-          Nog te verdelen op de kaart: {formatEuro(Math.max(0, available))}
+          Nog te verdelen in de hoofdpot: {formatEuro(Math.max(0, available))}
         </span>
       </label>
 
       {overAvailable && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-          Dit is meer dan er te verdelen staat. De kaart komt dan tijdelijk onder
-          nul; het banktotaal verandert niet.
+          Dit is meer dan er te verdelen staat. De hoofdpot komt dan tijdelijk
+          onder nul; het banktotaal verandert niet.
         </div>
       )}
 
@@ -152,7 +152,7 @@ export function DistributeModal({
         {allocations.length > 0 && (
           <div className="flex items-center justify-between border-t border-navy-100 px-4 py-2.5 text-sm dark:border-navy-700">
             <span className="text-ink-muted dark:text-navy-300">
-              Blijft op de kaart
+              Blijft in de hoofdpot
             </span>
             <span className="font-num font-semibold tabular-nums text-navy-700 dark:text-navy-200">
               {formatEuro(remaining)}

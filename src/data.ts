@@ -604,13 +604,13 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
   }
 
   /**
-   * Verdeel geld van de kaart (het onverdeelde geld, pot_id = null) over één of
-   * meerdere potjes. Maakt gekoppelde regels met hetzelfde transfer_group: één
-   * 'out' op de kaart voor het totaal, en één 'in' per potje. Netto nul op de
+   * Verdeel geld uit de hoofdpot (het onverdeelde geld, pot_id = null) over één
+   * of meerdere potjes. Maakt gekoppelde regels met hetzelfde transfer_group: één
+   * 'out' op de hoofdpot voor het totaal, en één 'in' per potje. Netto nul op de
    * rekening; enkel de verdeling verschuift. Gebruikt door de %-verdeling en
    * (later) de maandelijkse storting. Enkel admins (RLS op onverdeeld geld).
    */
-  async function allocateFromCard(input: {
+  async function allocateFromHoofdpot(input: {
     allocations: { toPotId: string; amount: number }[];
     occurredOn: string;
     counterparty?: string;
@@ -660,7 +660,7 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
     reassignTransactions,
     assignTransaction,
     transfer,
-    allocateFromCard,
+    allocateFromHoofdpot,
     refresh: fetchTransactions,
   };
 }
@@ -669,7 +669,7 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
 // useDistributionShares , de verdeel-preset (percentage per potje) van een org
 // =============================================================================
 
-/** Eén regel van de verdeel-preset: percentage van de kaart naar een potje. */
+/** Eén regel van de verdeel-preset: percentage van de hoofdpot naar een potje. */
 export type DistributionShare = {
   id: string;
   potId: string;
@@ -682,8 +682,8 @@ export type DistributionShare = {
  *
  * - Elke post krijgt round(amount * percent / 100).
  * - Tellen de percentages samen exact 100% op, dan vangt de laatste post de
- *   centen-afronding op zodat de som exact `amount` is (niks blijft op de kaart).
- * - Tellen ze op tot minder dan 100%, dan blijft de rest gewoon op de kaart.
+ *   centen-afronding op zodat de som exact `amount` is (niks blijft in de hoofdpot).
+ * - Tellen ze op tot minder dan 100%, dan blijft de rest gewoon in de hoofdpot.
  */
 export function computeShares(
   amount: number,
@@ -801,8 +801,8 @@ export type RecurringPlan = {
   match_window_days: number;
   active: boolean;
   last_run_on: string | null;
-  /** Alleen bij 'domiciliering': dag waarop Kaspio het bedrag vanuit de kaart in
-   *  het potje reserveert. null = geen automatische financiering. */
+  /** Alleen bij 'domiciliering': dag waarop Kaspio het bedrag vanuit de hoofdpot
+   *  in het potje reserveert. null = geen automatische financiering. */
   reserve_day: number | null;
   /** true = Kaspio boekt de reservering zelf; false = jij bevestigt met 1 klik. */
   auto_book: boolean;
@@ -887,7 +887,7 @@ export function matchRecurringPlan(
 }
 
 /**
- * Op welke dag van de maand hoort de reservering (kaart -> potje) te gebeuren?
+ * Op welke dag van de maand hoort de reservering (hoofdpot -> potje) te gebeuren?
  * - 'storting': altijd, op day_of_month.
  * - 'domiciliering': enkel als reserve_day gezet is (zelf-financierende
  *   domiciliëring). Zonder reserve_day reserveert Kaspio niks en toont ze de
@@ -980,7 +980,7 @@ export function useRecurringPlans(orgId: string | null) {
       day_of_month: input.dayOfMonth,
       counterparty: input.counterparty?.trim() || null,
       match_window_days: input.matchWindowDays ?? 5,
-      // Alleen een domiciliëring kan zichzelf financieren vanuit de kaart.
+      // Alleen een domiciliëring kan zichzelf financieren vanuit de hoofdpot.
       reserve_day: input.kind === "domiciliering" ? input.reserveDay ?? null : null,
       auto_book: input.autoBook ?? true,
     };

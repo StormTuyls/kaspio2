@@ -442,7 +442,7 @@ function useBridgedStore(
     reassignTransactions: reassignDbTxs,
     assignTransaction: assignDbTx,
     transfer: transferDbTx,
-    allocateFromCard: allocateDbCard,
+    allocateFromHoofdpot: allocateDbHoofdpot,
   } = useTransactions(orgId);
 
   const pots = useMemo(
@@ -540,7 +540,7 @@ function useBridgedStore(
       importTransactions: importDbTx,
       assignTransaction: assignDbTx,
       transfer: transferDbTx,
-      allocateFromCard: allocateDbCard,
+      allocateFromHoofdpot: allocateDbHoofdpot,
     };
   }, [
     localStore,
@@ -556,7 +556,7 @@ function useBridgedStore(
     reassignDbTxs,
     assignDbTx,
     transferDbTx,
-    allocateDbCard,
+    allocateDbHoofdpot,
   ]);
 }
 
@@ -891,22 +891,30 @@ function AuthedApp({
     setTab("instellingen");
   };
 
-  // Onverdeeld geld: transacties zonder potje (RLS: alleen admins zien deze).
-  const unallocatedTx = useMemo(
+  // De hoofdpot: al het geld zonder potje (RLS: alleen admins zien deze).
+  const hoofdpotTx = useMemo(
     () => store.state.transactions.filter((t) => t.potId === null),
     [store.state.transactions],
   );
-  // Saldo op de kaart dat nog verdeeld kan worden ("nog te verdelen").
-  const unallocatedTotal = useMemo(
+  // Saldo van de hoofdpot, dus wat er nog te verdelen valt. De uit-regels van
+  // een verdeling horen hier wél bij: die halen het verdeelde geld eruit.
+  const hoofdpotTotal = useMemo(
     () =>
-      unallocatedTx.reduce(
+      hoofdpotTx.reduce(
         (s, t) => s + (t.direction === "in" ? t.amount : -t.amount),
         0,
       ),
-    [unallocatedTx],
+    [hoofdpotTx],
+  );
+  // Toe te wijzen: enkel echt binnengekomen geld. Een verdeel-regel heeft een
+  // transferGroup en hoort bij een tegenboeking op een potje; die aan een potje
+  // toewijzen zou die koppeling breken en het geld dubbel laten tellen.
+  const unallocatedTx = useMemo(
+    () => hoofdpotTx.filter((t) => !t.transferGroup),
+    [hoofdpotTx],
   );
 
-  // Boek de maandelijkse reservering: verschuif geld van de kaart naar het potje
+  // Boek de maandelijkse reservering: verschuif geld van de hoofdpot naar het potje
   // (net-nul move). Eerst atomair claimen zodat twee tabbladen of twee beheerders
   // niet allebei boeken; faalt het boeken zelf, dan geven we de claim terug.
   const handleBookReservation = useCallback(
@@ -914,7 +922,7 @@ function AuthedApp({
       const today = new Date().toISOString().slice(0, 10);
       const won = await claimReservation(plan.id, today);
       if (!won) return false;
-      const res = await store.allocateFromCard({
+      const res = await store.allocateFromHoofdpot({
         allocations: [{ toPotId: plan.pot_id, amount: plan.amount }],
         occurredOn: today,
         counterparty: plan.counterparty || "Storting",
@@ -929,7 +937,7 @@ function AuthedApp({
   );
 
   // Automatisch boeken: zodra de dag bereikt is, zet Kaspio de reservering zelf
-  // klaar. Alleen de virtuele kant (kaart -> potje); de echte afhouding komt via
+  // klaar. Alleen de virtuele kant (hoofdpot -> potje); de echte afhouding komt via
   // de bankimport, anders zou ze dubbel tellen. De claim in de DB maakt dit
   // idempotent, dus meerdere tabbladen zijn veilig.
   const [autoBooked, setAutoBooked] = useState<string[]>([]);
@@ -1385,9 +1393,9 @@ function AuthedApp({
           <DistributeModal
             pots={potsForUser}
             shares={distShares}
-            available={unallocatedTotal}
+            available={hoofdpotTotal}
             onDistribute={async (allocations) =>
-              store.allocateFromCard({
+              store.allocateFromHoofdpot({
                 allocations,
                 occurredOn: new Date().toISOString().slice(0, 10),
                 counterparty: "Verdeling",
