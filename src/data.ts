@@ -17,7 +17,7 @@ import type {
   Transaction,
 } from "./supabase";
 import { supabase } from "./supabase";
-import type { NotificationSettings } from "./types";
+import type { NotificationSettings, PotTargetKind } from "./types";
 import { defaultNotificationSettings } from "./types";
 
 // =============================================================================
@@ -234,6 +234,8 @@ export type PotInput = {
   name: string;
   color: string;
   targetAmount?: number | null;
+  /** Hoe targetAmount gelezen wordt. Default 'saving'. */
+  targetKind?: PotTargetKind;
   description?: string | null;
   /** Optionele potgroep. null = expliciet geen groep. */
   groupId?: string | null;
@@ -278,6 +280,7 @@ export function usePots(orgId: string | null) {
       name: input.name,
       color: input.color,
       target_amount: input.targetAmount ?? null,
+      target_kind: input.targetKind ?? "saving",
       description: input.description ?? null,
       group_id: input.groupId ?? null,
     };
@@ -299,6 +302,7 @@ export function usePots(orgId: string | null) {
     if (patch.color !== undefined) updateRow.color = patch.color;
     if (patch.targetAmount !== undefined)
       updateRow.target_amount = patch.targetAmount;
+    if (patch.targetKind !== undefined) updateRow.target_kind = patch.targetKind;
     if (patch.description !== undefined)
       updateRow.description = patch.description;
     if (patch.groupId !== undefined) updateRow.group_id = patch.groupId;

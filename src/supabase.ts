@@ -160,6 +160,8 @@ export interface Pot {
   name: string;
   color: string;
   target_amount: number | null;
+  /** 'saving' = saldodoel, 'budget' = uitgavenplafond. */
+  target_kind: "saving" | "budget";
   description: string | null;
   archived: boolean;
   /** Optionele potgroep (tak, ploeg, werkgroep). */

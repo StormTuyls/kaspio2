@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent, ReactNode } from "react";
-import type { PotGroup } from "../types";
+import type { PotGroup, PotTargetKind } from "../types";
 
 // Kaspio kleurpalet — eerste optie is de primary teal.
 const POT_COLORS = [
@@ -21,6 +21,7 @@ export type PotFormValues = {
   name: string;
   color: string;
   targetAmount?: number;
+  targetKind: PotTargetKind;
   description?: string;
   groupId?: string | null;
 };
@@ -30,6 +31,7 @@ type Props = {
     name: string;
     color: string;
     targetAmount?: number;
+    targetKind?: PotTargetKind;
     description?: string;
     groupId?: string | null;
   };
@@ -48,6 +50,9 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
   const [color, setColor] = useState(initial?.color ?? POT_COLORS[0].hex);
   const [target, setTarget] = useState(
     initial?.targetAmount?.toString() ?? "",
+  );
+  const [targetKind, setTargetKind] = useState<PotTargetKind>(
+    initial?.targetKind ?? "saving",
   );
   const [description, setDescription] = useState(initial?.description ?? "");
   const [groupId, setGroupId] = useState<string>(initial?.groupId ?? "");
@@ -72,8 +77,14 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
     let targetAmount: number | undefined;
     if (target.trim()) {
       const v = Number(target);
-      if (!Number.isFinite(v) || v <= 0) {
-        setError("Doelbedrag moet een positief getal zijn.");
+      if (!Number.isFinite(v)) {
+        setError("Vul een geldig bedrag in.");
+        return;
+      }
+      // 0 betekent hetzelfde als een leeg veld, dus dat weigeren we liever dan
+      // stil een doel op te slaan dat nergens getoond wordt.
+      if (v === 0) {
+        setError("Laat het veld leeg als dit potje geen doel of budget heeft.");
         return;
       }
       targetAmount = v;
@@ -102,6 +113,7 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
         name: trimmed,
         color,
         targetAmount,
+        targetKind,
         description: description.trim() || undefined,
         ...(showGroupField ? { groupId: finalGroupId } : {}),
       });
@@ -189,20 +201,54 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
         </Field>
       )}
 
-      <Field label="Doelbedrag" hint="Optioneel. Bv. €500 voor het kamp">
-        <div className="relative">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-navy-400">
-            €
-          </span>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
-            placeholder="0,00"
-            className="input pl-7"
-          />
+      <Field
+        label="Doel of budget"
+        hint={
+          targetKind === "budget"
+            ? "Optioneel. Het bedrag dat dit potje mag kosten. De balk toont hoeveel daarvan al uitgegeven is."
+            : "Optioneel. Het saldo waar dit potje naartoe moet groeien. Een negatief bedrag mag ook, voor een potje dat volgens plan in het rood staat."
+        }
+      >
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setTargetKind("saving")}
+              aria-pressed={targetKind === "saving"}
+              className={`rounded-xl border-2 px-3 py-2 text-sm font-semibold transition ${
+                targetKind === "saving"
+                  ? "border-teal-500 bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300"
+                  : "border-navy-100 text-navy-500 hover:border-navy-200 dark:border-navy-700 dark:text-navy-300 dark:hover:border-navy-600"
+              }`}
+            >
+              Spaardoel
+            </button>
+            <button
+              type="button"
+              onClick={() => setTargetKind("budget")}
+              aria-pressed={targetKind === "budget"}
+              className={`rounded-xl border-2 px-3 py-2 text-sm font-semibold transition ${
+                targetKind === "budget"
+                  ? "border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                  : "border-navy-100 text-navy-500 hover:border-navy-200 dark:border-navy-700 dark:text-navy-300 dark:hover:border-navy-600"
+              }`}
+            >
+              Budget
+            </button>
+          </div>
+          <div className="relative">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-navy-400">
+              €
+            </span>
+            <input
+              type="number"
+              step="0.01"
+              value={target}
+              onChange={(e) => setTarget(e.target.value)}
+              placeholder={targetKind === "budget" ? "500,00" : "0,00"}
+              className="input pl-7"
+            />
+          </div>
         </div>
       </Field>
 

@@ -7,6 +7,7 @@ import type {
   Member,
   NotificationSettings,
   Pot,
+  PotTargetKind,
   Role,
   Transaction,
 } from "./types";
@@ -181,7 +182,12 @@ export function useAppState(accountId: string, bootstrapAdminName?: string) {
         };
       });
     },
-    addPot(input: { name: string; ownerId: string; targetAmount?: number }) {
+    addPot(input: {
+      name: string;
+      ownerId: string;
+      targetAmount?: number;
+      targetKind?: PotTargetKind;
+    }) {
       const pot: Pot = {
         ...input,
         id: crypto.randomUUID(),
@@ -200,7 +206,10 @@ export function useAppState(accountId: string, bootstrapAdminName?: string) {
       });
       return pot;
     },
-    updatePot(id: string, patch: Partial<Pick<Pot, "name" | "ownerId" | "targetAmount">>) {
+    updatePot(
+      id: string,
+      patch: Partial<Pick<Pot, "name" | "ownerId" | "targetAmount" | "targetKind">>,
+    ) {
       setState((s) => {
         const before = s.pots.find((p) => p.id === id);
         const pots = s.pots.map((p) => (p.id === id ? { ...p, ...patch } : p));
@@ -216,6 +225,11 @@ export function useAppState(accountId: string, bootstrapAdminName?: string) {
         }
         if (before && after && before.targetAmount !== after.targetAmount) {
           changes.push(`doelbedrag aangepast`);
+        }
+        if (before && after && before.targetKind !== after.targetKind) {
+          changes.push(
+            after.targetKind === "budget" ? "omgezet naar budget" : "omgezet naar spaardoel",
+          );
         }
         const entry = makeAudit(
           s,
@@ -313,6 +327,17 @@ export function calcBalance(transactions: Transaction[], potId: string) {
   return transactions
     .filter((t) => t.potId === potId && t.status !== "pending")
     .reduce((sum, t) => sum + (t.direction === "in" ? t.amount : -t.amount), 0);
+}
+
+/**
+ * Som van de uitgaven van een potje, voor budgetopvolging. Sluit net als
+ * calcBalance de transacties uit die nog op goedkeuring wachten, anders drukt
+ * een openstaande uitgave het budget al op terwijl het saldo nog niet beweegt.
+ */
+export function calcSpent(transactions: Transaction[], potId: string) {
+  return transactions
+    .filter((t) => t.potId === potId && t.status !== "pending" && t.direction === "out")
+    .reduce((sum, t) => sum + t.amount, 0);
 }
 
 export function visiblePots(pots: Pot[], currentUser: Member | null): Pot[] {

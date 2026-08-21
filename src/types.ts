@@ -7,12 +7,17 @@ export type Member = {
   createdAt: string;
 };
 
+/** Hoe target_amount gelezen moet worden: saldodoel of uitgavenbudget. */
+export type PotTargetKind = "saving" | "budget";
+
 export type Pot = {
   id: string;
   name: string;
   ownerId: string;
   color?: string;
   targetAmount?: number;
+  /** Default 'saving' voor alles wat van voor de budgetpotjes dateert. */
+  targetKind?: PotTargetKind;
   /** Optionele potgroep (tak, ploeg, werkgroep). */
   groupId?: string | null;
   createdAt: string;

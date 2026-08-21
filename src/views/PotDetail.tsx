@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { calcBalance, formatDate, formatEuro } from "../storage";
+import { calcBalance, calcSpent, formatDate, formatEuro } from "../storage";
+import { potProgress } from "../potProgress";
 import type { Member, Pot, PotGroup, Transaction, TransactionDirection } from "../types";
 import type { SubTier } from "../supabase";
 import { attachmentsEnabled, chartsEnabled } from "../data";
@@ -92,10 +93,10 @@ export function PotDetail({
   const totalIn = potTx.filter((t) => t.direction === "in").reduce((s, t) => s + t.amount, 0);
   const totalOut = potTx.filter((t) => t.direction === "out").reduce((s, t) => s + t.amount, 0);
   const owner = members.find((m) => m.id === pot.ownerId);
-  const progress =
-    pot.targetAmount && pot.targetAmount > 0
-      ? Math.min(100, Math.max(0, (balance / pot.targetAmount) * 100))
-      : null;
+  const progress = potProgress(pot.targetAmount, pot.targetKind, {
+    balance,
+    totalOut: calcSpent(transactions, pot.id),
+  });
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -271,15 +272,26 @@ export function PotDetail({
         {progress !== null && (
           <div className="mt-5">
             <div className="mb-1.5 flex justify-between text-xs text-navy-500 dark:text-navy-300">
-              <span>Doel: {formatEuro(pot.targetAmount!)}</span>
-              <span className="font-semibold text-teal-600 dark:text-teal-400">
-                {progress.toFixed(0)}%
+              <span>{progress.label}</span>
+              <span
+                className={`font-semibold ${
+                  progress.over
+                    ? "text-rose-600 dark:text-rose-400"
+                    : "text-teal-600 dark:text-teal-400"
+                }`}
+              >
+                {progress.pct.toFixed(0)}%
+                {progress.kind === "budget" ? " uitgegeven" : ""}
               </span>
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-navy-100 dark:bg-navy-700">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-teal-400 to-teal-600 transition-all"
-                style={{ width: `${progress}%` }}
+                className={`h-full rounded-full transition-all ${
+                  progress.over
+                    ? "bg-gradient-to-r from-rose-400 to-rose-600"
+                    : "bg-gradient-to-r from-teal-400 to-teal-600"
+                }`}
+                style={{ width: `${progress.barPct}%` }}
               />
             </div>
           </div>
@@ -585,6 +597,7 @@ export function PotDetail({
             name: pot.name,
             color: pot.color ?? "#1D9E75",
             targetAmount: pot.targetAmount,
+            targetKind: pot.targetKind,
             groupId: pot.groupId ?? null,
           }}
           groups={groups}

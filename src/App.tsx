@@ -40,7 +40,7 @@ import { OrgSwitcher } from "./components/OrgSwitcher";
 import { CreateOrgForm } from "./components/CreateOrgForm";
 import type { Organisation } from "./supabase";
 import type { Pot as DbPot, Transaction as DbTransaction } from "./supabase";
-import type { Pot, PotGroup, Role, Transaction } from "./types";
+import type { Pot, PotGroup, PotTargetKind, Role, Transaction } from "./types";
 import { signOut, supabase, useSession } from "./supabase";
 import { PotsView, Avatar } from "./views/Overview";
 import { DashboardView } from "./views/DashboardView";
@@ -394,6 +394,7 @@ function dbPotToUiPot(p: DbPot, currentUserId: string): Pot {
     // (zie potsWithOwner). RLS filtert op DB-niveau welke pots de user ziet.
     ownerId: currentUserId,
     targetAmount: p.target_amount ?? undefined,
+    targetKind: p.target_kind ?? "saving",
     groupId: p.group_id ?? null,
     createdAt: p.created_at,
   };
@@ -456,6 +457,7 @@ function useBridgedStore(
         name: string;
         color?: string;
         targetAmount?: number;
+        targetKind?: PotTargetKind;
         description?: string;
         groupId?: string | null;
       }) => {
@@ -463,6 +465,7 @@ function useBridgedStore(
           name: input.name,
           color: input.color ?? "#1D9E75",
           targetAmount: input.targetAmount,
+          targetKind: input.targetKind,
           description: input.description,
           groupId: input.groupId ?? null,
         });
@@ -476,6 +479,7 @@ function useBridgedStore(
           name?: string;
           color?: string;
           targetAmount?: number;
+          targetKind?: PotTargetKind;
           description?: string;
           groupId?: string | null;
         },
