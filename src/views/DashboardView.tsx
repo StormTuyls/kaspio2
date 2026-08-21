@@ -105,10 +105,6 @@ export function DashboardView({
     0,
   );
   const unallocated = hoofdpotTx.filter((t) => !t.transferGroup);
-  const unallocatedTotal = unallocated.reduce(
-    (s, t) => s + (t.direction === "in" ? t.amount : -t.amount),
-    0,
-  );
 
   const potById = new Map(pots.map((p) => [p.id, p] as const));
 
@@ -187,7 +183,9 @@ export function DashboardView({
             unallocated={hoofdpotTotal}
             potCount={pots.length}
             groupCount={groups.length}
+            unassignedCount={isAdmin ? unallocated.length : 0}
             onDistribute={isAdmin ? onDistribute : undefined}
+            onOpenInbox={isAdmin ? onOpenInbox : undefined}
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
@@ -258,36 +256,6 @@ export function DashboardView({
             })}
           </ul>
         </div>
-      )}
-
-      {/* Onverdeeld geld */}
-      {isAdmin && onOpenInbox && unallocated.length > 0 && (
-        <button
-          onClick={onOpenInbox}
-          className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3.5 text-left transition hover:border-amber-300 hover:bg-amber-50 dark:border-amber-900/50 dark:bg-amber-900/20"
-        >
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-              <Icon className="h-5 w-5">
-                <path d="M22 12h-6l-2 3h-4l-2-3H2" />
-                <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
-              </Icon>
-            </span>
-            <div>
-              <p className="font-num text-sm font-bold tabular-nums text-amber-900 dark:text-amber-200">
-                {formatEuro(unallocatedTotal)} nog toe te wijzen
-              </p>
-              <p className="text-xs text-amber-700 dark:text-amber-400">
-                {unallocated.length}{" "}
-                {unallocated.length === 1 ? "transactie" : "transacties"} zonder
-                potje. Klik om toe te wijzen.
-              </p>
-            </div>
-          </div>
-          <span className="text-amber-600 transition group-hover:translate-x-0.5 dark:text-amber-400">
-            →
-          </span>
-        </button>
       )}
 
       {/* Wacht op goedkeuring (admin) */}

@@ -560,20 +560,24 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
   }
 
   /**
-   * Verplaats geld van het ene potje naar het andere. Maakt twee gekoppelde
-   * regels (uit op bron, in op doel) met hetzelfde transfer_group. Netto nul op
-   * de rekening; enkel de verdeling over de potjes verschuift.
+   * Verplaats geld tussen twee plekken. Maakt twee gekoppelde regels (uit op
+   * bron, in op doel) met hetzelfde transfer_group. Netto nul op de rekening;
+   * enkel de verdeling verschuift.
+   *
+   * null = de hoofdpot (het onverdeelde geld). Zo kan je geld terugzetten naar
+   * de hoofdpot om het later opnieuw te verdelen. Eén kant mag null zijn, niet
+   * allebei: hoofdpot naar hoofdpot is geen verplaatsing.
    */
   async function transfer(input: {
-    fromPotId: string;
-    toPotId: string;
+    fromPotId: string | null;
+    toPotId: string | null;
     amount: number;
     occurredOn: string;
     memo?: string;
   }): Promise<{ error: string | null }> {
     if (!orgId) return { error: "Geen organisatie geselecteerd." };
-    if (!input.fromPotId || !input.toPotId) {
-      return { error: "Kies een bron- en een doelpotje." };
+    if (input.fromPotId === "" || input.toPotId === "") {
+      return { error: "Kies een bron en een doel." };
     }
     if (input.fromPotId === input.toPotId) {
       return { error: "Kies twee verschillende potjes." };

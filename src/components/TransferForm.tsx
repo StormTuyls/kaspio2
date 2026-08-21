@@ -3,15 +3,23 @@ import type { FormEvent } from "react";
 import { calcBalance, formatEuro } from "../storage";
 import type { Pot, Transaction } from "../types";
 
+/** Waarde in de selects die voor de hoofdpot staat (pot_id null in de DB). */
+const HOOFDPOT = "__hoofdpot__";
+
 type Props = {
   pots: Pot[];
   /** Nodig om de saldo's per potje te tonen. */
   transactions: Transaction[];
   /** Potje dat vooraf als bron geselecteerd is (bv. vanuit een potdetail). */
   initialFromPotId?: string | null;
+  /**
+   * Mag de hoofdpot als bron of doel gekozen worden? Alleen admins beheren het
+   * onverdeelde geld (RLS), dus voor de rest blijft dit potje-naar-potje.
+   */
+  allowHoofdpot?: boolean;
   onSubmit: (values: {
-    fromPotId: string;
-    toPotId: string;
+    fromPotId: string | null;
+    toPotId: string | null;
     amount: number;
     occurredOn: string;
     memo?: string;
@@ -20,21 +28,34 @@ type Props = {
 };
 
 /**
- * Verplaats geld tussen twee potjes. Netto verandert je rekeningsaldo niet;
- * enkel de verdeling over de potjes verschuift. De parent maakt hier twee
- * gekoppelde transacties van (uit op bron, in op doel).
+ * Verplaats geld tussen twee potjes, of tussen een potje en de hoofdpot. Netto
+ * verandert je rekeningsaldo niet; enkel de verdeling verschuift. De parent
+ * maakt hier twee gekoppelde transacties van (uit op bron, in op doel).
+ *
+ * Geld naar de hoofdpot terugzetten is de omgekeerde weg van verdelen: het komt
+ * weer op "nog te verdelen" te staan en kan later opnieuw verdeeld worden.
  */
 export function TransferForm({
   pots,
   transactions,
   initialFromPotId,
+  allowHoofdpot = false,
   onSubmit,
   onCancel,
 }: Props) {
   const today = new Date().toISOString().slice(0, 10);
-  const [fromPotId, setFromPotId] = useState(initialFromPotId ?? pots[0]?.id ?? "");
+  // Keuzelijst: de hoofdpot staat bovenaan, daarna de potjes.
+  const parties = [
+    ...(allowHoofdpot
+      ? [{ id: HOOFDPOT, name: "Hoofdpot (nog te verdelen)" }]
+      : []),
+    ...pots.map((p) => ({ id: p.id, name: p.name })),
+  ];
+  const [fromPotId, setFromPotId] = useState(
+    initialFromPotId ?? parties[0]?.id ?? "",
+  );
   const [toPotId, setToPotId] = useState(
-    pots.find((p) => p.id !== (initialFromPotId ?? pots[0]?.id))?.id ?? "",
+    parties.find((p) => p.id !== (initialFromPotId ?? parties[0]?.id))?.id ?? "",
   );
   const [amount, setAmount] = useState("");
   const [occurredOn, setOccurredOn] = useState(today);
@@ -42,19 +63,22 @@ export function TransferForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fromBalance = calcBalance(transactions, fromPotId);
-  const toBalance = calcBalance(transactions, toPotId);
+  // HOOFDPOT is een UI-waarde; in de data is de hoofdpot pot_id null.
+  const toPotIdOrNull = (id: string) => (id === HOOFDPOT ? null : id);
+  const fromBalance = calcBalance(transactions, toPotIdOrNull(fromPotId));
+  const toBalance = calcBalance(transactions, toPotIdOrNull(toPotId));
   // Absoluut: een minteken (bv. bij het overnemen van een negatief saldo) mag
   // je niet blokkeren. Je verplaatst altijd een positief bedrag.
   const parsedAmount = Math.abs(Number(amount.replace(",", ".")));
   const willGoNegative =
     Number.isFinite(parsedAmount) && parsedAmount > 0 && fromBalance - parsedAmount < 0;
+  const toIsHoofdpot = toPotId === HOOFDPOT;
 
-  if (pots.length < 2) {
+  if (parties.length < 2) {
     return (
       <div className="space-y-4">
         <p className="text-sm text-navy-500 dark:text-navy-300">
-          Je hebt minstens twee potjes nodig om geld te kunnen verplaatsen.
+          Je hebt minstens twee plekken nodig om geld te kunnen verplaatsen.
         </p>
         <div className="flex justify-end">
           <button type="button" onClick={onCancel} className="btn-secondary">
@@ -78,7 +102,13 @@ export function TransferForm({
       return;
     }
     setBusy(true);
-    const res = await onSubmit({ fromPotId, toPotId, amount: value, occurredOn, memo: memo.trim() || undefined });
+    const res = await onSubmit({
+      fromPotId: toPotIdOrNull(fromPotId),
+      toPotId: toPotIdOrNull(toPotId),
+      amount: value,
+      occurredOn,
+      memo: memo.trim() || undefined,
+    });
     setBusy(false);
     if (res.error) setError(res.error);
   }
@@ -86,8 +116,9 @@ export function TransferForm({
   return (
     <form onSubmit={submit} className="space-y-4">
       <p className="text-sm text-navy-500 dark:text-navy-300">
-        Verschuif geld tussen potjes. Je totale rekeningsaldo verandert niet, de
-        verdeling wel.
+        Verschuif geld tussen potjes, of terug naar de hoofdpot om het later
+        opnieuw te verdelen. Je totale rekeningsaldo verandert niet, de verdeling
+        wel.
       </p>
 
       <div className="grid grid-cols-2 gap-3">
@@ -100,7 +131,7 @@ export function TransferForm({
             onChange={(e) => setFromPotId(e.target.value)}
             className="input"
           >
-            {pots.map((p) => (
+            {parties.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>
@@ -119,7 +150,7 @@ export function TransferForm({
             onChange={(e) => setToPotId(e.target.value)}
             className="input"
           >
-            {pots.map((p) => (
+            {parties.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>
@@ -171,6 +202,12 @@ export function TransferForm({
           />
         </label>
       </div>
+
+      {toIsHoofdpot && parsedAmount > 0 && (
+        <p className="text-xs text-navy-500 dark:text-navy-300">
+          Dit bedrag komt weer bij "nog te verdelen" in de hoofdpot te staan.
+        </p>
+      )}
 
       {willGoNegative && (
         <p className="text-xs text-amber-700 dark:text-amber-400">

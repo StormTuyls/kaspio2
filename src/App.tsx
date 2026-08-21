@@ -1157,7 +1157,9 @@ function AuthedApp({
                 onAddPot={() => setShowAddPot(true)}
                 onAddTransaction={isAdmin ? () => setShowAddTx(true) : undefined}
                 onTransfer={
-                  isAdmin && potsForUser.length >= 2
+                  // Eén potje is genoeg: een admin kan altijd naar en van de
+                  // hoofdpot verplaatsen.
+                  isAdmin && potsForUser.length >= 1
                     ? () => setShowTransfer(true)
                     : undefined
                 }
@@ -1366,7 +1368,7 @@ function AuthedApp({
 
       <Modal
         open={showTransfer}
-        title="Verplaats tussen potjes"
+        title="Geld verplaatsen"
         onClose={() => setShowTransfer(false)}
       >
         {showTransfer && (
@@ -1374,6 +1376,7 @@ function AuthedApp({
             pots={potsForUser}
             transactions={store.state.transactions}
             initialFromPotId={selectedPot?.id ?? null}
+            allowHoofdpot={isAdmin}
             onSubmit={async (values) => {
               const res = await store.transfer(values);
               if (!res.error) setShowTransfer(false);
