@@ -54,8 +54,9 @@ export function RecurringPlansPanel({
   return (
     <div className="space-y-4">
       <p className="text-sm text-ink-muted dark:text-navy-300">
-        Terugkerende stortingen en domiciliëringen rond je potjes. Stortingen boek
-        je met één klik op het dashboard; domiciliëringen herkent Kaspio bij import.
+        Terugkerende stortingen en domiciliëringen rond je potjes. Reserveringen
+        zet Kaspio 's nachts zelf klaar, of jij bevestigt ze met één klik op het
+        dashboard; de echte afhouding herkent Kaspio bij de bankimport.
       </p>
 
       {plans.length === 0 ? (

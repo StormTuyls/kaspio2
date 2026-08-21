@@ -1,8 +1,8 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import "./App.css";
-import { useAppState, calcBalance, formatEuro } from "./storage";
+import { useAppState, calcBalance } from "./storage";
 import {
   acceptPendingInvites,
   approveTransaction,
@@ -29,7 +29,6 @@ import {
   useTransactions,
   useDistributionShares,
   useRecurringPlans,
-  isReservationDue,
   type RecurringPlan,
 } from "./data";
 import { UnallocatedInbox } from "./components/UnallocatedInbox";
@@ -914,9 +913,11 @@ function AuthedApp({
     [hoofdpotTx],
   );
 
-  // Boek de maandelijkse reservering: verschuif geld van de hoofdpot naar het potje
-  // (net-nul move). Eerst atomair claimen zodat twee tabbladen of twee beheerders
-  // niet allebei boeken; faalt het boeken zelf, dan geven we de claim terug.
+  // Boek een reservering met de hand ("Te bevestigen" op het dashboard): verschuif
+  // geld van de hoofdpot naar het potje (net-nul move). Enkel voor regels met
+  // auto_book uit; de rest boekt de cron 's nachts (supabase/recurring-plans-cron.sql).
+  // Eerst atomair claimen zodat twee tabbladen, twee beheerders of de cron niet
+  // allebei boeken; faalt het boeken zelf, dan geven we de claim terug.
   const handleBookReservation = useCallback(
     async (plan: RecurringPlan): Promise<boolean> => {
       const today = new Date().toISOString().slice(0, 10);
@@ -935,35 +936,6 @@ function AuthedApp({
     },
     [store, claimReservation, releaseReservation],
   );
-
-  // Automatisch boeken: zodra de dag bereikt is, zet Kaspio de reservering zelf
-  // klaar. Alleen de virtuele kant (hoofdpot -> potje); de echte afhouding komt via
-  // de bankimport, anders zou ze dubbel tellen. De claim in de DB maakt dit
-  // idempotent, dus meerdere tabbladen zijn veilig.
-  const [autoBooked, setAutoBooked] = useState<string[]>([]);
-  const autoRunning = useRef(false);
-  useEffect(() => {
-    if (!isAdmin || recurringPlans.length === 0) return;
-    const today = new Date().toISOString().slice(0, 10);
-    const due = recurringPlans.filter(
-      (p) => p.auto_book && isReservationDue(p, today),
-    );
-    if (due.length === 0 || autoRunning.current) return;
-    autoRunning.current = true;
-    (async () => {
-      const done: string[] = [];
-      for (const plan of due) {
-        const ok = await handleBookReservation(plan);
-        if (ok) {
-          const potName =
-            potsForUser.find((p) => p.id === plan.pot_id)?.name ?? "een potje";
-          done.push(`${formatEuro(plan.amount)} klaargezet in ${potName}`);
-        }
-      }
-      if (done.length > 0) setAutoBooked(done);
-      autoRunning.current = false;
-    })();
-  }, [isAdmin, recurringPlans, handleBookReservation, potsForUser]);
 
   // Wacht op de eerste org-fetch én op het afhandelen van openstaande invites,
   // zodat een net-uitgenodigde user niet kortstondig het onboarding-scherm ziet
@@ -1230,20 +1202,6 @@ function AuthedApp({
               />
             ) : (
               <>
-                {autoBooked.length > 0 && (
-                  <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal-200 bg-teal-50/70 px-4 py-3 dark:border-teal-900/50 dark:bg-teal-900/15">
-                    <p className="text-sm text-teal-900 dark:text-teal-200">
-                      <span className="font-semibold">Automatisch klaargezet:</span>{" "}
-                      {autoBooked.join(" · ")}
-                    </p>
-                    <button
-                      onClick={() => setAutoBooked([])}
-                      className="text-xs font-semibold text-teal-700 hover:underline dark:text-teal-300"
-                    >
-                      Sluiten
-                    </button>
-                  </div>
-                )}
                 {isAdmin && (
                   <div className="mb-6">
                     <OnboardingChecklist

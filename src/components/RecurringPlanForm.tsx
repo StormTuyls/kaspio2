@@ -233,8 +233,9 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
               Automatisch boeken
             </span>
             <span className="mt-0.5 block text-xs text-ink-muted dark:text-navy-300">
-              Kaspio boekt dit zelf zodra de dag bereikt is. Uit? Dan verschijnt
-              het onder "Te bevestigen" en klik jij op Boek.
+              Kaspio boekt dit 's nachts zelf op de ingestelde dag, ook als er
+              niemand ingelogd is. Uit? Dan verschijnt het onder "Te bevestigen"
+              en klik jij op Boek.
             </span>
           </span>
         </label>
