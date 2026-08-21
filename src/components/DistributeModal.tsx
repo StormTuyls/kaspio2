@@ -5,7 +5,7 @@ import { formatEuro } from "../storage";
 
 type Props = {
   pots: Pot[];
-  /** De verdeel-preset: percentage per potje. */
+  /** De verdeel-preset: percentage per potje. Mag leeg zijn. */
   shares: { potId: string; percent: number }[];
   /** Saldo van de hoofdpot ("nog te verdelen"). */
   available: number;
@@ -18,8 +18,13 @@ type Props = {
 };
 
 /**
- * Verdeel het geld uit de hoofdpot in één klik volgens de opgeslagen percentages.
- * Toont een voorbeeld (potje → % → bedrag) voor het bevestigen.
+ * Verdeel geld uit de hoofdpot over de potjes. Eén lijst met bedragvelden, die
+ * je zelf invult of in één klik laat vullen volgens de opgeslagen percentages.
+ * Zo werken procentueel en handmatig door elkaar: vullen volgens %, daarna
+ * eentje bijsturen, kan gewoon.
+ *
+ * Niet alles hoeft weg: wat je niet toewijst blijft in de hoofdpot staan en is
+ * later opnieuw te verdelen.
  */
 export function DistributeModal({
   pots,
@@ -29,24 +34,44 @@ export function DistributeModal({
   onManagePreset,
   onCancel,
 }: Props) {
-  const defaultAmount = Math.max(0, Math.round(available * 100) / 100);
-  const [amountStr, setAmountStr] = useState(
-    defaultAmount > 0 ? String(defaultAmount) : "",
+  const visibleShares = useMemo(
+    () => shares.filter((s) => pots.some((p) => p.id === s.potId)),
+    [shares, pots],
+  );
+  const hasPreset = visibleShares.length > 0;
+  const percentByPot = useMemo(
+    () => new Map(visibleShares.map((s) => [s.potId, s.percent])),
+    [visibleShares],
+  );
+
+  // Bedrag per potje als tekst, zodat een veld leeg mag zijn. Met een preset
+  // starten we ingevuld: dat is de "verdeel volgens %"-flow, in één blik te
+  // controleren en nog steeds aanpasbaar.
+  const [amounts, setAmounts] = useState<Record<string, string>>(() =>
+    hasPreset ? fillFromShares(available, visibleShares) : {},
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const potById = useMemo(() => new Map(pots.map((p) => [p.id, p])), [pots]);
-  const amount = parseAmount(amountStr);
+  const allocations = pots
+    .map((p) => ({ potId: p.id, amount: parseAmount(amounts[p.id]) }))
+    .filter((a) => a.amount > 0);
+  const allocated = allocations.reduce((s, a) => s + a.amount, 0);
+  const remaining = round2(available - allocated);
+  const overAvailable = remaining < -0.004;
 
-  // Enkel percentages van potjes die de user ziet, tellen mee.
-  const visibleShares = shares.filter((s) => potById.has(s.potId));
-  const allocations = computeShares(amount, visibleShares);
-  const allocated = allocations.reduce((a, x) => a + x.amount, 0);
-  const remaining = Math.round((amount - allocated) * 100) / 100;
-  const overAvailable = amount > available + 0.004;
+  function setAmount(potId: string, value: string) {
+    setAmounts((prev) => ({ ...prev, [potId]: value }));
+  }
 
-  const hasPreset = visibleShares.length > 0;
+  /** Zet het restant in dit potje, zodat je exact op nul uitkomt. */
+  function fillRest(potId: string) {
+    const others = pots
+      .filter((p) => p.id !== potId)
+      .reduce((s, p) => s + parseAmount(amounts[p.id]), 0);
+    const rest = round2(available - others);
+    setAmount(potId, rest > 0 ? toInput(rest) : "");
+  }
 
   async function submit() {
     if (allocations.length === 0) return;
@@ -63,19 +88,15 @@ export function DistributeModal({
     onCancel();
   }
 
-  if (!hasPreset) {
+  if (pots.length === 0) {
     return (
       <div className="space-y-4">
         <p className="text-sm text-ink-muted dark:text-navy-300">
-          Je hebt nog geen verdeling ingesteld. Kies eerst per potje welk
-          percentage van het geld in de hoofdpot het krijgt.
+          Maak eerst een potje aan om geld naartoe te verdelen.
         </p>
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end">
           <button onClick={onCancel} className="btn-secondary">
-            Annuleren
-          </button>
-          <button onClick={onManagePreset} className="btn-accent">
-            Verdeling instellen
+            Sluiten
           </button>
         </div>
       </div>
@@ -84,82 +105,89 @@ export function DistributeModal({
 
   return (
     <div className="space-y-4">
-      <label className="block">
-        <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
-          Bedrag om te verdelen
-        </span>
-        <div className="relative">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-light">
-            €
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-ink-muted dark:text-navy-300">
+          In de hoofdpot:{" "}
+          <span className="font-num font-semibold tabular-nums text-navy-900 dark:text-white">
+            {formatEuro(available)}
           </span>
-          <input
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step="0.01"
-            value={amountStr}
-            onChange={(e) => setAmountStr(e.target.value)}
-            className="input pl-7 font-num tabular-nums"
-          />
-        </div>
-        <span className="mt-1 block text-xs text-ink-light">
-          Nog te verdelen in de hoofdpot: {formatEuro(Math.max(0, available))}
-        </span>
-      </label>
-
-      {overAvailable && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-          Dit is meer dan er te verdelen staat. De hoofdpot komt dan tijdelijk
-          onder nul; het banktotaal verandert niet.
-        </div>
-      )}
-
-      {/* Voorbeeld van de verdeling */}
-      <div className="rounded-xl border border-navy-100 dark:border-navy-700">
-        <ul className="divide-y divide-navy-100 dark:divide-navy-700">
-          {allocations.length === 0 ? (
-            <li className="px-4 py-3 text-sm text-ink-light">
-              Vul een bedrag in om de verdeling te zien.
-            </li>
-          ) : (
-            allocations.map((a) => {
-              const pot = potById.get(a.potId);
-              const share = visibleShares.find((s) => s.potId === a.potId);
-              return (
-                <li
-                  key={a.potId}
-                  className="flex items-center gap-3 px-4 py-2.5"
-                >
-                  <span
-                    aria-hidden
-                    className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                    style={{ backgroundColor: pot?.color ?? "#1D9E75" }}
-                  />
-                  <span className="min-w-0 flex-1 truncate text-sm text-navy-800 dark:text-navy-100">
-                    {pot?.name ?? "Potje"}
-                  </span>
-                  <span className="font-num text-xs tabular-nums text-ink-light">
-                    {share ? `${formatPercent(share.percent)}` : ""}
-                  </span>
-                  <span className="w-24 flex-shrink-0 text-right font-num text-sm font-semibold tabular-nums text-navy-900 dark:text-white">
-                    {formatEuro(a.amount)}
-                  </span>
-                </li>
-              );
-            })
-          )}
-        </ul>
-        {allocations.length > 0 && (
-          <div className="flex items-center justify-between border-t border-navy-100 px-4 py-2.5 text-sm dark:border-navy-700">
-            <span className="text-ink-muted dark:text-navy-300">
-              Blijft in de hoofdpot
-            </span>
-            <span className="font-num font-semibold tabular-nums text-navy-700 dark:text-navy-200">
-              {formatEuro(remaining)}
-            </span>
-          </div>
+        </p>
+        {hasPreset && (
+          <button
+            onClick={() => setAmounts(fillFromShares(available, visibleShares))}
+            className="rounded-lg bg-canvas px-3 py-1.5 text-xs font-semibold text-navy-700 transition hover:bg-navy-100 dark:bg-navy-800 dark:text-navy-100 dark:hover:bg-navy-700"
+          >
+            Vul volgens %
+          </button>
         )}
       </div>
+
+      <ul className="space-y-2">
+        {pots.map((pot) => {
+          const percent = percentByPot.get(pot.id);
+          return (
+            <li key={pot.id} className="flex items-center gap-2.5">
+              <span
+                aria-hidden
+                className="h-3 w-3 flex-shrink-0 rounded-full"
+                style={{ backgroundColor: pot.color ?? "#1D9E75" }}
+              />
+              <span className="min-w-0 flex-1 truncate text-sm text-navy-800 dark:text-navy-100">
+                {pot.name}
+                {percent !== undefined && (
+                  <span className="ml-1.5 font-num text-xs text-ink-light">
+                    {formatPercent(percent)}
+                  </span>
+                )}
+              </span>
+              <button
+                type="button"
+                onClick={() => fillRest(pot.id)}
+                title="Zet het restant in dit potje"
+                className="rounded-md px-1.5 py-1 text-xs font-semibold text-teal-700 transition hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-900/30"
+              >
+                rest
+              </button>
+              <div className="relative w-32 flex-shrink-0">
+                <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-ink-light">
+                  €
+                </span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={amounts[pot.id] ?? ""}
+                  onChange={(e) => setAmount(pot.id, e.target.value)}
+                  placeholder="0,00"
+                  aria-label={`Bedrag voor ${pot.name}`}
+                  className="input py-1.5 pl-6 pr-2 text-right font-num tabular-nums"
+                />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="flex items-center justify-between rounded-xl bg-canvas px-4 py-2.5 text-sm dark:bg-navy-800">
+        <span className="text-ink-muted dark:text-navy-300">
+          {overAvailable ? "Tekort in de hoofdpot" : "Blijft in de hoofdpot"}
+        </span>
+        <span
+          className={`font-num font-semibold tabular-nums ${
+            overAvailable
+              ? "text-amber-700 dark:text-amber-300"
+              : "text-navy-900 dark:text-white"
+          }`}
+        >
+          {formatEuro(remaining)}
+        </span>
+      </div>
+
+      {overAvailable && (
+        <p className="text-xs text-amber-700 dark:text-amber-300">
+          Je verdeelt meer dan er in de hoofdpot zit. Die komt dan onder nul te
+          staan; je banksaldo verandert niet.
+        </p>
+      )}
 
       {error && (
         <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
@@ -167,12 +195,12 @@ export function DistributeModal({
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-2 pt-1">
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
         <button
           onClick={onManagePreset}
           className="text-sm font-medium text-teal-600 hover:underline dark:text-teal-400"
         >
-          Verdeling aanpassen
+          {hasPreset ? "Percentages aanpassen" : "Percentages instellen"}
         </button>
         <div className="flex gap-2">
           <button onClick={onCancel} className="btn-secondary" disabled={busy}>
@@ -191,9 +219,30 @@ export function DistributeModal({
   );
 }
 
-function parseAmount(raw: string): number {
+/** Vul de velden volgens de preset, met dezelfde centenlogica als de verdeling zelf. */
+function fillFromShares(
+  available: number,
+  shares: { potId: string; percent: number }[],
+): Record<string, string> {
+  const next: Record<string, string> = {};
+  for (const a of computeShares(Math.max(0, available), shares)) {
+    next[a.potId] = toInput(a.amount);
+  }
+  return next;
+}
+
+function parseAmount(raw: string | undefined): number {
+  if (!raw) return 0;
   const n = Number(raw.replace(",", "."));
-  return Number.isFinite(n) && n > 0 ? n : 0;
+  return Number.isFinite(n) && n > 0 ? round2(n) : 0;
+}
+
+function toInput(value: number): string {
+  return value.toFixed(2).replace(".", ",");
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
 }
 
 function formatPercent(n: number): string {

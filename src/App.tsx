@@ -1347,7 +1347,7 @@ function AuthedApp({
 
       <Modal
         open={showDistribute}
-        title="Verdeel volgens %"
+        title="Geld verdelen"
         onClose={() => setShowDistribute(false)}
       >
         {showDistribute && (

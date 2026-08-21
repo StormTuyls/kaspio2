@@ -11,7 +11,7 @@ type Props = {
   groupCount: number;
   /** Aantal transacties zonder potje (de inbox). 0 = niks toe te wijzen. */
   unassignedCount?: number;
-  /** Aanwezig (admin) → toont de "Verdeel volgens %"-knop bij een positieve hoofdpot. */
+  /** Aanwezig (admin) → toont de "Verdelen"-knop bij een positieve hoofdpot. */
   onDistribute?: () => void;
   /** Aanwezig (admin) → link naar de toe-te-wijzen-inbox. */
   onOpenInbox?: () => void;
@@ -29,7 +29,7 @@ type Props = {
  * De verdeelbalk staat er altijd, ook wanneer alles verdeeld is. Onverdeeld geld
  * mag blijven staan, maar het mag nooit onzichtbaar worden: zolang er iets in de
  * hoofdpot zit, zegt de kaart hoeveel en biedt ze de twee wegen eruit (verdelen
- * volgens percentages, of per transactie toewijzen).
+ * over de potjes, of een losse transactie aan een potje toewijzen).
  */
 export function BankCard({
   label,
@@ -103,7 +103,7 @@ export function BankCard({
               onClick={onDistribute}
               className="rounded-xl bg-teal-500 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-teal-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
             >
-              Verdeel volgens %
+              Verdelen
             </button>
           )}
           {onOpenInbox && unassignedCount > 0 && (
