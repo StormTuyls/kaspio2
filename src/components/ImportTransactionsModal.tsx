@@ -5,6 +5,7 @@ import {
   findDuplicate,
   guessColumns,
   normalizeCounterparty,
+  sameParty,
   parseAmount,
   parseCsv,
   parseDate,
@@ -101,11 +102,15 @@ export function ImportTransactionsModal({
   // komen hier automatisch in te staan; jij kan elke rij aan- of uitzetten.
   const [skipped, setSkipped] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState(false);
+  // Afloop van een import: wat er binnen is, en welke rijen je oversloeg. Blijft
+  // staan tot je sluit, zodat "alsnog importeren" mogelijk is.
+  const [result, setResult] = useState<{ imported: number; skipped: number[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Reset bij sluiten zodat een volgende import schoon start.
   useEffect(() => {
     if (!open) {
+      setResult(null);
       setSkipped(new Set());
       setStep("upload");
       setFileName("");
@@ -249,8 +254,28 @@ export function ImportTransactionsModal({
 
   const validRows = preview.filter((p) => p.valid);
   const invalidCount = preview.length - validRows.length;
-  const importCount = preview.filter((p, i) => p.valid && !skipped.has(i)).length;
-  const skippedCount = validRows.length - importCount;
+  // Naam van de bestaande transactie, maar alleen wanneer die de importrij
+  // tegenspreekt. "AG INSURANCE NV" naast "AG Insurance" is dezelfde partij en
+  // voegt niets toe; "Delhaize" naast "Colruyt" is precies wat je wil zien,
+  // want dan is zelfde dag + zelfde bedrag misschien toch toeval.
+  const otherParty = preview.map((p, i) => {
+    const dup = duplicates[i];
+    if (dup?.kind !== "exact" || !dup.existing.counterparty) return "";
+    const mine = normalizeCounterparty(p.counterparty ?? "");
+    if (!mine || sameParty(mine, dup.existing.counterparty)) return "";
+    return dup.existing.counterparty.length > 22
+      ? `${dup.existing.counterparty.slice(0, 22)}…`
+      : dup.existing.counterparty;
+  });
+
+  const importIndexes = preview
+    .map((p, i) => (p.valid && !skipped.has(i) ? i : -1))
+    .filter((i) => i >= 0);
+  const skippableIndexes = preview
+    .map((p, i) => (p.valid && skipped.has(i) ? i : -1))
+    .filter((i) => i >= 0);
+  const importCount = importIndexes.length;
+  const skippedCount = skippableIndexes.length;
   const duplicateCount = duplicates.filter(Boolean).length;
   const canImport =
     cols.date >= 0 && cols.amount >= 0 && importCount > 0 && !busy;
@@ -261,12 +286,17 @@ export function ImportTransactionsModal({
     return signed < 0 ? "out" : "in";
   }
 
-  async function runImport() {
+  /**
+   * Importeer precies deze rijen (index in preview). Sluit het scherm niet: de
+   * afloop blijft staan, zodat je overgeslagen rijen alsnog kan binnenhalen
+   * zonder het bestand opnieuw te kiezen.
+   */
+  async function runImport(indexes: number[]) {
     setBusy(true);
     setError(null);
-    const inputs: TransactionInput[] = preview
-      .map((p, i) => ({ p, i }))
-      .filter(({ p, i }) => p.valid && !skipped.has(i))
+    const inputs: TransactionInput[] = indexes
+      .map((i) => ({ p: preview[i], i }))
+      .filter(({ p }) => p?.valid)
       .map(({ p, i }) => {
         const choice = rowPot[i] ?? targetPot;
         return {
@@ -278,13 +308,24 @@ export function ImportTransactionsModal({
           memo: p.memo || null,
         };
       });
+    if (inputs.length === 0) {
+      setBusy(false);
+      return;
+    }
     const res = await onImport(inputs);
     setBusy(false);
     if (res.error) {
       setError(res.error);
       return;
     }
-    onClose();
+    const done = new Set(indexes);
+    setResult((prev) => ({
+      imported: (prev?.imported ?? 0) + inputs.length,
+      // Wat we deze ronde binnenhaalden is geen "overgeslagen" meer.
+      skipped: (prev ? prev.skipped : skippableIndexes).filter(
+        (i) => !done.has(i),
+      ),
+    }));
   }
 
   if (!open) return null;
@@ -494,6 +535,7 @@ export function ImportTransactionsModal({
                               <input
                                 type="checkbox"
                                 checked={!skip}
+                                disabled={!!result}
                                 onChange={() => toggleSkip(i)}
                                 aria-label={skip ? "Deze rij toch importeren" : "Deze rij overslaan"}
                                 className="mt-0.5 h-4 w-4 accent-teal-600"
@@ -522,7 +564,9 @@ export function ImportTransactionsModal({
                                 }`}
                               >
                                 {dup.kind === "exact"
-                                  ? "staat er al"
+                                  ? otherParty[i]
+                                    ? `staat er al · ${otherParty[i]}`
+                                    : "staat er al"
                                   : `lijkt op ${dup.existing.occurredOn}`}
                               </span>
                             )}
@@ -590,7 +634,7 @@ export function ImportTransactionsModal({
           )}
         </div>
 
-        {step === "map" && (
+        {step === "map" && !result && (
           <div className="flex items-center justify-end gap-3 border-t border-navy-100 px-5 py-4 dark:border-navy-700/60">
             <button
               onClick={onClose}
@@ -599,7 +643,7 @@ export function ImportTransactionsModal({
               Annuleren
             </button>
             <button
-              onClick={runImport}
+              onClick={() => runImport(importIndexes)}
               disabled={!canImport}
               className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -609,6 +653,42 @@ export function ImportTransactionsModal({
                   ? `${importCount} importeren, ${skippedCount} overslaan`
                   : `${importCount} importeren`}
             </button>
+          </div>
+        )}
+
+        {/* Afloop: wat er binnen is, en de kans om overgeslagen rijen alsnog te
+            halen. Zonder dit moet je het bestand opnieuw kiezen voor één rij. */}
+        {result && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-navy-100 px-5 py-4 dark:border-navy-700/60">
+            <p className="text-sm text-navy-700 dark:text-navy-200">
+              <span className="font-semibold">{result.imported}</span>{" "}
+              {result.imported === 1 ? "transactie" : "transacties"} geïmporteerd
+              {result.skipped.length > 0 && (
+                <>
+                  {", "}
+                  <span className="font-semibold">{result.skipped.length}</span>{" "}
+                  overgeslagen als duplicaat
+                </>
+              )}
+              .
+            </p>
+            <div className="flex gap-2">
+              {result.skipped.length > 0 && (
+                <button
+                  onClick={() => runImport(result.skipped)}
+                  disabled={busy}
+                  className="rounded-lg px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 disabled:opacity-50 dark:text-teal-300 dark:hover:bg-teal-900/30"
+                >
+                  {busy ? "Bezig…" : "Toch importeren"}
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="rounded-lg bg-navy-900 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-800 dark:bg-white dark:text-navy-900 dark:hover:bg-navy-100"
+              >
+                Sluiten
+              </button>
+            </div>
           </div>
         )}
       </div>

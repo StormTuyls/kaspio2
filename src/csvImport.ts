@@ -234,11 +234,15 @@ function sameCents(a: number, b: number): boolean {
 /**
  * Zoek een bestaande transactie die overeenkomt met een importrij.
  *
- *   'exact' : zelfde datum, bedrag, richting én tegenpartij. Vrijwel altijd een
- *             tweede import van dezelfde verrichting.
- *   'near'  : zelfde bedrag en richting, datum binnen `windowDays`, tegenpartij
- *             gelijk of een deelstring. Kan ook een echte tweede betaling zijn,
- *             dus enkel om te waarschuwen.
+ *   'exact' : zelfde datum, bedrag en richting. De tegenpartij speelt hier geen
+ *             rol meer. Die eis kostte vooral gemiste duplicaten: een niet
+ *             gemapte naamkolom of een andere schrijfwijze in een tweede export
+ *             liet de rij gewoon door. Verschilt de naam wel, dan tonen we die
+ *             van de bestaande transactie, zodat je zelf ziet dat er iets niet
+ *             rijmt en de rij terug kan aanvinken.
+ *   'near'  : bedrag en richting gelijk, datum binnen `windowDays`, én een
+ *             tegenpartij die overeenkomt. Zonder die naam is "zelfde bedrag,
+ *             datum een paar dagen ernaast" te mager om iets over te zeggen.
  *
  * Bij meerdere kandidaten wint de exacte, en daarna de kleinste datumafstand.
  */
@@ -271,16 +275,11 @@ export function findDuplicate(
     const gap = dayGap(row.occurredOn, tx.occurredOn);
     if (gap > windowDays) continue;
 
-    const txCp = normalizeCounterparty(tx.counterparty ?? "");
-    const bothEmpty = !cp && !txCp;
-    const identical = bothEmpty || (!!cp && cp === txCp);
-    const similar =
-      identical || (!!cp && !!txCp && (cp.includes(txCp) || txCp.includes(cp)));
-
-    const kind: DuplicateKind = gap === 0 && identical ? "exact" : "near";
-    // Zonder enige gelijkenis in de tegenpartij is een gelijk bedrag te mager,
-    // tenzij het exact dezelfde dag is: dan is het nog steeds verdacht.
-    if (!similar && gap !== 0) continue;
+    // Zelfde dag + zelfde bedrag is het sterkste signaal dat we hebben.
+    // Daarbuiten moet de tegenpartij het verhaal bevestigen.
+    const isExact = gap === 0;
+    if (!isExact && !sameParty(cp, tx.counterparty)) continue;
+    const kind: DuplicateKind = isExact ? "exact" : "near";
 
     const hit = {
       kind,
@@ -304,4 +303,18 @@ export function findDuplicate(
 
   if (!best) return null;
   return { kind: best.kind, existing: best.existing };
+}
+
+/**
+ * Slaan twee tegenpartijen op hetzelfde? Gelijk, of de ene zit in de andere
+ * ("AG Insurance" in "AG INSURANCE NV"). Deelstrings pas vanaf vier tekens,
+ * anders matcht "AG" op "AGENDA BVBA". Eén lege naam is geen bevestiging.
+ */
+export function sameParty(normalized: string, other: string | undefined): boolean {
+  const b = normalizeCounterparty(other ?? "");
+  if (!normalized || !b) return false;
+  if (normalized === b) return true;
+  const short = normalized.length <= b.length ? normalized : b;
+  const long = short === normalized ? b : normalized;
+  return short.length >= 4 && long.includes(short);
 }
