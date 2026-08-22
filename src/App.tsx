@@ -1443,6 +1443,7 @@ function AuthedApp({
             allowUnallocated={!!isAdmin}
             counterpartyPotHints={counterpartyPotHints}
             recurringPlans={recurringPlans}
+            existingTransactions={store.state.transactions}
             onImport={(inputs) => store.importTransactions(inputs)}
             onClose={() => setShowImport(false)}
           />

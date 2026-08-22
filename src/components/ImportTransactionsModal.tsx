@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import type { Pot } from "../types";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { Pot, Transaction } from "../types";
 import { matchRecurringPlan, type RecurringPlan, type TransactionInput } from "../data";
 import {
+  findDuplicate,
   guessColumns,
   normalizeCounterparty,
   parseAmount,
@@ -22,11 +23,20 @@ type Props = {
   counterpartyPotHints?: Record<string, string>;
   /** Actieve domiciliëringen, om afhoudingen automatisch te herkennen. */
   recurringPlans?: RecurringPlan[];
+  /** Wat er al in de organisatie staat, om dubbele import te herkennen. */
+  existingTransactions?: Transaction[];
   onImport: (
     inputs: TransactionInput[],
   ) => Promise<{ error: string | null; count: number }>;
   onClose: () => void;
 };
+
+// Lege defaults op moduleniveau: een default-waarde in de destructuring ({} of
+// []) is elke render een nieuw object, en dat laat elk effect dat erop let
+// oneindig opnieuw draaien.
+const NO_HINTS: Record<string, string> = {};
+const NO_PLANS: RecurringPlan[] = [];
+const NO_TRANSACTIONS: Transaction[] = [];
 
 type DirectionMode = "sign" | "all_in" | "all_out";
 
@@ -64,8 +74,9 @@ export function ImportTransactionsModal({
   open,
   pots,
   allowUnallocated,
-  counterpartyPotHints = {},
-  recurringPlans = [],
+  counterpartyPotHints = NO_HINTS,
+  recurringPlans = NO_PLANS,
+  existingTransactions = NO_TRANSACTIONS,
   onImport,
   onClose,
 }: Props) {
@@ -86,12 +97,16 @@ export function ImportTransactionsModal({
   // Toewijzing per rij (potId of UNALLOCATED). De "alle rijen"-keuze vult deze;
   // per rij kan je daarna overschrijven.
   const [rowPot, setRowPot] = useState<string[]>([]);
+  // Rijen die je niet wil importeren (index in preview). Zekere duplicaten
+  // komen hier automatisch in te staan; jij kan elke rij aan- of uitzetten.
+  const [skipped, setSkipped] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Reset bij sluiten zodat een volgende import schoon start.
   useEffect(() => {
     if (!open) {
+      setSkipped(new Set());
       setStep("upload");
       setFileName("");
       setHeaders([]);
@@ -161,6 +176,55 @@ export function ImportTransactionsModal({
     });
   }, [preview, recurringPlans, dirMode]);
 
+  // Duplicaten: staat deze verrichting al in de organisatie? Interne regels
+  // (transferGroup) tellen niet mee, zie findDuplicate.
+  const duplicates = useMemo(
+    () =>
+      preview.map((p) => {
+        if (!p.valid || p.amount === null || !p.occurredOn) return null;
+        return findDuplicate(
+          {
+            occurredOn: p.occurredOn,
+            amount: Math.abs(p.amount),
+            direction: directionOf(p.amount),
+            counterparty: p.counterparty,
+          },
+          existingTransactions,
+        );
+      }),
+    // directionOf hangt van dirMode af; die staat expliciet in de deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [preview, existingTransactions, dirMode],
+  );
+
+  // Zekere duplicaten staan standaard uit. Near-matches blijven aan: een
+  // domiciliëring die een dag verschoof mag geen echte tweede afhouding slikken.
+  //
+  // Alleen opnieuw bepalen wanneer de rijen zelf veranderen (ander bestand,
+  // andere kolommen, andere in/uit-regel). De duplicatenlijst verandert ook
+  // wanneer de transacties in de app ververst worden, en dan mogen jouw eigen
+  // vinkjes niet zomaar teruggezet worden.
+  const duplicatesRef = useRef(duplicates);
+  duplicatesRef.current = duplicates;
+  useEffect(() => {
+    setSkipped(
+      new Set(
+        duplicatesRef.current
+          .map((d, i) => (d?.kind === "exact" ? i : -1))
+          .filter((i) => i >= 0),
+      ),
+    );
+  }, [preview, dirMode]);
+
+  function toggleSkip(i: number) {
+    setSkipped((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  }
+
   // Seed de per-rij toewijzing, in volgorde van zekerheid:
   //   1. een herkende domiciliëring (bedrag + datum + tegenpartij kloppen),
   //   2. een tegenpartij die je eerder al aan een potje toewees,
@@ -185,8 +249,11 @@ export function ImportTransactionsModal({
 
   const validRows = preview.filter((p) => p.valid);
   const invalidCount = preview.length - validRows.length;
+  const importCount = preview.filter((p, i) => p.valid && !skipped.has(i)).length;
+  const skippedCount = validRows.length - importCount;
+  const duplicateCount = duplicates.filter(Boolean).length;
   const canImport =
-    cols.date >= 0 && cols.amount >= 0 && validRows.length > 0 && !busy;
+    cols.date >= 0 && cols.amount >= 0 && importCount > 0 && !busy;
 
   function directionOf(signed: number): "in" | "out" {
     if (dirMode === "all_in") return "in";
@@ -199,7 +266,7 @@ export function ImportTransactionsModal({
     setError(null);
     const inputs: TransactionInput[] = preview
       .map((p, i) => ({ p, i }))
-      .filter(({ p }) => p.valid)
+      .filter(({ p, i }) => p.valid && !skipped.has(i))
       .map(({ p, i }) => {
         const choice = rowPot[i] ?? targetPot;
         return {
@@ -381,13 +448,22 @@ export function ImportTransactionsModal({
               <div className="rounded-xl border border-navy-100 dark:border-navy-700/60">
                 <div className="flex items-center justify-between gap-2 border-b border-navy-100 px-3 py-2 dark:border-navy-700/60">
                   <span className="text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
-                    Voorbeeld ({validRows.length} importeerbaar
-                    {invalidCount > 0 ? `, ${invalidCount} overgeslagen` : ""})
+                    Voorbeeld ({importCount} importeerbaar
+                    {invalidCount > 0 ? `, ${invalidCount} onleesbaar` : ""})
                   </span>
                   <span className="text-[11px] font-normal normal-case text-navy-400 dark:text-navy-500">
                     potje per rij aanpasbaar →
                   </span>
                 </div>
+                {duplicateCount > 0 && (
+                  <p className="border-b border-amber-200 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+                    {duplicateCount === 1
+                      ? "1 rij lijkt al in Kaspio te staan"
+                      : `${duplicateCount} rijen lijken al in Kaspio te staan`}
+                    . Zekere duplicaten staan uit; vink ze aan als je ze toch wil
+                    importeren.
+                  </p>
+                )}
                 <div className="max-h-56 overflow-y-auto">
                   <table className="w-full text-sm">
                     <tbody className="divide-y divide-navy-100 dark:divide-navy-700/60">
@@ -405,12 +481,25 @@ export function ImportTransactionsModal({
                           !!hintPotId &&
                           pots.some((pt) => pt.id === hintPotId) &&
                           (rowPot[i] ?? targetPot) === hintPotId;
+                        const dup = duplicates[i];
+                        const skip = skipped.has(i);
                         return (
                         <tr
                           key={i}
-                          className={p.valid ? "" : "opacity-40"}
+                          className={!p.valid ? "opacity-40" : skip ? "opacity-50" : ""}
                           title={p.valid ? "" : "Datum of bedrag onleesbaar — wordt overgeslagen"}
                         >
+                          <td className="py-1.5 pl-3 pr-0 align-top">
+                            {p.valid && (
+                              <input
+                                type="checkbox"
+                                checked={!skip}
+                                onChange={() => toggleSkip(i)}
+                                aria-label={skip ? "Deze rij toch importeren" : "Deze rij overslaan"}
+                                className="mt-0.5 h-4 w-4 accent-teal-600"
+                              />
+                            )}
+                          </td>
                           <td className="whitespace-nowrap px-3 py-1.5 text-navy-500 dark:text-navy-300">
                             {p.occurredOn ?? "—"}
                           </td>
@@ -418,9 +507,23 @@ export function ImportTransactionsModal({
                             <span className="block max-w-[14rem] truncate">
                               {p.counterparty || p.memo || "—"}
                             </span>
-                            {matches[i] && (
+                            {matches[i] && !dup && (
                               <span className="mt-0.5 inline-block rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
                                 ✨ herkende domiciliëring
+                              </span>
+                            )}
+                            {dup && (
+                              <span
+                                title={`Bestaat al: ${dup.existing.occurredOn}, € ${dup.existing.amount.toFixed(2)}${dup.existing.counterparty ? ` , ${dup.existing.counterparty}` : ""}`}
+                                className={`mt-0.5 inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                                  dup.kind === "exact"
+                                    ? "bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
+                                    : "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                                }`}
+                              >
+                                {dup.kind === "exact"
+                                  ? "staat er al"
+                                  : `lijkt op ${dup.existing.occurredOn}`}
                               </span>
                             )}
                           </td>
@@ -500,7 +603,11 @@ export function ImportTransactionsModal({
               disabled={!canImport}
               className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {busy ? "Importeren…" : `${validRows.length} importeren`}
+              {busy
+                ? "Importeren…"
+                : skippedCount > 0
+                  ? `${importCount} importeren, ${skippedCount} overslaan`
+                  : `${importCount} importeren`}
             </button>
           </div>
         )}

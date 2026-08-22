@@ -189,3 +189,119 @@ export function guessColumns(headers: string[]): Record<ColumnKey, number> {
     memo: find([/mededeling/, /omschrijving/, /memo/, /communicatie/, /detail/, /description/]),
   };
 }
+
+// =============================================================================
+// Duplicaatdetectie bij import
+// =============================================================================
+// Twee afschriften overlappen bijna altijd een stuk. Zonder controle boek je die
+// overlap gewoon een tweede keer, en bij domiciliëringen valt dat het minst op:
+// die zien er maand na maand identiek uit.
+//
+// De vergelijking negeert alle regels met een transferGroup. Dat zijn interne
+// verschuivingen (verdelingen, reserveringen, overboekingen tussen potjes) en
+// geen echte bankverrichtingen. Deed ze dat niet, dan werd je echte afhouding
+// aangezien voor een duplicaat van de reservering die Kaspio er zelf voor
+// klaarzette: zelfde bedrag, zelfde tegenpartij, datum vlakbij.
+// =============================================================================
+
+/** Hoe zeker is de match? 'exact' = veilig om standaard over te slaan. */
+export type DuplicateKind = "exact" | "near";
+
+export type DuplicateHit = {
+  kind: DuplicateKind;
+  /** De bestaande transactie waarop gematcht is. */
+  existing: {
+    id: string;
+    occurredOn: string;
+    amount: number;
+    counterparty: string;
+    potId: string | null;
+  };
+};
+
+/** Dagen tussen twee ISO-datums (absoluut). */
+function dayGap(a: string, b: string): number {
+  const da = new Date(`${a}T00:00:00`).getTime();
+  const db = new Date(`${b}T00:00:00`).getTime();
+  if (!Number.isFinite(da) || !Number.isFinite(db)) return Infinity;
+  return Math.abs(Math.round((da - db) / 86_400_000));
+}
+
+function sameCents(a: number, b: number): boolean {
+  return Math.round(Math.abs(a) * 100) === Math.round(Math.abs(b) * 100);
+}
+
+/**
+ * Zoek een bestaande transactie die overeenkomt met een importrij.
+ *
+ *   'exact' : zelfde datum, bedrag, richting én tegenpartij. Vrijwel altijd een
+ *             tweede import van dezelfde verrichting.
+ *   'near'  : zelfde bedrag en richting, datum binnen `windowDays`, tegenpartij
+ *             gelijk of een deelstring. Kan ook een echte tweede betaling zijn,
+ *             dus enkel om te waarschuwen.
+ *
+ * Bij meerdere kandidaten wint de exacte, en daarna de kleinste datumafstand.
+ */
+export function findDuplicate(
+  row: {
+    occurredOn: string;
+    amount: number;
+    direction: "in" | "out";
+    counterparty: string;
+  },
+  existing: {
+    id: string;
+    occurredOn: string;
+    amount: number;
+    direction: "in" | "out";
+    counterparty?: string;
+    potId: string | null;
+    transferGroup?: string | null;
+  }[],
+  windowDays = 3,
+): DuplicateHit | null {
+  const cp = normalizeCounterparty(row.counterparty ?? "");
+  let best: (DuplicateHit & { gap: number }) | null = null;
+
+  for (const tx of existing) {
+    if (tx.transferGroup) continue;
+    if (tx.direction !== row.direction) continue;
+    if (!sameCents(tx.amount, row.amount)) continue;
+
+    const gap = dayGap(row.occurredOn, tx.occurredOn);
+    if (gap > windowDays) continue;
+
+    const txCp = normalizeCounterparty(tx.counterparty ?? "");
+    const bothEmpty = !cp && !txCp;
+    const identical = bothEmpty || (!!cp && cp === txCp);
+    const similar =
+      identical || (!!cp && !!txCp && (cp.includes(txCp) || txCp.includes(cp)));
+
+    const kind: DuplicateKind = gap === 0 && identical ? "exact" : "near";
+    // Zonder enige gelijkenis in de tegenpartij is een gelijk bedrag te mager,
+    // tenzij het exact dezelfde dag is: dan is het nog steeds verdacht.
+    if (!similar && gap !== 0) continue;
+
+    const hit = {
+      kind,
+      gap,
+      existing: {
+        id: tx.id,
+        occurredOn: tx.occurredOn,
+        amount: Math.abs(tx.amount),
+        counterparty: tx.counterparty ?? "",
+        potId: tx.potId,
+      },
+    };
+    if (
+      !best ||
+      (hit.kind === "exact" && best.kind !== "exact") ||
+      (hit.kind === best.kind && hit.gap < best.gap)
+    ) {
+      best = hit;
+    }
+  }
+
+  if (!best) return null;
+  return { kind: best.kind, existing: best.existing };
+}
