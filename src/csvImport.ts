@@ -215,6 +215,7 @@ export type DuplicateHit = {
     occurredOn: string;
     amount: number;
     counterparty: string;
+    memo: string;
     potId: string | null;
   };
 };
@@ -259,6 +260,7 @@ export function findDuplicate(
     amount: number;
     direction: "in" | "out";
     counterparty?: string;
+    memo?: string;
     potId: string | null;
     transferGroup?: string | null;
   }[],
@@ -289,6 +291,7 @@ export function findDuplicate(
         occurredOn: tx.occurredOn,
         amount: Math.abs(tx.amount),
         counterparty: tx.counterparty ?? "",
+        memo: tx.memo ?? "",
         potId: tx.potId,
       },
     };

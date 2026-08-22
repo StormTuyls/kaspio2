@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import type { Pot, Transaction } from "../types";
 import { matchRecurringPlan, type RecurringPlan, type TransactionInput } from "../data";
 import {
@@ -105,6 +105,9 @@ export function ImportTransactionsModal({
   // Afloop van een import: wat er binnen is, en welke rijen je oversloeg. Blijft
   // staan tot je sluit, zodat "alsnog importeren" mogelijk is.
   const [result, setResult] = useState<{ imported: number; skipped: number[] } | null>(null);
+  // Welke rij zijn vergelijking openklapt (index in preview). Eén tegelijk: de
+  // tabel is smal, en je vergelijkt er toch maar één per keer.
+  const [openDup, setOpenDup] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Reset bij sluiten zodat een volgende import schoon start.
@@ -524,9 +527,15 @@ export function ImportTransactionsModal({
                           (rowPot[i] ?? targetPot) === hintPotId;
                         const dup = duplicates[i];
                         const skip = skipped.has(i);
+                        const potNaam = (id: string | null) =>
+                          id === null
+                            ? "Hoofdpot"
+                            : (pots.find((pt) => pt.id === id)?.name ??
+                              "ander potje");
+                        const gekozen = rowPot[i] ?? targetPot;
                         return (
+                        <Fragment key={i}>
                         <tr
-                          key={i}
                           className={!p.valid ? "opacity-40" : skip ? "opacity-50" : ""}
                           title={p.valid ? "" : "Datum of bedrag onleesbaar — wordt overgeslagen"}
                         >
@@ -555,9 +564,14 @@ export function ImportTransactionsModal({
                               </span>
                             )}
                             {dup && (
-                              <span
-                                title={`Bestaat al: ${dup.existing.occurredOn}, € ${dup.existing.amount.toFixed(2)}${dup.existing.counterparty ? ` , ${dup.existing.counterparty}` : ""}`}
-                                className={`mt-0.5 inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setOpenDup((cur) => (cur === i ? null : i))
+                                }
+                                aria-expanded={openDup === i}
+                                title="Vergelijk met wat er al in Kaspio staat"
+                                className={`mt-0.5 inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold transition hover:brightness-95 ${
                                   dup.kind === "exact"
                                     ? "bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
                                     : "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
@@ -568,7 +582,10 @@ export function ImportTransactionsModal({
                                     ? `staat er al · ${otherParty[i]}`
                                     : "staat er al"
                                   : `lijkt op ${dup.existing.occurredOn}`}
-                              </span>
+                                <span aria-hidden className="ml-1 opacity-60">
+                                  {openDup === i ? "▴" : "▾"}
+                                </span>
+                              </button>
                             )}
                           </td>
                           <td
@@ -614,6 +631,32 @@ export function ImportTransactionsModal({
                             )}
                           </td>
                         </tr>
+                        {dup && openDup === i && (
+                          <tr className="bg-canvas dark:bg-navy-800/50">
+                            <td />
+                            <td colSpan={4} className="px-3 pb-2.5 pt-0">
+                              <DupVergelijking
+                                bestaand={{
+                                  datum: dup.existing.occurredOn,
+                                  bedrag: dup.existing.amount,
+                                  tegenpartij: dup.existing.counterparty,
+                                  mededeling: dup.existing.memo,
+                                  potje: potNaam(dup.existing.potId),
+                                }}
+                                importrij={{
+                                  datum: p.occurredOn ?? "",
+                                  bedrag: Math.abs(p.amount ?? 0),
+                                  tegenpartij: p.counterparty,
+                                  mededeling: p.memo,
+                                  potje: potNaam(
+                                    gekozen === UNALLOCATED ? null : gekozen,
+                                  ),
+                                }}
+                              />
+                            </td>
+                          </tr>
+                        )}
+                        </Fragment>
                         );
                       })}
                     </tbody>
@@ -692,6 +735,107 @@ export function ImportTransactionsModal({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Vergelijking bij een herkend duplicaat
+// =============================================================================
+// Bij een exacte match zijn datum, bedrag en richting per definitie gelijk. Wat
+// kán verschillen is de tegenpartij, de mededeling en het potje. Precies dat
+// bepaalt of je hier met een tweede import zit of met een echte tweede
+// verrichting, dus het hoort zichtbaar te zijn en niet in een tooltip.
+
+type VergelijkRij = {
+  datum: string;
+  bedrag: number;
+  tegenpartij: string;
+  mededeling: string;
+  potje: string;
+};
+
+function DupVergelijking({
+  bestaand,
+  importrij,
+}: {
+  bestaand: VergelijkRij;
+  importrij: VergelijkRij;
+}) {
+  const velden: { label: string; a: string; b: string; anders: boolean }[] = [
+    {
+      label: "Datum",
+      a: bestaand.datum,
+      b: importrij.datum,
+      anders: bestaand.datum !== importrij.datum,
+    },
+    {
+      label: "Bedrag",
+      a: `€ ${bestaand.bedrag.toFixed(2)}`,
+      b: `€ ${importrij.bedrag.toFixed(2)}`,
+      anders:
+        Math.round(bestaand.bedrag * 100) !== Math.round(importrij.bedrag * 100),
+    },
+    {
+      label: "Tegenpartij",
+      a: bestaand.tegenpartij,
+      b: importrij.tegenpartij,
+      // Anders geschreven is niet anders: "AG INSURANCE NV" en "AG Insurance"
+      // zijn dezelfde partij, dat hoeft geen nadruk.
+      anders: !sameParty(
+        normalizeCounterparty(importrij.tegenpartij),
+        bestaand.tegenpartij,
+      ),
+    },
+    {
+      label: "Mededeling",
+      a: bestaand.mededeling,
+      b: importrij.mededeling,
+      anders: bestaand.mededeling.trim() !== importrij.mededeling.trim(),
+    },
+    {
+      label: "Potje",
+      a: bestaand.potje,
+      b: importrij.potje,
+      anders: bestaand.potje !== importrij.potje,
+    },
+  ];
+
+  return (
+    <div className="rounded-lg border border-navy-100 bg-white text-[11px] dark:border-navy-700 dark:bg-navy-900">
+      <div className="grid grid-cols-[5.5rem_1fr_1fr] gap-x-3 border-b border-navy-100 px-3 py-1.5 font-semibold uppercase tracking-wider text-navy-400 dark:border-navy-700 dark:text-navy-500">
+        <span />
+        <span>Al in Kaspio</span>
+        <span>Dit bestand</span>
+      </div>
+      {velden.map((v) => (
+        <div
+          key={v.label}
+          className="grid grid-cols-[5.5rem_1fr_1fr] gap-x-3 px-3 py-1"
+        >
+          <span className="text-navy-400 dark:text-navy-500">{v.label}</span>
+          <span
+            className={`truncate ${
+              v.anders
+                ? "text-navy-700 dark:text-navy-200"
+                : "text-navy-400 dark:text-navy-500"
+            }`}
+            title={v.a}
+          >
+            {v.a || "—"}
+          </span>
+          <span
+            className={`truncate ${
+              v.anders
+                ? "font-semibold text-amber-700 dark:text-amber-300"
+                : "text-navy-400 dark:text-navy-500"
+            }`}
+            title={v.b}
+          >
+            {v.b || "—"}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
