@@ -120,9 +120,28 @@ de standaard van Postgres:
 
 ## De app ertegen draaien
 
-Daarvoor heb je de volledige stack nodig, met PostgREST en Auth erbij. De
-Supabase CLI kan dat (`supabase start`), maar dat vereist een draaiende Docker.
-Docker Desktop staat geïnstalleerd maar draaide niet toen dit geschreven werd,
-dus die route is nog niet uitgeprobeerd en staat hier bewust niet als
-kant-en-klaar recept. Start Docker en zeg het, dan wordt dit stuk aangevuld en
-getest.
+Hiervoor is de volledige stack nodig, met PostgREST en Auth erbij. Vereist een
+draaiende Docker.
+
+```bash
+supabase start                        # haalt de images op, duurt de eerste keer even
+./scripts/testdb/testdb.sh supabase   # schema, grants en demodata erin
+```
+
+De demo-seeds hebben een auth-user `demo@kaspio.be` nodig. Maak die aan via
+Studio (http://127.0.0.1:54323, Authentication > Add user, met "Auto Confirm"),
+of via de admin-API met de service key uit `supabase status`. Doe dat **nadat**
+het schema geladen is, anders bestaat de trigger die het profiel aanmaakt nog
+niet en klagen de seeds dat er geen profiel is.
+
+Zet daarna `.env.local` op de lokale stack:
+
+```
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+VITE_SUPABASE_PUBLISHABLE_KEY=<publishable key uit `supabase status`>
+```
+
+Bewaar je productiewaarden ergens anders; `.env.local` wijst dan niet meer naar
+productie tot je hem terugzet.
+
+`supabase stop` zet alles weer uit.

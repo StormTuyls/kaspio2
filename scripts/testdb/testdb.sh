@@ -181,6 +181,9 @@ load_supabase() {
     fi
   done < "$HERE/01-order.txt"
 
+  echo "-> tabelrechten"
+  psql "$url" -v ON_ERROR_STOP=1 -q -f "$HERE/03-grants.sql"
+
   echo "-> login_as-hulpje"
   psql "$url" -v ON_ERROR_STOP=1 -q -c "
     create or replace function public.login_as(p_user uuid) returns void
