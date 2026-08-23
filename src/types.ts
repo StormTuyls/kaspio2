@@ -31,9 +31,22 @@ export type PotGroup = {
 export type TransactionDirection = "in" | "out";
 
 export type Transaction = {
+  /**
+   * Id van de ALLOCATIE, niet van de bankregel. Eén bankregel kan over
+   * meerdere potjes gesplitst zijn en verschijnt dan als meerdere rijen.
+   * Voor alles wat de bankregel zelf raakt (verwijderen, bijlagen, toewijzen)
+   * moet je `transactionId` gebruiken.
+   */
   id: string;
-  /** null = onverdeeld, nog toe te wijzen aan een potje. */
+  /** Id van de bankregel waar deze rij een stuk van is. */
+  transactionId: string;
+  /** null = staat in de hoofdpot. */
   potId: string | null;
+  /**
+   * Alleen zinvol voor rijen in de hoofdpot: is er al over beslist? Onbeslist
+   * geld staat in de inbox en kan niet verdeeld worden.
+   */
+  confirmed?: boolean;
   direction: TransactionDirection;
   amount: number;
   occurredOn: string;

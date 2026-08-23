@@ -274,6 +274,25 @@ where not exists (
   select 1 from public.allocations a where a.transaction_id = t.id
 );
 
+-- Reparatie voor het geval de allocaties al bestonden voordat confirmed_at
+-- erbij kwam (bijvoorbeeld als je dit bestand in twee keer gedraaid hebt).
+-- Een allocatie op een gewoon potje is per definitie een genomen beslissing,
+-- net als de benen van een overboeking. Alleen wat onbeslist in de hoofdpot
+-- ligt hoort null te blijven.
+update public.allocations a
+   set confirmed_at = coalesce(a.created_at, now())
+  from public.pots p
+ where p.id = a.pot_id
+   and a.confirmed_at is null
+   and not p.is_hoofdpot;
+
+update public.allocations a
+   set confirmed_at = coalesce(a.created_at, now())
+  from public.transactions t
+ where t.id = a.transaction_id
+   and a.confirmed_at is null
+   and t.transfer_group is not null;
+
 -- De trigger hierboven heeft allocated_amount al bijgewerkt, maar bij een
 -- bulk-insert op een lege tabel is het goedkoper en zekerder om hem hier nog
 -- eens in één keer te zetten.

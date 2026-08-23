@@ -97,14 +97,17 @@ export function DashboardView({
     .filter((t) => t.direction === "out")
     .reduce((s, t) => s + t.amount, 0);
 
-  // Hoofdpot: alles zonder potje. Het saldo bevat ook de uit-regels van een
-  // verdeling; de "toe te wijzen"-lijst niet, want die regels zijn al verdeeld.
+  // Hoofdpot: alles zonder potje.
   const hoofdpotTx = allTransactions.filter((t) => t.potId === null);
-  const hoofdpotTotal = hoofdpotTx.reduce(
-    (s, t) => s + (t.direction === "in" ? t.amount : -t.amount),
-    0,
-  );
-  const unallocated = hoofdpotTx.filter((t) => !t.transferGroup);
+  // De kaart zegt "nog te verdelen" en biedt de verdeelknop aan, dus hier hoort
+  // het VERDEELBARE bedrag te staan, niet het saldo. Geld waarover nog beslist
+  // moet worden telt wel mee in het saldo maar kan niet verdeeld worden; dat
+  // beloven zou de knop laten falen.
+  const hoofdpotTotal = hoofdpotTx
+    .filter((t) => t.confirmed)
+    .reduce((s, t) => s + (t.direction === "in" ? t.amount : -t.amount), 0);
+  // Nog te beslissen: dat is de inbox. Verdeel-regels horen er niet bij.
+  const unallocated = hoofdpotTx.filter((t) => !t.transferGroup && !t.confirmed);
 
   const potById = new Map(pots.map((p) => [p.id, p] as const));
 

@@ -166,6 +166,8 @@ export interface Pot {
   archived: boolean;
   /** Optionele potgroep (tak, ploeg, werkgroep). */
   group_id: string | null;
+  /** De hoofdpot van de organisatie. Precies één per org, niet te verwijderen. */
+  is_hoofdpot: boolean;
   created_at: string;
   updated_at: string;
 }

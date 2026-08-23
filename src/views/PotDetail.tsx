@@ -149,7 +149,7 @@ export function PotDetail({
   }
 
   async function bulkDelete() {
-    const ids = [...selected];
+    const ids = toTransactionIds([...selected]);
     if (ids.length === 0) return;
     if (
       !(await confirm({
@@ -167,10 +167,21 @@ export function PotDetail({
 
   const otherPots = pots.filter((p) => p.id !== pot.id);
 
+  /** Selectie bevat allocatie-id's; mutaties werken op bankregels. */
+  function toTransactionIds(ids: string[]): string[] {
+    const set = new Set(ids);
+    return [
+      ...new Set(
+        transactions.filter((t) => set.has(t.id)).map((t) => t.transactionId),
+      ),
+    ];
+  }
+
   async function reassignSelected(toPotId: string) {
     const ids = [...selected];
     if (ids.length === 0 || !toPotId || !onReassignTransactions) return;
-    await onReassignTransactions(ids, toPotId);
+    // De selectie bevat allocatie-id's; de mutatie werkt op bankregels.
+    await onReassignTransactions(toTransactionIds(ids), toPotId);
     setSelected(new Set());
   }
 
@@ -466,7 +477,7 @@ export function PotDetail({
                           <button
                             onClick={async () => {
                               if (await confirm({ title: "Transactie verwijderen?", confirmLabel: "Verwijderen", danger: true }))
-                                onDeleteTransaction(tx.id);
+                                onDeleteTransaction(tx.transactionId);
                             }}
                             className="rounded-md px-2 py-1 text-navy-300 hover:bg-rose-50 hover:text-rose-600 dark:text-navy-500 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
                             aria-label="Verwijderen"
@@ -492,7 +503,7 @@ export function PotDetail({
                             <div className="mt-2 rounded-lg bg-canvas p-3 dark:bg-navy-800/40">
                               <TransactionAttachments
                                 orgId={orgId}
-                                transactionId={tx.id}
+                                transactionId={tx.transactionId}
                                 isAdmin={isAdmin}
                               />
                             </div>
@@ -585,7 +596,7 @@ export function PotDetail({
                               <button
                                 onClick={async () => {
                                   if (await confirm({ title: "Transactie verwijderen?", confirmLabel: "Verwijderen", danger: true }))
-                                    onDeleteTransaction(tx.id);
+                                    onDeleteTransaction(tx.transactionId);
                                 }}
                                 className="text-xs text-navy-300 hover:text-rose-600 dark:text-navy-500 dark:hover:text-rose-400"
                                 aria-label="Verwijderen"
@@ -601,7 +612,7 @@ export function PotDetail({
                           <td colSpan={isAdmin ? 6 : 5} className="px-4 py-3">
                             <TransactionAttachments
                               orgId={orgId}
-                              transactionId={tx.id}
+                              transactionId={tx.transactionId}
                               isAdmin={isAdmin}
                             />
                           </td>

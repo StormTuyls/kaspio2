@@ -16,11 +16,6 @@ import type {
   Subscription,
   Transaction,
 } from "./supabase";
-import {
-  buildPool,
-  leftoverAllocations,
-  planAllocation,
-} from "./allocatePlan";
 import { supabase } from "./supabase";
 import type { NotificationSettings, PotTargetKind } from "./types";
 import { defaultNotificationSettings } from "./types";
@@ -355,14 +350,26 @@ export type AssignPart = {
   amount: number;
 };
 
+/** Rij uit public.allocations: welk potje krijgt welk deel van een bankregel. */
+export type DbAllocation = {
+  id: string;
+  organisation_id: string;
+  transaction_id: string;
+  pot_id: string;
+  amount: number | string;
+  confirmed_at: string | null;
+};
+
 export function useTransactions(orgId: string | null, potId?: string | null) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [allocations, setAllocations] = useState<DbAllocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchTransactions = useCallback(async () => {
     if (!orgId) {
       setTransactions([]);
+      setAllocations([]);
       setLoading(false);
       return;
     }
@@ -375,9 +382,20 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
       .order("occurred_on", { ascending: false })
       .order("created_at", { ascending: false });
     if (potId) query = query.eq("pot_id", potId);
-    const { data, error: err } = await query;
-    if (err) setError(err.message);
-    else setTransactions((data as Transaction[]) ?? []);
+
+    // De allocaties bepalen waar het geld staat; de transacties blijven het
+    // bankfeit. De UI wordt uit de combinatie opgebouwd.
+    const [txRes, allocRes] = await Promise.all([
+      query,
+      supabase
+        .from("allocations")
+        .select("*")
+        .eq("organisation_id", orgId),
+    ]);
+    if (txRes.error) setError(txRes.error.message);
+    else setTransactions((txRes.data as Transaction[]) ?? []);
+    if (allocRes.error) setError(allocRes.error.message);
+    else setAllocations((allocRes.data as unknown as DbAllocation[]) ?? []);
     setLoading(false);
   }, [orgId, potId]);
 
@@ -432,25 +450,32 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
     return { error: null, count: rows.length };
   }
 
-  async function deleteTransaction(
-    id: string,
-  ): Promise<{ error: string | null }> {
-    // Is dit één been van een overboeking? Verwijder dan beide benen samen,
-    // anders blijft er een losse "in" of "uit" achter.
-    const tx = transactions.find((t) => t.id === id);
-    const query = tx?.transfer_group
-      ? supabase.from("transactions").delete().eq("transfer_group", tx.transfer_group)
-      : supabase.from("transactions").delete().eq("id", id);
-    const { error: err } = await query;
+  /**
+   * Een bankregel intrekken. Geen DELETE: het bankfeit blijft staan met
+   * voided_at, valt uit alle saldo's, en houdt zijn spoor. De allocaties gaan
+   * wel weg, want die zeggen niets meer.
+   */
+  async function deleteTransaction(id: string): Promise<{ error: string | null }> {
+    const { error: aErr } = await supabase
+      .from("allocations")
+      .delete()
+      .eq("transaction_id", id);
+    if (aErr) return { error: aErr.message };
+
+    const { error: err } = await (
+      supabase.from("transactions") as unknown as {
+        update: (v: Record<string, unknown>) => {
+          eq: (k: string, v: string) => Promise<{ error: Error | null }>;
+        };
+      }
+    )
+      .update({ voided_at: new Date().toISOString() })
+      .eq("id", id);
     if (err) return { error: err.message };
     await fetchTransactions();
     return { error: null };
   }
 
-  /**
-   * Verwijder meerdere transacties in één keer (één request + één refresh,
-   * i.p.v. per transactie). Neemt transfer-tegenbenen automatisch mee.
-   */
   async function deleteTransactions(
     ids: string[],
   ): Promise<{ error: string | null }> {
@@ -480,99 +505,127 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
    * Verplaats meerdere transacties naar een ander potje (herverdelen van
    * verkeerd toegewezen transacties). Wijzigt enkel pot_id, in één request.
    */
+  /**
+   * Verplaats allocaties naar een ander potje.
+   *
+   * Werkt op ALLOCATIE-id's, niet op bankregels: een gesplitste transactie
+   * staat in meerdere potjes en je wil alleen het deel verplaatsen dat je
+   * geselecteerd hebt. De bankregel blijft ongemoeid.
+   */
   async function reassignTransactions(
-    ids: string[],
+    allocationIds: string[],
     toPotId: string,
   ): Promise<{ error: string | null }> {
-    if (ids.length === 0) return { error: null };
+    if (allocationIds.length === 0) return { error: null };
     if (!toPotId) return { error: "Kies een doelpotje." };
     const { error: err } = await (
-      supabase.from("transactions") as unknown as {
+      supabase.from("allocations") as unknown as {
         update: (v: Record<string, unknown>) => {
           in: (k: string, v: string[]) => Promise<{ error: Error | null }>;
         };
       }
     )
-      .update({ pot_id: toPotId })
-      .in("id", ids);
+      .update({ pot_id: toPotId, confirmed_at: new Date().toISOString() })
+      .in("id", allocationIds);
     if (err) return { error: err.message };
     await fetchTransactions();
     return { error: null };
   }
 
   /**
-   * Wijs een onverdeelde transactie toe aan één of meerdere potjes.
-   * Bij splitsen: de originele rij krijgt deel 1 (id blijft stabiel),
-   * de overige delen worden nieuwe rijen met split_from = origineel.
-   * De delen moeten exact optellen tot het originele bedrag.
+   * Wijs (een deel van) een bankregel toe aan één of meerdere potjes.
+   *
+   * Gaat via assign_from_hoofdpot: die haalt het bedrag eerst uit de hoofdpot
+   * en kent het dan pas toe. De bankregel zelf wordt niet aangeraakt, dus het
+   * originele bedrag blijft bewaard. Wat je niet toewijst blijft onbeslist in
+   * de hoofdpot staan.
    */
   async function assignTransaction(
     id: string,
     parts: AssignPart[],
   ): Promise<{ error: string | null }> {
-    const original = transactions.find((t) => t.id === id);
-    if (!original) return { error: "Transactie niet gevonden." };
     if (parts.length === 0) return { error: "Kies minstens één potje." };
-
-    const sum = parts.reduce((s, p) => s + p.amount, 0);
-    // Centen-vergelijking om floating-point ruis te vermijden
-    if (Math.round(sum * 100) !== Math.round(Number(original.amount) * 100)) {
-      return { error: "De delen moeten samen exact het originele bedrag zijn." };
-    }
     if (parts.some((p) => p.amount <= 0)) {
       return { error: "Elk deel moet een positief bedrag zijn." };
     }
 
-    // Deel 1: originele rij bijwerken (audit-trigger logt de wijziging)
-    const first = parts[0];
-    const { error: updErr } = await (
-      supabase.from("transactions") as unknown as {
-        update: (
-          v: Record<string, unknown>,
-        ) => { eq: (k: string, v: string) => Promise<{ error: Error | null }> };
-      }
-    )
-      .update({ pot_id: first.potId, amount: first.amount })
-      .eq("id", id);
-    if (updErr) return { error: updErr.message };
-
-    // Delen 2..n: nieuwe rijen met trace naar het origineel
-    if (parts.length > 1) {
-      const rows = parts.slice(1).map((p) => ({
-        organisation_id: original.organisation_id,
-        pot_id: p.potId,
-        amount: p.amount,
-        direction: original.direction,
-        occurred_on: original.occurred_on,
-        memo: original.memo,
-        counterparty: original.counterparty,
-        split_from: id,
-      }));
-      const { error: insErr } = await supabase
-        .from("transactions")
+    for (const part of parts) {
+      const { error: err } = await supabase.rpc(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .insert(rows as any);
-      if (insErr) {
+        "assign_from_hoofdpot" as any,
+        {
+          p_transaction_id: id,
+          p_pot_id: part.potId,
+          p_amount: part.amount,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any,
+      );
+      if (err) {
         await fetchTransactions();
-        return {
-          error: `Deel 1 is toegewezen, maar de rest faalde: ${insErr.message}`,
-        };
+        return { error: err.message };
       }
     }
-
     await fetchTransactions();
     return { error: null };
   }
 
   /**
-   * Verplaats geld tussen twee plekken. Maakt twee gekoppelde regels (uit op
-   * bron, in op doel) met hetzelfde transfer_group. Netto nul op de rekening;
-   * enkel de verdeling verschuift.
-   *
-   * null = de hoofdpot (het onverdeelde geld). Zo kan je geld terugzetten naar
-   * de hoofdpot om het later opnieuw te verdelen. Eén kant mag null zijn, niet
-   * allebei: hoofdpot naar hoofdpot is geen verplaatsing.
+   * Wijs van meerdere bankregels alles wat nog in de hoofdpot staat toe aan
+   * hetzelfde potje. Gebruikt door de bulk-actie in de inbox.
    */
+  async function assignAllToPot(
+    transactionIds: string[],
+    potId: string,
+  ): Promise<{ error: string | null }> {
+    if (transactionIds.length === 0) return { error: null };
+    if (!potId) return { error: "Kies een potje." };
+
+    const openstaand = new Map<string, number>();
+    for (const a of allocations) {
+      if (transactionIds.includes(a.transaction_id)) {
+        openstaand.set(
+          a.transaction_id,
+          (openstaand.get(a.transaction_id) ?? 0) + Number(a.amount),
+        );
+      }
+    }
+
+    for (const [txId, amount] of openstaand) {
+      if (amount <= 0) continue;
+      const { error: err } = await supabase.rpc(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        "assign_from_hoofdpot" as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        { p_transaction_id: txId, p_pot_id: potId, p_amount: amount } as any,
+      );
+      if (err) {
+        await fetchTransactions();
+        return { error: err.message };
+      }
+    }
+    await fetchTransactions();
+    return { error: null };
+  }
+
+  /**
+   * Bewust in de hoofdpot houden, of die beslissing terugdraaien. Pas na
+   * bevestigen kan het geld verdeeld worden.
+   */
+  async function keepInHoofdpot(
+    transactionId: string,
+    confirm = true,
+  ): Promise<{ error: string | null }> {
+    const { error: err } = await supabase.rpc(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      "keep_in_hoofdpot" as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { p_transaction_id: transactionId, p_confirm: confirm } as any,
+    );
+    if (err) return { error: err.message };
+    await fetchTransactions();
+    return { error: null };
+  }
+
   async function transfer(input: {
     fromPotId: string | null;
     toPotId: string | null;
@@ -622,15 +675,13 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
   /**
    * Verdeel de hoofdpot over potjes.
    *
-   * Wijst de onverdeelde inkomsten zélf toe (oudste eerst, splitsend waar een
-   * transactie over twee potjes valt) in plaats van een tegenboeking te
-   * verzinnen. Vroeger bleven die transacties op pot_id null staan, dus ze
-   * bleven in de inbox hangen en wie ze daarna alsnog toewees boekte hetzelfde
-   * geld dubbel.
+   * Dit is een geldbeweging, geen herclassificatie: het maakt een overboeking
+   * uit de hoofdpot naar de gekozen potjes en komt nooit aan een bankregel. De
+   * transacties die dat geld leverden blijven onder de hoofdpot staan.
    *
-   * Wat niet uit de inbox gedekt kan worden valt terug op de oude
-   * transfer-regels. Dat gebeurt bij een org die eerder al op de oude manier
-   * verdeeld heeft: het saldo staat er dan wel, maar zonder onderliggende rij.
+   * Hoeveel je mag verdelen bewaakt de databank: enkel geld waarvan je bevestigd
+   * hebt dat het in de hoofdpot hoort telt mee. Een verse import of een
+   * onbesliste bankkost doet dus niet mee.
    */
   async function allocateFromHoofdpot(input: {
     allocations: { toPotId: string; amount: number }[];
@@ -644,104 +695,55 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
     );
     if (allocations.length === 0) return { error: "Niets om te verdelen." };
     const total = allocations.reduce((s, a) => s + a.amount, 0);
-    if (!(total > 0)) return { error: "Bedrag moet groter zijn dan 0." };
 
-    // De pool: onverdeelde inkomsten, oudste eerst. Uitgaven zonder potje
-    // horen er niet bij (die halen geld weg, ze leveren niets te verdelen op)
-    // en transfer-regels evenmin.
-    const plan = planAllocation(buildPool(transactions), allocations);
-    const byId = new Map(transactions.map((t) => [t.id, t]));
-
-    // Volgorde is bewust: eerst de originelen verplaatsen (geld verlaat de
-    // hoofdpot), dan de splitsingen. Faalt stap twee, dan is er te wéinig
-    // verdeeld. Andersom zou hetzelfde geld even dubbel staan.
-    for (const u of plan.updates) {
-      const { error: updErr } = await (
-        supabase.from("transactions") as unknown as {
-          update: (v: Record<string, unknown>) => {
-            eq: (k: string, v: string) => Promise<{ error: Error | null }>;
-          };
-        }
-      )
-        .update({ pot_id: u.potId, amount: u.amount })
-        .eq("id", u.txId);
-      if (updErr) {
-        await fetchTransactions();
-        return { error: updErr.message };
-      }
+    const { data: hoofd, error: hErr } = await supabase
+      .from("pots")
+      .select("id")
+      .eq("organisation_id", orgId)
+      .eq("is_hoofdpot", true)
+      .single();
+    if (hErr || !hoofd) {
+      return { error: "Deze organisatie heeft geen hoofdpot." };
     }
+    const hoofdpotId = (hoofd as { id: string }).id;
 
-    if (plan.inserts.length > 0) {
-      const rows = plan.inserts.map((i) => {
-        const orig = byId.get(i.splitFrom);
-        return {
-          organisation_id: orgId,
-          pot_id: i.potId,
-          amount: i.amount,
-          direction: "in" as const,
-          occurred_on: orig?.occurred_on ?? input.occurredOn,
-          memo: orig?.memo ?? null,
-          counterparty: orig?.counterparty ?? input.counterparty ?? "Verdeling",
-          split_from: i.splitFrom,
-        };
-      });
-      const { error: insErr } = await supabase
-        .from("transactions")
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .insert(rows as any);
-      if (insErr) {
-        await fetchTransactions();
-        return {
-          error: `Een deel is verdeeld, maar de rest faalde: ${insErr.message}`,
-        };
-      }
+    const group = crypto.randomUUID();
+    const base = {
+      organisation_id: orgId,
+      occurred_on: input.occurredOn,
+      memo: input.memo ?? null,
+      counterparty: input.counterparty ?? "Verdeling",
+      transfer_group: group,
+    };
+    const rows = [
+      { ...base, pot_id: hoofdpotId, direction: "out" as const, amount: total },
+      ...allocations.map((a) => ({
+        ...base,
+        pot_id: a.toPotId,
+        direction: "in" as const,
+        amount: a.amount,
+      })),
+    ];
+    const { error: err } = await supabase
+      .from("transactions")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .insert(rows as any);
+    if (err) {
+      await fetchTransactions();
+      return { error: err.message };
     }
-
-    // Restant dat niet uit de inbox kwam: klassieke tegenboeking.
-    if (plan.remainder > 0.004) {
-      const group = crypto.randomUUID();
-      const base = {
-        organisation_id: orgId,
-        occurred_on: input.occurredOn,
-        memo: input.memo ?? null,
-        counterparty: input.counterparty ?? "Verdeling",
-        transfer_group: group,
-      };
-      // Wat er per potje nog openstaat na de inbox-dekking.
-      const leftovers = leftoverAllocations(allocations, plan);
-      const rows = [
-        {
-          ...base,
-          pot_id: null,
-          direction: "out" as const,
-          amount: plan.remainder,
-        },
-        ...leftovers.map((l) => ({
-          ...base,
-          pot_id: l.toPotId,
-          direction: "in" as const,
-          amount: l.amount,
-        })),
-      ];
-      const { error: err } = await supabase
-        .from("transactions")
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .insert(rows as any);
-      if (err) {
-        await fetchTransactions();
-        return { error: err.message };
-      }
-    }
-
     await fetchTransactions();
     return { error: null };
   }
 
   return {
     transactions,
+    allocations,
     loading,
     error,
     addTransaction,
+    assignAllToPot,
+    keepInHoofdpot,
     importTransactions,
     deleteTransaction,
     deleteTransactions,

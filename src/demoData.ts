@@ -75,7 +75,10 @@ function buildOrg(seed: OrgSeed): DemoOrg {
   }));
   const transactions: Transaction[] = seed.tx.map(
     ([potKey, direction, amount, occurredOn, counterparty, memo], i) => ({
+      // In de demo is elke transactie precies één allocatie, dus id en
+      // transactionId vallen samen.
       id: `${seed.id}-t${String(i + 1).padStart(2, "0")}`,
+      transactionId: `${seed.id}-t${String(i + 1).padStart(2, "0")}`,
       potId: `${seed.id}-${potKey}`,
       direction,
       amount,

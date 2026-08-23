@@ -30,6 +30,7 @@ import {
   useDistributionShares,
   useRecurringPlans,
   type RecurringPlan,
+  type DbAllocation,
 } from "./data";
 import { UnallocatedInbox } from "./components/UnallocatedInbox";
 import { FeedbackModal } from "./components/FeedbackModal";
@@ -406,12 +407,30 @@ function dbPotToUiPot(p: DbPot, currentUserId: string): Pot {
   };
 }
 
-function dbTxToUiTx(t: DbTransaction): Transaction {
+/**
+ * Van bankregel + allocatie naar één UI-rij.
+ *
+ * Een bankregel die over twee potjes gesplitst is, levert twee rijen op met
+ * hetzelfde `transactionId` en elk hun eigen bedrag. Zo blijft alle bestaande
+ * UI-code werken (calcBalance, de inbox, de grafieken): die redeneert per rij
+ * over `potId` en `amount`, en dat klopt nog steeds.
+ *
+ * De hoofdpot wordt naar `potId: null` vertaald, want dat is wat de rest van de
+ * app al kent als "nog geen potje".
+ */
+function dbTxToUiTx(
+  t: DbTransaction,
+  alloc: DbAllocation,
+  hoofdpotId: string | null,
+): Transaction {
+  const inHoofdpot = alloc.pot_id === hoofdpotId;
   return {
-    id: t.id,
-    potId: t.pot_id,
+    id: alloc.id,
+    transactionId: t.id,
+    potId: inHoofdpot ? null : alloc.pot_id,
+    confirmed: inHoofdpot ? alloc.confirmed_at !== null : true,
     direction: t.direction,
-    amount: Number(t.amount),
+    amount: Number(alloc.amount),
     occurredOn: t.occurred_on,
     counterparty: t.counterparty ?? "",
     memo: t.memo ?? undefined,
@@ -434,21 +453,51 @@ function useBridgedStore(
   } = usePots(orgId);
   const {
     transactions: dbTx,
+    allocations: dbAllocations,
+    keepInHoofdpot: keepDbInHoofdpot,
     addTransaction: addDbTx,
     importTransactions: importDbTx,
     deleteTransaction: deleteDbTx,
     deleteTransactions: deleteDbTxs,
     reassignTransactions: reassignDbTxs,
     assignTransaction: assignDbTx,
+    assignAllToPot: assignAllDbToPot,
     transfer: transferDbTx,
     allocateFromHoofdpot: allocateDbHoofdpot,
   } = useTransactions(orgId);
 
+  // De hoofdpot staat niet tussen de gewone potjes: die heeft zijn eigen kaart
+  // en zijn eigen inbox in de UI.
   const pots = useMemo(
-    () => dbPots.map((p) => dbPotToUiPot(p, currentUserId)),
+    () =>
+      dbPots
+        .filter((p) => !p.is_hoofdpot)
+        .map((p) => dbPotToUiPot(p, currentUserId)),
     [dbPots, currentUserId],
   );
-  const transactions = useMemo(() => dbTx.map(dbTxToUiTx), [dbTx]);
+  // De hoofdpot is een echt potje in de databank, maar de UI kent hem als
+  // "geen potje". Hier vertalen we dat één keer.
+  const hoofdpotId = useMemo(
+    () => dbPots.find((p) => p.is_hoofdpot)?.id ?? null,
+    [dbPots],
+  );
+
+  // Eén UI-rij per allocatie, niet per bankregel. Een gesplitste transactie
+  // verschijnt dus als meerdere rijen, elk in hun eigen potje.
+  const transactions = useMemo(() => {
+    const byTx = new Map(dbTx.map((t) => [t.id, t]));
+    return dbAllocations
+      .map((a) => {
+        const t = byTx.get(a.transaction_id);
+        return t ? dbTxToUiTx(t, a, hoofdpotId) : null;
+      })
+      .filter((t): t is Transaction => t !== null)
+      .sort((a, b) =>
+        a.occurredOn === b.occurredOn
+          ? b.createdAt.localeCompare(a.createdAt)
+          : b.occurredOn.localeCompare(a.occurredOn),
+      );
+  }, [dbTx, dbAllocations, hoofdpotId]);
 
   // Build a new store object met dezelfde shape als de oude useAppState,
   // maar met pots/transactions uit Supabase + mutaties die naar Supabase schrijven.
@@ -540,11 +589,16 @@ function useBridgedStore(
       // honderden mails sturen. Eén batch-insert, één refresh.
       importTransactions: importDbTx,
       assignTransaction: assignDbTx,
+      assignAllToPot: assignAllDbToPot,
+      keepInHoofdpot: keepDbInHoofdpot,
       transfer: transferDbTx,
       allocateFromHoofdpot: allocateDbHoofdpot,
     };
   }, [
     localStore,
+    orgId,
+    keepDbInHoofdpot,
+    assignAllDbToPot,
     pots,
     transactions,
     addDbPot,
@@ -897,21 +951,23 @@ function AuthedApp({
     () => store.state.transactions.filter((t) => t.potId === null),
     [store.state.transactions],
   );
-  // Saldo van de hoofdpot, dus wat er nog te verdelen valt. De uit-regels van
-  // een verdeling horen hier wél bij: die halen het verdeelde geld eruit.
-  const hoofdpotTotal = useMemo(
-    () =>
-      hoofdpotTx.reduce(
-        (s, t) => s + (t.direction === "in" ? t.amount : -t.amount),
-        0,
-      ),
+  // De inbox: waar nog over beslist moet worden. Bevestigd geld hoort er niet
+  // meer bij, dat is een genomen beslissing en staat bewust in de hoofdpot. Een
+  // verdeel-regel evenmin: die heeft een transferGroup en hoort bij een
+  // tegenboeking op een potje.
+  const unallocatedTx = useMemo(
+    () => hoofdpotTx.filter((t) => !t.transferGroup && !t.confirmed),
     [hoofdpotTx],
   );
-  // Toe te wijzen: enkel echt binnengekomen geld. Een verdeel-regel heeft een
-  // transferGroup en hoort bij een tegenboeking op een potje; die aan een potje
-  // toewijzen zou die koppeling breken en het geld dubbel laten tellen.
-  const unallocatedTx = useMemo(
-    () => hoofdpotTx.filter((t) => !t.transferGroup),
+  // Wat je écht kan verdelen. Dat is iets anders dan het saldo hierboven: geld
+  // waarover je nog niet beslist hebt telt wel mee in het saldo, maar mag niet
+  // verdeeld worden. De databank bewaakt dezelfde grens; dit is de UI-kant
+  // ervan, zodat het scherm geen geld belooft dat je niet kan verdelen.
+  const verdeelbaar = useMemo(
+    () =>
+      hoofdpotTx
+        .filter((t) => t.confirmed)
+        .reduce((s, t) => s + (t.direction === "in" ? t.amount : -t.amount), 0),
     [hoofdpotTx],
   );
 
@@ -1356,7 +1412,7 @@ function AuthedApp({
           <DistributeModal
             pots={potsForUser}
             shares={distShares}
-            available={hoofdpotTotal}
+            available={verdeelbaar}
             onDistribute={async (allocations) =>
               store.allocateFromHoofdpot({
                 allocations,
@@ -1483,7 +1539,10 @@ function AuthedApp({
           onDelete={(txId) => store.deleteTransaction(txId)}
           onBulkDelete={(txIds) => store.deleteTransactions(txIds)}
           onBulkAssign={(txIds, potId) =>
-            store.reassignTransactions(txIds, potId)
+            store.assignAllToPot(txIds, potId)
+          }
+          onKeepInHoofdpot={(txId, confirm) =>
+            store.keepInHoofdpot(txId, confirm)
           }
         />
       </Modal>

@@ -22,6 +22,14 @@ type Props = {
     txIds: string[],
     potId: string,
   ) => Promise<{ error: string | null }>;
+  /**
+   * Bewust in de hoofdpot houden. Dat is de tweede geldige beslissing naast
+   * toewijzen, en pas daarna mag het geld verdeeld worden.
+   */
+  onKeepInHoofdpot?: (
+    txId: string,
+    confirm: boolean,
+  ) => Promise<{ error: string | null }>;
 };
 
 /**
@@ -36,6 +44,7 @@ export function UnallocatedInbox({
   onDelete,
   onBulkDelete,
   onBulkAssign,
+  onKeepInHoofdpot,
 }: Props) {
   const confirm = useConfirm();
   const alert = useAlert();
@@ -43,6 +52,17 @@ export function UnallocatedInbox({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkPotId, setBulkPotId] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [keepBusy, setKeepBusy] = useState<string | null>(null);
+
+  /** Selectie bevat allocatie-id's; mutaties werken op bankregels. */
+  function toTransactionIds(ids: string[]): string[] {
+    const set = new Set(ids);
+    return [
+      ...new Set(
+        transactions.filter((t) => set.has(t.id)).map((t) => t.transactionId),
+      ),
+    ];
+  }
 
   const allSelected =
     transactions.length > 0 && transactions.every((t) => selected.has(t.id));
@@ -65,7 +85,7 @@ export function UnallocatedInbox({
   }
 
   async function bulkDelete() {
-    const ids = [...selected];
+    const ids = toTransactionIds([...selected]);
     if (ids.length === 0) return;
     if (
       !(await confirm({
@@ -82,7 +102,7 @@ export function UnallocatedInbox({
   }
 
   async function bulkAssign() {
-    const ids = [...selected];
+    const ids = toTransactionIds([...selected]);
     if (ids.length === 0 || !bulkPotId || !onBulkAssign) return;
     const potName = pots.find((p) => p.id === bulkPotId)?.name ?? "dit potje";
     if (
@@ -117,8 +137,9 @@ export function UnallocatedInbox({
   return (
     <div className="space-y-2">
       <p className="text-sm text-navy-500 dark:text-navy-300">
-        Dit geld staat op de rekening maar heeft nog geen potje. Wijs het toe,
-        of splits het over meerdere potjes.
+        Dit geld staat op de rekening maar heeft nog geen bestemming. Wijs het
+        toe aan een potje, of hou het bewust in de hoofdpot. Pas daarna kan je
+        het verdelen.
       </p>
       {(onBulkDelete || onBulkAssign) && (
         <div className="space-y-2 rounded-xl border border-navy-100 bg-canvas px-3 py-2.5 dark:border-navy-700/60 dark:bg-navy-800/40">
@@ -223,6 +244,26 @@ export function UnallocatedInbox({
                 </div>
               </div>
               <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
+                {onKeepInHoofdpot && (
+                  <button
+                    onClick={async () => {
+                      setKeepBusy(tx.id);
+                      const res = await onKeepInHoofdpot(tx.transactionId, true);
+                      setKeepBusy(null);
+                      if (res.error) {
+                        await alert({
+                          title: "Lukt niet",
+                          message: res.error,
+                        });
+                      }
+                    }}
+                    disabled={keepBusy === tx.id}
+                    title="Dit geld heeft geen specifiek doel en blijft in de hoofdpot"
+                    className="btn-secondary flex-shrink-0 px-3 py-1.5 text-xs"
+                  >
+                    {keepBusy === tx.id ? "Bezig…" : "Hou in hoofdpot"}
+                  </button>
+                )}
                 <button
                   onClick={() => setOpenId(openId === tx.id ? null : tx.id)}
                   className="btn-accent flex-shrink-0 px-3 py-1.5 text-xs"
@@ -232,7 +273,7 @@ export function UnallocatedInbox({
                 <button
                   onClick={async () => {
                     if (await confirm({ title: "Transactie verwijderen?", confirmLabel: "Verwijderen", danger: true }))
-                      onDelete(tx.id);
+                      onDelete(tx.transactionId);
                   }}
                   className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md text-navy-300 hover:bg-rose-50 hover:text-rose-600 sm:h-auto sm:w-auto sm:px-2 sm:py-1 dark:text-navy-500 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
                   aria-label="Verwijderen"
@@ -247,13 +288,13 @@ export function UnallocatedInbox({
                 tx={tx}
                 pots={pots}
                 onAssign={async (parts) => {
-                  const res = await onAssign(tx.id, parts);
+                  const res = await onAssign(tx.transactionId, parts);
                   if (!res.error) setOpenId(null);
                   return res;
                 }}
                 onDelete={async () => {
                   if (await confirm({ title: "Transactie verwijderen?", confirmLabel: "Verwijderen", danger: true }))
-                    onDelete(tx.id);
+                    onDelete(tx.transactionId);
                 }}
               />
             )}
