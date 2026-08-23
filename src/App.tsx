@@ -67,7 +67,7 @@ import { Modal } from "./components/Modal";
 import { useAlert, useConfirm } from "./components/ConfirmDialog";
 import { PotForm } from "./components/PotForm";
 import { TransactionForm } from "./components/TransactionForm";
-import { OpeningBalanceForm } from "./components/OpeningBalanceForm";
+import { AddMoneyForm } from "./components/AddMoneyForm";
 import { TransferForm } from "./components/TransferForm";
 import { DistributeModal } from "./components/DistributeModal";
 import { DistributionPresetForm } from "./components/DistributionPresetForm";
@@ -683,7 +683,7 @@ function AuthedApp({
   );
   const [showAddPot, setShowAddPot] = useState(false);
   const [showAddTx, setShowAddTx] = useState(false);
-  const [showOpeningBalance, setShowOpeningBalance] = useState(false);
+  const [showAddMoney, setShowAddMoney] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
   const [showDistribute, setShowDistribute] = useState(false);
   const [showDistributionPreset, setShowDistributionPreset] = useState(false);
@@ -1209,7 +1209,7 @@ function AuthedApp({
                       pots={potsForUser}
                       transactions={store.state.transactions}
                       onAddPot={() => setShowAddPot(true)}
-                      onSetOpeningBalance={() => setShowOpeningBalance(true)}
+                      onAddMoney={() => setShowAddMoney(true)}
                       onImport={
                         importEnabled(tier) ? () => setShowImport(true) : undefined
                       }
@@ -1247,9 +1247,7 @@ function AuthedApp({
                 onManageRecurring={
                   isAdmin ? () => setShowRecurring(true) : undefined
                 }
-                onSetOpeningBalance={
-                  isAdmin ? () => setShowOpeningBalance(true) : undefined
-                }
+                onAddMoney={isAdmin ? () => setShowAddMoney(true) : undefined}
                 onExportReport={
                   isAdmin && reportsEnabled(tier) ? () => setShowReport(true) : undefined
                 }
@@ -1302,24 +1300,23 @@ function AuthedApp({
       </Modal>
 
       <Modal
-        open={showOpeningBalance}
-        title="Beginsaldo instellen"
-        onClose={() => setShowOpeningBalance(false)}
+        open={showAddMoney}
+        title="Geld toevoegen aan de hoofdpot"
+        onClose={() => setShowAddMoney(false)}
       >
-        {showOpeningBalance && (
-          <OpeningBalanceForm
-            onSubmit={async ({ amount, occurredOn, memo }) => {
+        {showAddMoney && (
+          <AddMoneyForm
+            onSubmit={async ({ amount, occurredOn, counterparty }) => {
               await store.addTransaction({
                 potId: null,
                 direction: "in",
                 amount,
                 occurredOn,
-                counterparty: "Beginsaldo",
-                memo,
+                counterparty: counterparty ?? "",
               });
-              setShowOpeningBalance(false);
+              setShowAddMoney(false);
             }}
-            onCancel={() => setShowOpeningBalance(false)}
+            onCancel={() => setShowAddMoney(false)}
           />
         )}
       </Modal>

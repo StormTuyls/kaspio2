@@ -15,6 +15,9 @@ type Props = {
   onDistribute?: () => void;
   /** Aanwezig (admin) → link naar de toe-te-wijzen-inbox. */
   onOpenInbox?: () => void;
+  /** Aanwezig (admin) → geld toevoegen aan de hoofdpot. Staat er altijd: juist
+   *  bij een lege hoofdpot is dit de actie die je zoekt. */
+  onAddMoney?: () => void;
 };
 
 /**
@@ -40,6 +43,7 @@ export function BankCard({
   unassignedCount = 0,
   onDistribute,
   onOpenInbox,
+  onAddMoney,
 }: Props) {
   // Wat al in potjes zit. Bij een negatieve hoofdpot is er meer verdeeld dan er
   // binnenkwam; dan is het potjes-deel groter dan het totaal.
@@ -95,8 +99,9 @@ export function BankCard({
         )}
       </div>
 
-      {/* Acties: enkel zinvol wanneer er iets in de hoofdpot wacht. */}
-      {(hasUnallocated || unassignedCount > 0) && (onDistribute || onOpenInbox) && (
+      {/* Acties op de hoofdpot. Verdelen en toewijzen hebben alleen zin met geld
+          of openstaande transacties; geld toevoegen kan altijd. */}
+      {(onAddMoney || ((hasUnallocated || unassignedCount > 0) && (onDistribute || onOpenInbox))) && (
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/10 pt-4">
           {onDistribute && hasUnallocated && (
             <button
@@ -112,6 +117,18 @@ export function BankCard({
               className="rounded-xl bg-white/10 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
             >
               {unassignedCount} {unassignedCount === 1 ? "transactie" : "transacties"} toewijzen
+            </button>
+          )}
+          {onAddMoney && (
+            <button
+              onClick={onAddMoney}
+              className={
+                hasUnallocated
+                  ? "rounded-xl px-3.5 py-2 text-sm font-semibold text-navy-200 transition hover:bg-white/10 hover:text-white"
+                  : "rounded-xl bg-teal-500 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-teal-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
+              }
+            >
+              Geld toevoegen
             </button>
           )}
         </div>

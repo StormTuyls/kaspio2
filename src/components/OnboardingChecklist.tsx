@@ -7,7 +7,8 @@ type Props = {
   pots: Pot[];
   transactions: Transaction[];
   onAddPot: () => void;
-  onSetOpeningBalance: () => void;
+  /** Geld toevoegen aan de hoofdpot (opent hetzelfde scherm als de saldokaart). */
+  onAddMoney: () => void;
   onImport?: () => void;
   onOpenInbox: () => void;
   /** Open de opzet-wizard (sjablonen). Alleen zinvol zolang er nog geen potjes zijn. */
@@ -24,7 +25,7 @@ export function OnboardingChecklist({
   pots,
   transactions,
   onAddPot,
-  onSetOpeningBalance,
+  onAddMoney,
   onImport,
   onOpenInbox,
   onUseTemplate,
@@ -54,8 +55,8 @@ export function OnboardingChecklist({
       done: hasMoney,
       label: "Voeg geld toe",
       hint: "Zet je beginsaldo of importeer je rekeninguittreksel.",
-      cta: "Beginsaldo",
-      action: onSetOpeningBalance,
+      cta: "Geld toevoegen",
+      action: onAddMoney,
       secondary: onImport ? { cta: "Importeer", action: onImport } : undefined,
     },
     {

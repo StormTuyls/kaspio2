@@ -31,8 +31,8 @@ type Props = {
   onBookStorting?: (plan: RecurringPlan) => void | Promise<void>;
   /** Open het beheer van terugkerende boekingen (admin). */
   onManageRecurring?: () => void;
-  /** Beginsaldo instellen (admin): startbedrag dat al op de rekening stond. */
-  onSetOpeningBalance?: () => void;
+  /** Geld toevoegen aan de hoofdpot (admin). Staat op de saldokaart. */
+  onAddMoney?: () => void;
   /** Genereer een financieel rapport (PDF). Alleen aanwezig bij Pro+ admin. */
   onExportReport?: () => void;
   /** Goedkeuren/afwijzen van transacties die op goedkeuring wachten (admin). */
@@ -57,7 +57,7 @@ export function DashboardView({
   recurringPlans = [],
   onBookStorting,
   onManageRecurring,
-  onSetOpeningBalance,
+  onAddMoney,
   onExportReport,
   onApprove,
   onReject,
@@ -155,11 +155,6 @@ export function DashboardView({
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          {onSetOpeningBalance && (
-            <button onClick={onSetOpeningBalance} className="btn-secondary text-sm">
-              Beginsaldo
-            </button>
-          )}
           {onManageRecurring && (
             <button onClick={onManageRecurring} className="btn-secondary text-sm">
               Terugkerend
@@ -186,6 +181,7 @@ export function DashboardView({
             unassignedCount={isAdmin ? unallocated.length : 0}
             onDistribute={isAdmin ? onDistribute : undefined}
             onOpenInbox={isAdmin ? onOpenInbox : undefined}
+            onAddMoney={isAdmin ? onAddMoney : undefined}
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
