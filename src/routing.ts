@@ -6,7 +6,7 @@
 // staan, zonder App.tsx te herschrijven naar <Route>-componenten.
 //
 // Pad-conventie:
-//   /dashboard /potjes /groepen /leden /activiteit /instellingen
+//   /dashboard /potjes /groepen /transacties /leden /activiteit /instellingen
 //   /potjes/:potId      (een potje open)
 //   /groepen/:groupId   (een groep open)
 // =============================================================================
@@ -15,6 +15,7 @@ export type Tab =
   | "dashboard"
   | "potjes"
   | "groepen"
+  | "transacties"
   | "leden"
   | "activiteit"
   | "instellingen";
@@ -23,6 +24,7 @@ export const TABS: Tab[] = [
   "dashboard",
   "potjes",
   "groepen",
+  "transacties",
   "leden",
   "activiteit",
   "instellingen",

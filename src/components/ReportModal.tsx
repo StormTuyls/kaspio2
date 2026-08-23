@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Modal } from "./Modal";
 import type { Pot, Transaction } from "../types";
 import { exportOrgReport } from "../csv";
+import { PERIOD_OPTIONS, resolvePeriod, type PeriodPreset } from "../period";
 
 type Props = {
   open: boolean;
@@ -11,66 +12,15 @@ type Props = {
   onClose: () => void;
 };
 
-type Preset = "this_year" | "last_year" | "this_quarter" | "this_month" | "all" | "custom";
-
-function pad(n: number): string {
-  return String(n).padStart(2, "0");
-}
-
-const MONTHS = [
-  "januari", "februari", "maart", "april", "mei", "juni",
-  "juli", "augustus", "september", "oktober", "november", "december",
-];
-
-type Range = { start: string | null; end: string | null; label: string };
-
-function rangeFor(preset: Preset, now: Date, custom: { start: string; end: string }): Range {
-  const y = now.getFullYear();
-  const m = now.getMonth(); // 0-based
-  const lastDay = (year: number, month0: number) => new Date(year, month0 + 1, 0).getDate();
-  switch (preset) {
-    case "this_year":
-      return { start: `${y}-01-01`, end: `${y}-12-31`, label: `${y}` };
-    case "last_year":
-      return { start: `${y - 1}-01-01`, end: `${y - 1}-12-31`, label: `${y - 1}` };
-    case "this_quarter": {
-      const q = Math.floor(m / 3); // 0..3
-      const sm = q * 3;
-      const em = sm + 2;
-      return {
-        start: `${y}-${pad(sm + 1)}-01`,
-        end: `${y}-${pad(em + 1)}-${pad(lastDay(y, em))}`,
-        label: `Q${q + 1} ${y}`,
-      };
-    }
-    case "this_month":
-      return {
-        start: `${y}-${pad(m + 1)}-01`,
-        end: `${y}-${pad(m + 1)}-${pad(lastDay(y, m))}`,
-        label: `${MONTHS[m]} ${y}`,
-      };
-    case "all":
-      return { start: null, end: null, label: "alle transacties" };
-    case "custom":
-      return {
-        start: custom.start || null,
-        end: custom.end || null,
-        label:
-          custom.start || custom.end
-            ? `${custom.start || "begin"} , ${custom.end || "nu"}`
-            : "aangepaste periode",
-      };
-  }
-}
-
 export function ReportModal({ open, orgName, pots, transactions, onClose }: Props) {
-  const [preset, setPreset] = useState<Preset>("this_year");
+  const [preset, setPreset] = useState<PeriodPreset>("this_year");
   const [custom, setCustom] = useState({ start: "", end: "" });
   const [details, setDetails] = useState(true);
+  const [history, setHistory] = useState(false);
 
   // new Date() is in app-context prima (niet in workflow-scripts).
   const range = useMemo(
-    () => rangeFor(preset, new Date(), custom),
+    () => resolvePeriod(preset, new Date(), custom),
     [preset, custom],
   );
 
@@ -83,6 +33,7 @@ export function ReportModal({ open, orgName, pots, transactions, onClose }: Prop
       pots,
       transactions,
       includeDetails: details,
+      includeHistory: history,
     });
     onClose();
   }
@@ -102,15 +53,14 @@ export function ReportModal({ open, orgName, pots, transactions, onClose }: Prop
           </span>
           <select
             value={preset}
-            onChange={(e) => setPreset(e.target.value as Preset)}
+            onChange={(e) => setPreset(e.target.value as PeriodPreset)}
             className="w-full rounded-lg border border-navy-200 bg-white px-2.5 py-2 text-sm dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50"
           >
-            <option value="this_year">Dit jaar</option>
-            <option value="last_year">Vorig jaar</option>
-            <option value="this_quarter">Dit kwartaal</option>
-            <option value="this_month">Deze maand</option>
-            <option value="all">Alle transacties</option>
-            <option value="custom">Aangepast…</option>
+            {PERIOD_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
           </select>
         </label>
 
@@ -141,15 +91,32 @@ export function ReportModal({ open, orgName, pots, transactions, onClose }: Prop
           </div>
         )}
 
-        <label className="flex items-center gap-2 text-sm text-navy-700 dark:text-navy-200">
-          <input
-            type="checkbox"
-            checked={details}
-            onChange={(e) => setDetails(e.target.checked)}
-            className="h-4 w-4 rounded border-navy-300 text-teal-600 focus:ring-teal-500"
-          />
-          Transactiedetails per potje toevoegen
-        </label>
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm text-navy-700 dark:text-navy-200">
+            <input
+              type="checkbox"
+              checked={details}
+              onChange={(e) => setDetails(e.target.checked)}
+              className="h-4 w-4 rounded border-navy-300 text-teal-600 focus:ring-teal-500"
+            />
+            Transactiedetails per potje toevoegen
+          </label>
+
+          <label className="flex items-start gap-2 text-sm text-navy-700 dark:text-navy-200">
+            <input
+              type="checkbox"
+              checked={history}
+              onChange={(e) => setHistory(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-navy-300 text-teal-600 focus:ring-teal-500"
+            />
+            <span>
+              Chronologisch transactieoverzicht (hele organisatie)
+              <span className="block text-xs text-navy-400 dark:text-navy-400">
+                Eén lijst op datum, over alle potjes heen, met het potje als kolom.
+              </span>
+            </span>
+          </label>
+        </div>
 
         <div className="flex items-center justify-end gap-3 pt-2">
           <button onClick={onClose} className="btn-ghost">

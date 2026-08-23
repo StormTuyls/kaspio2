@@ -52,6 +52,9 @@ import { GroupsView } from "./views/GroupsView";
 import { GroupDetail } from "./views/GroupDetail";
 import { PotDetail } from "./views/PotDetail";
 import { SettingsView } from "./views/SettingsView";
+const TransactionsView = lazy(() =>
+  import("./views/TransactionsView").then((m) => ({ default: m.TransactionsView })),
+);
 const Landing = lazy(() =>
   import("./views/Landing").then((m) => ({ default: m.Landing })),
 );
@@ -1218,6 +1221,26 @@ function AuthedApp({
                 onSelectPot={(id) => setSelectedPotId(id)}
                 onOpenGroup={(id) => setSelectedGroupId(id)}
               />
+            ) : tab === "transacties" ? (
+              <Suspense
+                fallback={
+                  <div className="py-10 text-center text-sm text-navy-400">Laden…</div>
+                }
+              >
+                <TransactionsView
+                  orgName={org.name}
+                  pots={potsForUser}
+                  groups={uiGroups}
+                  transactions={store.state.transactions}
+                  tier={tier}
+                  onUpgrade={goToUpgrade}
+                  onSelectPot={(id) => {
+                    setTab("potjes");
+                    setSelectedGroupId(null);
+                    setSelectedPotId(id);
+                  }}
+                />
+              </Suspense>
             ) : tab === "leden" && isAdmin ? (
               <MembersListView
                 orgId={org.id}
@@ -1705,6 +1728,14 @@ function Sidebar({
           }
           label="Groepen"
         />
+        <NavItem
+          active={tab === "transacties"}
+          onClick={() => onTab("transacties")}
+          icon={
+            <path d="M4 8h13m0 0-3-3m3 3-3 3M20 16H7m0 0 3-3m-3 3 3 3" />
+          }
+          label="Transacties"
+        />
         {isAdmin && (
           <>
             <NavItem
@@ -1835,6 +1866,11 @@ function BottomNav({
       label: "Groepen",
       icon: <path d="M4 5h7v7H4zM13 5h7v4h-7zM13 11h7v8h-7zM4 14h7v5H4z" />,
     },
+    {
+      tab: "transacties",
+      label: "Transacties",
+      icon: <path d="M4 8h13m0 0-3-3m3 3-3 3M20 16H7m0 0 3-3m-3 3 3 3" />,
+    },
     ...(isAdmin
       ? [
           {
@@ -1865,7 +1901,11 @@ function BottomNav({
           <button
             key={it.tab}
             onClick={() => onTab(it.tab)}
-            className={`relative flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold transition ${
+            className={`relative flex min-w-0 flex-1 flex-col items-center gap-0.5 px-0.5 py-2.5 font-semibold transition ${
+              // Met een admin-menu passen er 6 items in de balk; op smalle
+              // toestellen loopt "Transacties" dan over 11px heen.
+              items.length > 5 ? "text-[10px]" : "text-[11px]"
+            } ${
               active
                 ? "text-teal-600 dark:text-teal-400"
                 : "text-navy-400 hover:text-navy-700 dark:text-navy-400 dark:hover:text-white"
@@ -1890,7 +1930,7 @@ function BottomNav({
                 </span>
               )}
             </span>
-            <span>{it.label}</span>
+            <span className="max-w-full truncate">{it.label}</span>
             {active && (
               <span className="absolute -top-px h-0.5 w-8 rounded-full bg-teal-500" />
             )}
