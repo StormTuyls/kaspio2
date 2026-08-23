@@ -70,6 +70,13 @@ returns public.sub_tier language sql stable security definer set search_path = p
   )::public.sub_tier;
 $$;
 
+-- Wordt uitsluitend aangeroepen vanuit andere SECURITY DEFINER- en
+-- triggerfuncties (free-tier-limits, groups-tier-gate, attachments,
+-- approval-flows, org-invite-tokens). Die draaien als eigenaar en houden dus
+-- EXECUTE, ook als de client niets mag. Hoort niet in de REST-API te staan, en
+-- staat in de live database ook dicht.
+revoke all on function public.org_tier(uuid) from public, anon, authenticated;
+
 -- ----- Potjes-limiet -----
 create or replace function public.enforce_pot_limit()
 returns trigger language plpgsql security definer set search_path = public as $$

@@ -43,8 +43,8 @@ export function MembersListView({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between rounded-2xl border border-navy-100 bg-white p-4 dark:border-navy-700 dark:bg-navy-900">
-        <div>
+      <div className="flex flex-col gap-3 rounded-2xl border border-navy-100 bg-white p-4 sm:flex-row sm:items-center sm:justify-between dark:border-navy-700 dark:bg-navy-900">
+        <div className="min-w-0">
           <h3 className="font-bold text-navy-900 dark:text-white">
             Iemand uitnodigen
           </h3>
@@ -52,7 +52,7 @@ export function MembersListView({
             Admin, pot-owner of lezer. Krijg een KASP-code om door te sturen.
           </p>
         </div>
-        <button onClick={onInviteClick} className="btn-accent">
+        <button onClick={onInviteClick} className="btn-accent w-full flex-shrink-0 sm:w-auto">
           + Uitnodigen
         </button>
       </div>
@@ -74,10 +74,10 @@ export function MembersListView({
               return (
                 <li
                   key={inv.id}
-                  className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-sm dark:bg-navy-900"
+                  className="flex flex-col gap-1 rounded-lg bg-white px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-2 dark:bg-navy-900"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium text-navy-900 dark:text-white">
+                    <div className="break-all font-medium text-navy-900 sm:truncate dark:text-white">
                       {inv.email}
                     </div>
                     <div className="text-xs text-navy-400">
@@ -89,7 +89,7 @@ export function MembersListView({
                   </div>
                   <button
                     onClick={() => onRevokeInvite(inv.id)}
-                    className="text-xs font-semibold text-rose-600 hover:underline"
+                    className="self-start text-xs font-semibold text-rose-600 hover:underline sm:self-auto"
                   >
                     Intrekken
                   </button>
@@ -170,8 +170,8 @@ function MemberRow({
   return (
     <li className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="truncate font-medium text-navy-900 dark:text-white">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="min-w-0 truncate font-medium text-navy-900 dark:text-white">
             {member.full_name}
           </span>
           {isCurrentUser && (
@@ -215,7 +215,7 @@ function MemberRow({
         </div>
       </div>
 
-      <button onClick={onManage} className="btn-secondary text-sm">
+      <button onClick={onManage} className="btn-secondary flex-shrink-0 text-sm">
         Beheer
       </button>
     </li>

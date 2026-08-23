@@ -182,10 +182,10 @@ export function InviteMemberForm({
               return (
                 <li
                   key={inv.id}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-navy-100 bg-canvas px-3 py-2 text-sm dark:border-navy-700 dark:bg-navy-800"
+                  className="flex flex-col gap-2 rounded-lg border border-navy-100 bg-canvas px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between dark:border-navy-700 dark:bg-navy-800"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium text-navy-900 dark:text-white">
+                    <div className="break-all font-medium text-navy-900 sm:truncate dark:text-white">
                       {inv.email}
                     </div>
                     <div className="text-xs text-navy-400">
@@ -194,7 +194,7 @@ export function InviteMemberForm({
                     </div>
                   </div>
                   {!accepted && (
-                    <div className="flex flex-shrink-0 items-center gap-3">
+                    <div className="flex flex-shrink-0 items-center gap-3 self-start sm:self-auto">
                       {inv.token && <CopyLinkButton token={inv.token} email={inv.email} />}
                       <button
                         type="button"

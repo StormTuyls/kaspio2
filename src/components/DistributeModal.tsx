@@ -15,6 +15,13 @@ type Props = {
   /** Open het preset-scherm om de percentages in te stellen/wijzigen. */
   onManagePreset: () => void;
   onCancel: () => void;
+  /**
+   * Aantal onverdeelde INKOMSTEN. Alleen die worden verdeeld; een uitgave
+   * zonder potje blijft in de inbox staan en moet apart toegewezen worden.
+   */
+  incomingCount?: number;
+  /** Spring naar die inbox. Zonder callback tonen we alleen de uitleg. */
+  onOpenInbox?: () => void;
 };
 
 /**
@@ -33,6 +40,8 @@ export function DistributeModal({
   onDistribute,
   onManagePreset,
   onCancel,
+  incomingCount = 0,
+  onOpenInbox,
 }: Props) {
   const visibleShares = useMemo(
     () => shares.filter((s) => pots.some((p) => p.id === s.potId)),
@@ -105,6 +114,30 @@ export function DistributeModal({
 
   return (
     <div className="space-y-4">
+      {/* Verdelen wijst de onverdeelde transacties zélf toe (oudste eerst,
+          splitsend waar nodig), dus de inbox loopt hiermee leeg. Even zeggen
+          wat er gaat gebeuren, want de verdeling gaat over bedragen terwijl de
+          inbox over losse transacties gaat. */}
+      {incomingCount > 0 && (
+        <div className="rounded-xl border border-navy-100 bg-canvas p-3 dark:border-navy-700/60 dark:bg-navy-800/40">
+          <p className="text-sm text-navy-700 dark:text-navy-100">
+            {incomingCount === 1
+              ? "De inkomst die nog toe te wijzen staat, wordt hiermee zelf over de gekozen potjes verdeeld en verdwijnt dus uit je inbox."
+              : `De ${incomingCount} inkomsten die nog toe te wijzen staan, worden hiermee zelf over de gekozen potjes verdeeld, oudste eerst. Ze verdwijnen dus uit je inbox.`}{" "}
+            Een bedrag dat net over twee potjes valt, wordt gesplitst. Uitgaven
+            zonder potje blijven staan.
+          </p>
+          {onOpenInbox && (
+            <button
+              onClick={onOpenInbox}
+              className="mt-2 text-xs font-semibold text-teal-700 underline underline-offset-2 hover:no-underline dark:text-teal-300"
+            >
+              Liever zelf per transactie
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-ink-muted dark:text-navy-300">
           In de hoofdpot:{" "}

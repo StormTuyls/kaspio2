@@ -531,9 +531,11 @@ function useBridgedStore(
       deleteTransactions: async (ids: string[]) => {
         await deleteDbTxs(ids);
       },
-      reassignTransactions: async (ids: string[], toPotId: string) => {
-        await reassignDbTxs(ids, toPotId);
-      },
+      // Resultaat doorgeven i.p.v. inslikken: de aanroeper kan een mislukte
+      // herverdeling dan tonen. Deed hij eerder niet, dus een fout hier
+      // verdween stilletjes.
+      reassignTransactions: (ids: string[], toPotId: string) =>
+        reassignDbTxs(ids, toPotId),
       // Bulk-import (CSV). Geen per-transactie e-mails: dat zou bij een afschrift
       // honderden mails sturen. Eén batch-insert, één refresh.
       importTransactions: importDbTx,
@@ -1079,7 +1081,10 @@ function AuthedApp({
             onFeedback={() => setShowFeedback(true)}
           />
 
-          <main className="mx-auto max-w-6xl px-4 pb-24 pt-6 sm:px-8 sm:pt-8 lg:pb-8">
+          {/* De onderbalk is fixed en ~58px hoog; op een toestel met home-indicator
+              komt daar env(safe-area-inset-bottom) bovenop. pb-24 alleen liet
+              daar nog 4px over, vandaar de expliciete berekening. */}
+          <main className="mx-auto max-w-6xl px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 sm:px-8 sm:pt-8 lg:pb-8">
             {selectedPot ? (
               <PotDetail
                 pot={selectedPot}
@@ -1359,6 +1364,13 @@ function AuthedApp({
                 counterparty: "Verdeling",
               })
             }
+            incomingCount={
+              unallocatedTx.filter((t) => t.direction === "in").length
+            }
+            onOpenInbox={() => {
+              setShowDistribute(false);
+              setShowInbox(true);
+            }}
             onManagePreset={() => {
               setShowDistribute(false);
               setShowDistributionPreset(true);
@@ -1470,6 +1482,9 @@ function AuthedApp({
           onAssign={(txId, parts) => store.assignTransaction(txId, parts)}
           onDelete={(txId) => store.deleteTransaction(txId)}
           onBulkDelete={(txIds) => store.deleteTransactions(txIds)}
+          onBulkAssign={(txIds, potId) =>
+            store.reassignTransactions(txIds, potId)
+          }
         />
       </Modal>
 

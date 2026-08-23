@@ -142,8 +142,8 @@ export function GroupDetail({
 
       {/* Cashflow-grafiek (Pro+) over de groep */}
       {chartsEnabled(tier) && groupTx.length > 0 && (
-        <div className="rounded-2xl border border-navy-100 bg-white p-5 dark:border-navy-700/60 dark:bg-navy-900">
-          <h2 className="mb-3 text-base font-bold text-navy-900 dark:text-navy-50">
+        <div className="rounded-2xl border border-navy-100 bg-white p-3 sm:p-5 dark:border-navy-700/60 dark:bg-navy-900">
+          <h2 className="mb-3 px-1 text-base font-bold text-navy-900 sm:px-0 dark:text-navy-50">
             Verloop saldo
           </h2>
           <BalanceChart transactions={groupTx} />

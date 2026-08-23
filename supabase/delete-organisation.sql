@@ -21,6 +21,7 @@ create or replace function public.log_audit()
 returns trigger
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
   v_org_id uuid;

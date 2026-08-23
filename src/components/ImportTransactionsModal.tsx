@@ -81,6 +81,18 @@ export function ImportTransactionsModal({
   onImport,
   onClose,
 }: Props) {
+  // Eigen overlay in plaats van <Modal>, dus de Escape-afhandeling moet hier
+  // apart. Zonder dit was dit de enige dialoog in de app die niet op Escape
+  // sluit.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   const [step, setStep] = useState<"upload" | "map">("upload");
   const [fileName, setFileName] = useState("");
   const [headers, setHeaders] = useState<string[]>([]);
@@ -355,20 +367,22 @@ export function ImportTransactionsModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-navy-950/40 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={onClose}
     >
+      {/* Zelfde sheet-gedrag als <Modal>, maar breder: de importstappen tonen
+          een tabel met kolomkeuzes. */}
       <div
-        className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl dark:bg-navy-900 dark:ring-1 dark:ring-navy-700/60"
+        className="flex max-h-[92dvh] w-full flex-col rounded-t-2xl bg-white shadow-2xl sm:max-h-[90dvh] sm:max-w-2xl sm:rounded-2xl dark:bg-navy-900 dark:ring-1 dark:ring-navy-700/60"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-navy-100 px-5 py-4 dark:border-navy-700/60">
-          <h2 className="text-lg font-bold text-navy-900 dark:text-white">
+        <div className="flex items-center justify-between gap-3 border-b border-navy-100 px-5 py-4 dark:border-navy-700/60">
+          <h2 className="min-w-0 truncate text-lg font-bold text-navy-900 dark:text-white">
             Transacties importeren
           </h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-navy-400 hover:bg-navy-50 hover:text-navy-700 dark:hover:bg-navy-800 dark:hover:text-white"
+            className="-mr-1.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg text-navy-400 hover:bg-navy-50 hover:text-navy-700 sm:h-8 sm:w-8 dark:hover:bg-navy-800 dark:hover:text-white"
             aria-label="Sluiten"
           >
             ✕
@@ -445,14 +459,14 @@ export function ImportTransactionsModal({
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {colSelect("date", "Datum", true)}
                 {colSelect("amount", "Bedrag", true)}
                 {colSelect("counterparty", "Tegenpartij")}
                 {colSelect("memo", "Mededeling")}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block">
                   <span className="mb-1 block text-xs font-medium text-navy-500 dark:text-navy-300">
                     In / uit bepalen
@@ -508,8 +522,12 @@ export function ImportTransactionsModal({
                     importeren.
                   </p>
                 )}
-                <div className="max-h-56 overflow-y-auto">
-                  <table className="w-full text-sm">
+                {/* Vijf kolommen (vinkje, datum, tegenpartij, bedrag, potje)
+                    passen niet in een sheet van 375px. Op mobiel scrollt de
+                    voorbeeldtabel daarom horizontaal i.p.v. samengedrukt te
+                    worden; vanaf sm valt hij terug op de volle breedte. */}
+                <div className="max-h-56 overflow-auto">
+                  <table className="w-full min-w-[34rem] text-sm sm:min-w-0">
                     <tbody className="divide-y divide-navy-100 dark:divide-navy-700/60">
                       {preview.slice(0, 50).map((p, i) => {
                         const cpNorm = p.counterparty
@@ -678,17 +696,17 @@ export function ImportTransactionsModal({
         </div>
 
         {step === "map" && !result && (
-          <div className="flex items-center justify-end gap-3 border-t border-navy-100 px-5 py-4 dark:border-navy-700/60">
+          <div className="flex flex-col gap-2 border-t border-navy-100 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:pb-4 dark:border-navy-700/60">
             <button
               onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-navy-500 hover:bg-navy-50 dark:text-navy-300 dark:hover:bg-navy-800"
+              className="min-h-11 rounded-lg px-4 py-2 text-sm font-medium text-navy-500 hover:bg-navy-50 sm:min-h-0 dark:text-navy-300 dark:hover:bg-navy-800"
             >
               Annuleren
             </button>
             <button
               onClick={() => runImport(importIndexes)}
               disabled={!canImport}
-              className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="min-h-11 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0"
             >
               {busy
                 ? "Importeren…"
@@ -702,7 +720,7 @@ export function ImportTransactionsModal({
         {/* Afloop: wat er binnen is, en de kans om overgeslagen rijen alsnog te
             halen. Zonder dit moet je het bestand opnieuw kiezen voor één rij. */}
         {result && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-navy-100 px-5 py-4 dark:border-navy-700/60">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-navy-100 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4 dark:border-navy-700/60">
             <p className="text-sm text-navy-700 dark:text-navy-200">
               <span className="font-semibold">{result.imported}</span>{" "}
               {result.imported === 1 ? "transactie" : "transacties"} geïmporteerd

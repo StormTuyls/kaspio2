@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { formatEuro } from "../storage";
+import { formatEuro, formatEuroCompact } from "../storage";
 import type { Transaction } from "../types";
 
 type Props = {
@@ -190,7 +190,7 @@ export function CashflowChart({ transactions }: Props) {
                 className="fill-slate-400 text-[10px] tabular-nums"
                 style={{ fontFamily: "var(--font-num)" }}
               >
-                {formatEuro(maxVal * f)}
+                {formatEuroCompact(maxVal * f)}
               </text>
             </g>
           ))}

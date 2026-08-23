@@ -124,7 +124,7 @@ export function OnboardingChecklist({
         {steps.map((step) => (
           <li
             key={step.label}
-            className="flex items-center gap-3 rounded-xl border border-navy-100 bg-canvas px-3 py-2.5 dark:border-navy-700/60 dark:bg-navy-800/40"
+            className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-navy-100 bg-canvas px-3 py-2.5 dark:border-navy-700/60 dark:bg-navy-800/40"
           >
             <span
               className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold ${
@@ -150,8 +150,10 @@ export function OnboardingChecklist({
                 <p className="text-xs text-navy-500 dark:text-navy-300">{step.hint}</p>
               )}
             </div>
+            {/* Op mobiel zakken de knoppen naar een eigen regel. Een stap met
+                twee acties liet anders zo'n 18px over voor label en hint. */}
             {!step.done && (
-              <div className="flex flex-shrink-0 gap-2">
+              <div className="flex w-full flex-shrink-0 justify-end gap-2 sm:w-auto">
                 {step.secondary && (
                   <button
                     onClick={step.secondary.action}
