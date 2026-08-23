@@ -39,6 +39,21 @@ hoofdpot en zet het in andere potjes, via percentage, vast bedrag of maandelijks
 afhouding. Het komt nooit aan een transactie. De transacties die dat geld
 leverden blijven onder de hoofdpot staan, ook in de PDF-export.
 
+**Eerst beslissen, dan pas verdelen.** Een verse import ligt onbeslist in de
+hoofdpot. Je doet er één van twee dingen mee: toewijzen aan een potje, of bewust
+in de hoofdpot laten. Pas dat tweede maakt het geld verdeelbaar. Zo kan je nooit
+geld verdelen waar je nog niet naar gekeken hebt, en blokkeert een vergeten
+bankkost de werking niet: die is ook nog onbeslist en telt dus nergens in mee.
+
+Let op het verschil tussen twee getallen die makkelijk verward worden:
+
+| | |
+| --- | --- |
+| Saldo van de hoofdpot | alles wat erin ligt, ook het onbesliste |
+| Verdeelbaar | alleen wat bevestigd is, min wat er al uit overgeboekt is |
+
+De app hoort bij "nog te verdelen" het tweede te tonen, niet het eerste.
+
 ### Hoofdpot wordt een echt potje
 
 `pot_id IS NULL` verdwijnt als concept. Elke org krijgt één hoofdpot-rij in

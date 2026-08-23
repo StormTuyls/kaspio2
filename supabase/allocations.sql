@@ -127,9 +127,21 @@ create table if not exists public.allocations (
   pot_id uuid not null
     references public.pots(id) on delete restrict,
   amount numeric(12,2) not null check (amount > 0),
+  -- Null = nog te beslissen. Een verse import belandt onbeslist in de hoofdpot
+  -- en telt dan nergens in mee: niet als verdeelbaar geld en niet als
+  -- beperking. Pas als je beslist ("dit potje" of "laat maar in de hoofdpot")
+  -- gaat het meetellen. Zo kan je nooit geld verdelen waar je nog niet naar
+  -- gekeken hebt.
+  confirmed_at timestamptz,
   created_by uuid references auth.users(id),
   created_at timestamptz not null default now()
 );
+
+alter table public.allocations
+  add column if not exists confirmed_at timestamptz;
+
+create index if not exists allocations_open_idx
+  on public.allocations(organisation_id) where confirmed_at is null;
 
 create index if not exists allocations_transaction_idx on public.allocations(transaction_id);
 create index if not exists allocations_pot_idx on public.allocations(pot_id);
@@ -203,10 +215,18 @@ begin
       using errcode = '23502';
   end if;
 
+  -- Onbeslist als het in de hoofdpot belandt zonder dat iemand koos. Kreeg de
+  -- transactie meteen een potje mee, of is het een overboeking die door
+  -- verdelen zelf gemaakt is, dan valt er niets te beslissen.
   insert into public.allocations
-    (organisation_id, transaction_id, pot_id, amount, created_by)
+    (organisation_id, transaction_id, pot_id, amount, created_by, confirmed_at)
   values (new.organisation_id, new.id, coalesce(new.pot_id, v_hoofd),
-          new.amount, auth.uid());
+          new.amount, auth.uid(),
+          case
+            when new.pot_id is not null and new.pot_id <> v_hoofd then now()
+            when new.transfer_group is not null then now()
+            else null
+          end);
 
   return new;
 end $$;
@@ -232,12 +252,21 @@ create trigger transactions_auto_allocate
 -- tegenboeking op de hoofdpot wordt een allocatie naar de hoofdpot en de
 -- 'in'-regels worden allocaties naar hun potje. Netto klopt dat.
 
-insert into public.allocations (organisation_id, transaction_id, pot_id, amount, created_at)
+insert into public.allocations
+  (organisation_id, transaction_id, pot_id, amount, created_at, confirmed_at)
 select t.organisation_id,
        t.id,
        coalesce(t.pot_id, h.id),
        t.amount,
-       t.created_at
+       t.created_at,
+       -- Alles wat al een potje had is een genomen beslissing, net als de
+       -- overboekingen. Wat nog op de hoofdpot stond is precies de huidige
+       -- inbox en blijft dus onbeslist.
+       case
+         when t.pot_id is not null      then t.created_at
+         when t.transfer_group is not null then t.created_at
+         else null
+       end
 from public.transactions t
 join public.pots h
   on h.organisation_id = t.organisation_id and h.is_hoofdpot
@@ -297,21 +326,22 @@ declare
   v_org         uuid := coalesce(new.organisation_id, old.organisation_id);
   v_beschikbaar numeric(12,2);
 begin
+  -- Alleen bevestigde allocaties tellen mee. Wat nog onbeslist in de hoofdpot
+  -- ligt is geen verdeelbaar geld, en een onbesliste uitgave beperkt dus ook
+  -- niets. Zo blokkeert één vergeten bankkost de werking niet, terwijl een
+  -- kost die je bewust in de hoofdpot legt wél de ruimte verkleint.
   select coalesce(sum(
-           case
-             when t.direction = 'in'            then  a.amount
-             when t.transfer_group is not null  then -a.amount
-             else 0            -- bankuitgave zonder potje: geen beperking
-           end), 0)
+           case when t.direction = 'in' then a.amount else -a.amount end), 0)
     into v_beschikbaar
     from public.allocations a
     join public.pots p         on p.id = a.pot_id and p.is_hoofdpot
     join public.transactions t on t.id = a.transaction_id and t.voided_at is null
-   where a.organisation_id = v_org;
+   where a.organisation_id = v_org
+     and a.confirmed_at is not null;
 
   if v_beschikbaar < 0 then
     raise exception
-      'Er staat niet genoeg in de hoofdpot. Dit geld is al toegewezen of verdeeld (tekort: %).',
+      'Er staat niet genoeg in de hoofdpot. Dit geld is al toegewezen, al verdeeld, of nog niet bevestigd (tekort: %).',
       -v_beschikbaar
       using errcode = '23514';
   end if;
@@ -380,21 +410,68 @@ begin
   delete from public.allocations
    where transaction_id = p_transaction_id and pot_id = v_hoofd;
 
+  -- Wat niet toegewezen is blijft onbeslist in de hoofdpot staan; daar heb je
+  -- immers nog niets over gezegd.
   v_rest := v_in_hoofd - p_amount;
   if v_rest > 0 then
     insert into public.allocations
-      (organisation_id, transaction_id, pot_id, amount, created_by)
-    values (v_org, p_transaction_id, v_hoofd, v_rest, auth.uid());
+      (organisation_id, transaction_id, pot_id, amount, created_by, confirmed_at)
+    values (v_org, p_transaction_id, v_hoofd, v_rest, auth.uid(), null);
   end if;
 
+  -- Aan een potje toewijzen ís de beslissing.
   insert into public.allocations
-    (organisation_id, transaction_id, pot_id, amount, created_by)
-  values (v_org, p_transaction_id, p_pot_id, p_amount, auth.uid());
+    (organisation_id, transaction_id, pot_id, amount, created_by, confirmed_at)
+  values (v_org, p_transaction_id, p_pot_id, p_amount, auth.uid(), now());
 
   return v_rest;
 end $$;
 
 grant execute on function public.assign_from_hoofdpot(uuid, uuid, numeric) to authenticated;
+
+
+-- =============================================================================
+-- 5c. BEWUST IN DE HOOFDPOT HOUDEN
+-- =============================================================================
+-- De tweede van de twee beslissingen. Geld waarvan je zegt "dit heeft geen
+-- specifiek doel" hoort thuis in de hoofdpot, en pas dán mag het verdeeld
+-- worden. Zonder deze stap kan je een verse import niet verdelen, en dat is de
+-- bedoeling: eerst kijken, dan pas verdelen.
+--
+-- Omkeerbaar: p_confirm = false zet het terug op onbeslist. Zou dat geld
+-- inmiddels verdeeld zijn, dan houdt de bewaking dat tegen.
+
+create or replace function public.keep_in_hoofdpot(
+  p_transaction_id uuid,
+  p_confirm boolean default true
+)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_org   uuid;
+  v_hoofd uuid;
+begin
+  select organisation_id into v_org
+    from public.transactions where id = p_transaction_id for update;
+  if v_org is null then
+    raise exception 'Transactie bestaat niet' using errcode = '42704';
+  end if;
+
+  select id into v_hoofd from public.pots
+   where organisation_id = v_org and is_hoofdpot;
+
+  if not public.can_write_pot(v_hoofd) then
+    raise exception 'Alleen een beheerder beslist over de hoofdpot'
+      using errcode = '42501';
+  end if;
+
+  update public.allocations
+     set confirmed_at = case when p_confirm then now() else null end
+   where transaction_id = p_transaction_id
+     and pot_id = v_hoofd;
+end $$;
+
+grant execute on function public.keep_in_hoofdpot(uuid, boolean) to authenticated;
 
 
 -- =============================================================================
