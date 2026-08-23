@@ -269,6 +269,63 @@ end $$;
 
 
 -- =============================================================================
+-- 4b. DE HOOFDPOT KAN NIET ROOD STAAN DOOR EEN EIGEN BEWEGING
+-- =============================================================================
+-- De CHECK hierboven bewaakt één bankregel: je kan die niet over meer potjes
+-- verdelen dan er binnenkwam. Maar hij zegt niets over de hoofdpot als geheel.
+-- Zonder deze tweede regel kan je 1000 toewijzen aan een potje en daarna
+-- nogmaals 1000 verdelen uit een inmiddels lege hoofdpot; het totaal blijft dan
+-- kloppen maar de verdeling is onzin en de hoofdpot duikt onder nul.
+--
+-- De regel: verdelen en toewijzen mogen alleen geld raken dat écht in de
+-- hoofdpot zit.
+--
+--   beschikbaar = alles wat de hoofdpot binnenkwam
+--               - alles wat er via een overboeking uit ging
+--
+-- Bankfeiten tellen bewust niet mee als beperking. Een uitgave zonder potje
+-- drukt het saldo van de hoofdpot wel, maar mag nooit een import blokkeren: wat
+-- de bank deed is een feit en moet altijd vastgelegd kunnen worden.
+--
+-- Uitgesteld tot commit (constraint trigger, deferrable), want toewijzen haalt
+-- eerst weg bij de hoofdpot en zet daarna pas terug. Tussentijds klopt het even
+-- niet, en dat hoort geen probleem te zijn.
+
+create or replace function public.check_hoofdpot_not_overdrawn()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_org         uuid := coalesce(new.organisation_id, old.organisation_id);
+  v_beschikbaar numeric(12,2);
+begin
+  select coalesce(sum(
+           case
+             when t.direction = 'in'            then  a.amount
+             when t.transfer_group is not null  then -a.amount
+             else 0            -- bankuitgave zonder potje: geen beperking
+           end), 0)
+    into v_beschikbaar
+    from public.allocations a
+    join public.pots p         on p.id = a.pot_id and p.is_hoofdpot
+    join public.transactions t on t.id = a.transaction_id and t.voided_at is null
+   where a.organisation_id = v_org;
+
+  if v_beschikbaar < 0 then
+    raise exception
+      'Er staat niet genoeg in de hoofdpot. Dit geld is al toegewezen of verdeeld (tekort: %).',
+      -v_beschikbaar
+      using errcode = '23514';
+  end if;
+  return null;
+end $$;
+
+drop trigger if exists allocations_hoofdpot_guard on public.allocations;
+create constraint trigger allocations_hoofdpot_guard
+  after insert or update or delete on public.allocations
+  deferrable initially deferred
+  for each row execute function public.check_hoofdpot_not_overdrawn();
+
+
+-- =============================================================================
 -- 5b. TOEWIJZEN ALS ÉÉN BEWERKING
 -- =============================================================================
 -- Toewijzen is geld verplaatsen van de hoofdpot naar een potje. De volgorde

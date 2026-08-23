@@ -166,8 +166,63 @@ echo "6. Een transactie met allocaties kan niet verdwijnen"
 check "  delete wordt tegengehouden" \
   "$(Q -c "delete from public.transactions where id='$TX4'" 2>&1 | grep -qc 'violates foreign key' && echo ja || echo ja)" "ja"
 
+
+echo "7. Verdelen mag alleen geld raken dat in de hoofdpot zit"
+TX5=$(new_tx 1000)
+QA -c "select public.assign_from_hoofdpot('$TX5','$POT_A',1000)" >/dev/null
+check "  1000 toegewezen aan A, hoofdpot leeg voor die rij" \
+  "$(Q -c "select coalesce(sum(amount),0) from public.allocations where transaction_id='$TX5' and pot_id='$HOOFD'")" "0"
+
+# Verdelen is een overboeking uit de hoofdpot naar een potje.
+verdeel() {  # $1 = bedrag -> 'ok' of 'geweigerd'
+  local out
+  out=$(psql -h "$SOCK" -p "$PGPORT" -U postgres -d "$DB" -tA -v ON_ERROR_STOP=1 -c "
+    select public.login_as('$DEMO');
+    do \$do\$
+    declare g uuid := gen_random_uuid();
+    begin
+      insert into public.transactions
+        (organisation_id,pot_id,direction,amount,occurred_on,counterparty,transfer_group)
+      values ('$ORG','$HOOFD','out'::public.txn_direction,$1,'2026-06-02','Verdeling',g),
+             ('$ORG','$POT_A','in'::public.txn_direction,$1,'2026-06-02','Verdeling',g);
+    end \$do\$;" 2>&1)
+  if [ $? -eq 0 ]; then echo ok
+  elif echo "$out" | grep -q 'niet genoeg in de hoofdpot'; then echo geweigerd
+  else echo "$out" | tr '\n' ' ' | cut -c1-70; fi
+}
+
+HP_VOOR=$(Q -c "select balance from public.pot_balances where pot_id='$HOOFD'")
+check "  verdelen zonder dekking wordt geweigerd" "$(verdeel $(( ${HP_VOOR%%.*} + 500 )))" "geweigerd"
+check "  de hoofdpot is niet veranderd"           "$(Q -c "select balance from public.pot_balances where pot_id='$HOOFD'")" "$HP_VOOR"
+
+new_tx 300 >/dev/null
+check "  met dekking mag verdelen wel"            "$(verdeel 300)" "ok"
+
+# Een onverdeelde bankuitgave drukt het saldo van de hoofdpot, maar beperkt
+# verdelen niet: verdelen gaat over wat er aan inkomsten binnenkwam. Anders zou
+# één vergeten kost de hele werking blokkeren. Het bankfeit zelf moet sowieso
+# altijd vastgelegd kunnen worden.
+check "  een bankuitgave zonder potje mag altijd" \
+  "$(Q -c "with x as (insert into public.transactions
+             (organisation_id,pot_id,direction,amount,occurred_on,counterparty)
+             values ('$ORG',null,'out',99999,'2026-06-03','bankkosten') returning id)
+           select case when count(*)=1 then 'ok' else 'mislukt' end from x")" "ok"
+check "  en die maakt de hoofdpot negatief"       "$(Q -c "select case when balance < 0 then 'ja' else 'nee' end from public.pot_balances where pot_id='$HOOFD'")" "ja"
+
+# Wat er nog aan onverdeelde inkomsten staat, is wat je nog mag verdelen.
+REST=$(Q -c "select coalesce(sum(case when t.direction='in' then a.amount
+                                      when t.transfer_group is not null then -a.amount
+                                      else 0 end),0)
+               from public.allocations a
+               join public.pots p on p.id=a.pot_id and p.is_hoofdpot
+               join public.transactions t on t.id=a.transaction_id
+              where a.organisation_id='$ORG'")
+check "  precies die rest verdelen mag nog"       "$(verdeel "$REST")" "ok"
+check "  daarna is er niets meer te verdelen"     "$(verdeel 1)" "geweigerd"
+
 cleanup
 
+echo
 echo
 if [ "$fail" -eq 0 ]; then
   printf '\033[32m%d geslaagd, 0 gefaald\033[0m\n\n' "$pass"; exit 0

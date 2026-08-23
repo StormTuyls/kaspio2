@@ -141,14 +141,32 @@ Verdelen maakt overboekingsregels aan, geen allocaties. Om te voorkomen dat je
 geld verdeelt dat je al hebt toegewezen (of omgekeerd), geldt één regel: **de
 hoofdpot kan niet onder nul door een uitgaande beweging.**
 
-Dat wordt afgedwongen in de RPC die verdeelt en in de RPC die toewijst: beide
-vergrendelen de hoofdpot, berekenen het saldo, en weigeren als de beweging het
-negatief zou maken. De melding is dan expliciet, bijvoorbeeld "dit geld is al
-verdeeld over de potjes".
+Dit staat niet in de RPC's maar in een uitgestelde constraint trigger op
+`allocations`, zodat het ook geldt voor een script in de SQL Editor of een bug
+in de frontend. Uitgesteld tot commit, want toewijzen haalt eerst weg bij de
+hoofdpot en zet daarna pas terug; tussentijds klopt het even niet.
 
-Een onverdeelde uitgave mag de hoofdpot wél negatief maken; dat is een echt
-bankfeit en geen fout. De regel geldt alleen voor bewegingen die de gebruiker
-zelf initieert.
+De precieze formulering:
+
+    beschikbaar = alles wat de hoofdpot binnenkwam
+                - alles wat er via een overboeking uit ging
+
+en dat moet altijd nul of meer zijn.
+
+Twee gevolgen die het overwegen waard zijn:
+
+- **Een bankuitgave zonder potje blokkeert nooit.** Wat de bank deed is een
+  feit en moet altijd vastgelegd kunnen worden, ook als het saldo van de
+  hoofdpot daardoor negatief wordt. Zo'n uitgave telt dus niet mee als
+  beperking op verdelen; anders legt één vergeten kost de hele werking stil.
+- **De hoofdpot kan dus negatief staan**, maar dan uitsluitend door onverdeelde
+  uitgaven. Dat is een bruikbaar signaal: het zegt "er staan nog kosten die je
+  moet toewijzen", niet "er is iets dubbel geboekt".
+
+Zonder deze regel bleef er een gat: de CHECK per transactie verhindert dat je
+één bankregel dubbel toewijst, maar niet dat je 1.000 toewijst aan een potje en
+daarna nog eens 1.000 verdeelt uit een inmiddels lege hoofdpot. Het totaal bleef
+dan kloppen terwijl de verdeling onzin was en de hoofdpot onder nul dook.
 
 ### Afgeleide waarden
 
