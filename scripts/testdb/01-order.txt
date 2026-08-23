@@ -29,6 +29,9 @@ feedback.sql
 admin-analytics-views.sql
 realtime.sql
 
+# Nieuw model: hoofdpot als echt potje plus allocaties.
+allocations.sql
+
 # Bewust niet geladen:
 #   demo-seed*.sql            , seeds, gaan apart via 03-seed
 #   reset-data.sql            , wist data

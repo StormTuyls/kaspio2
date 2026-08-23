@@ -69,6 +69,20 @@ select counterparty, direction, amount from public.transactions where pot_id is 
 Dat is de toestand waarin het verdeel-probleem zich voordoet, en dus waar het
 nieuwe allocatie-model tegen getest moet worden.
 
+## Het allocatie-model testen
+
+```bash
+./scripts/testdb/test-allocations.sh
+```
+
+25 controles op de garanties uit het ontwerp: dat de hoofdpot beschermd is, dat
+je nooit meer kan toewijzen dan er binnenkwam, dat twee gelijktijdige sessies
+niet allebei hetzelfde geld kunnen pakken, dat het scenario uit de bugmelding
+geweigerd wordt, en dat het totaal gelijk blijft aan de som van de potjes.
+
+De tests maken hun eigen wegwerp-organisatie aan en ruimen die weer op, dus je
+kan ze zo vaak draaien als je wil zonder de demodata te raken.
+
 ## Wat hier nagebootst is
 
 Op een kale Postgres ontbreekt alles wat Supabase eromheen zet.
