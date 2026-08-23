@@ -30,6 +30,10 @@ type Props = {
     txId: string,
     confirm: boolean,
   ) => Promise<{ error: string | null }>;
+  /** Een hele selectie in één keer bewust in de hoofdpot houden. */
+  onBulkKeepInHoofdpot?: (
+    txIds: string[],
+  ) => Promise<{ error: string | null }>;
 };
 
 /**
@@ -45,6 +49,7 @@ export function UnallocatedInbox({
   onBulkDelete,
   onBulkAssign,
   onKeepInHoofdpot,
+  onBulkKeepInHoofdpot,
 }: Props) {
   const confirm = useConfirm();
   const alert = useAlert();
@@ -98,6 +103,29 @@ export function UnallocatedInbox({
     }
     if (onBulkDelete) await onBulkDelete(ids);
     else ids.forEach((id) => onDelete(id));
+    setSelected(new Set());
+  }
+
+  async function bulkKeep() {
+    const ids = toTransactionIds([...selected]);
+    if (ids.length === 0 || !onBulkKeepInHoofdpot) return;
+    if (
+      !(await confirm({
+        title: `${ids.length} ${ids.length === 1 ? "transactie" : "transacties"} in de hoofdpot houden?`,
+        message:
+          "Dit geld krijgt geen eigen potje en wordt daarmee verdeelbaar. Je kan het later alsnog toewijzen zolang het niet verdeeld is.",
+        confirmLabel: "In de hoofdpot houden",
+      }))
+    ) {
+      return;
+    }
+    setBulkBusy(true);
+    const res = await onBulkKeepInHoofdpot(ids);
+    setBulkBusy(false);
+    if (res.error) {
+      await alert({ title: "Lukt niet", message: res.error });
+      return;
+    }
     setSelected(new Set());
   }
 
@@ -190,6 +218,16 @@ export function UnallocatedInbox({
                     {bulkBusy ? "Bezig…" : `${selected.size} toewijzen`}
                   </button>
                 </>
+              )}
+              {onBulkKeepInHoofdpot && (
+                <button
+                  onClick={bulkKeep}
+                  disabled={bulkBusy}
+                  title="Dit geld heeft geen specifiek doel en blijft in de hoofdpot"
+                  className="btn-secondary flex-1 px-3 py-1.5 text-xs sm:flex-none"
+                >
+                  Hou in hoofdpot
+                </button>
               )}
               {onBulkDelete && (
                 <button

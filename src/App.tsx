@@ -455,6 +455,7 @@ function useBridgedStore(
     transactions: dbTx,
     allocations: dbAllocations,
     keepInHoofdpot: keepDbInHoofdpot,
+    keepAllInHoofdpot: keepAllDbInHoofdpot,
     addTransaction: addDbTx,
     importTransactions: importDbTx,
     deleteTransaction: deleteDbTx,
@@ -591,6 +592,7 @@ function useBridgedStore(
       assignTransaction: assignDbTx,
       assignAllToPot: assignAllDbToPot,
       keepInHoofdpot: keepDbInHoofdpot,
+      keepAllInHoofdpot: keepAllDbInHoofdpot,
       transfer: transferDbTx,
       allocateFromHoofdpot: allocateDbHoofdpot,
     };
@@ -598,6 +600,7 @@ function useBridgedStore(
     localStore,
     orgId,
     keepDbInHoofdpot,
+    keepAllDbInHoofdpot,
     assignAllDbToPot,
     pots,
     transactions,
@@ -1544,6 +1547,7 @@ function AuthedApp({
           onKeepInHoofdpot={(txId, confirm) =>
             store.keepInHoofdpot(txId, confirm)
           }
+          onBulkKeepInHoofdpot={(txIds) => store.keepAllInHoofdpot(txIds)}
         />
       </Modal>
 

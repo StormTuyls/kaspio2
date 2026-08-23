@@ -50,6 +50,10 @@ type PreviewRow = {
 };
 
 const UNALLOCATED = "__unallocated__";
+// Meteen in de hoofdpot: komt op dezelfde plek terecht als "onverdeeld", maar
+// dan als genomen beslissing, dus meteen verdeelbaar. Handig voor een afschrift
+// waarvan je weet dat het gemeenschappelijk geld is.
+const HOOFDPOT = "__hoofdpot__";
 
 const SAMPLE_CSV = `Datum;Bedrag;Tegenpartij;Mededeling
 20/06/2026;-12,50;Colruyt;Boodschappen materiaal
@@ -258,7 +262,7 @@ export function ImportTransactionsModal({
         if (match && pots.some((pot) => pot.id === match.pot_id)) {
           return match.pot_id;
         }
-        if (targetPot === UNALLOCATED && p.counterparty) {
+        if ((targetPot === UNALLOCATED || targetPot === HOOFDPOT) && p.counterparty) {
           const hint = counterpartyPotHints[normalizeCounterparty(p.counterparty)];
           if (hint && pots.some((pot) => pot.id === hint)) return hint;
         }
@@ -315,7 +319,9 @@ export function ImportTransactionsModal({
       .map(({ p, i }) => {
         const choice = rowPot[i] ?? targetPot;
         return {
-          potId: choice === UNALLOCATED ? null : choice,
+          potId:
+            choice === UNALLOCATED || choice === HOOFDPOT ? null : choice,
+          keepInHoofdpot: choice === HOOFDPOT,
           amount: Math.abs(p.amount as number),
           direction: directionOf(p.amount as number),
           occurredOn: p.occurredOn as string,
@@ -491,7 +497,14 @@ export function ImportTransactionsModal({
                     className="w-full rounded-lg border border-navy-200 bg-white px-2.5 py-1.5 text-sm dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50"
                   >
                     {allowUnallocated && (
-                      <option value={UNALLOCATED}>Onverdeeld (later toewijzen)</option>
+                      <>
+                        <option value={UNALLOCATED}>
+                          Nog beslissen (komt in de inbox)
+                        </option>
+                        <option value={HOOFDPOT}>
+                          Hoofdpot (meteen te verdelen)
+                        </option>
+                      </>
                     )}
                     {pots.map((p) => (
                       <option key={p.id} value={p.id}>
@@ -630,7 +643,10 @@ export function ImportTransactionsModal({
                                   className="max-w-[9rem] rounded-md border border-navy-200 bg-white px-1.5 py-1 text-xs dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50"
                                 >
                                   {allowUnallocated && (
-                                    <option value={UNALLOCATED}>Onverdeeld</option>
+                                    <>
+                                      <option value={UNALLOCATED}>Nog beslissen</option>
+                                      <option value={HOOFDPOT}>Hoofdpot</option>
+                                    </>
                                   )}
                                   {pots.map((pot) => (
                                     <option key={pot.id} value={pot.id}>
@@ -667,7 +683,10 @@ export function ImportTransactionsModal({
                                   tegenpartij: p.counterparty,
                                   mededeling: p.memo,
                                   potje: potNaam(
-                                    gekozen === UNALLOCATED ? null : gekozen,
+                                    gekozen === UNALLOCATED ||
+                                    gekozen === HOOFDPOT
+                                      ? null
+                                      : gekozen,
                                   ),
                                 }}
                               />

@@ -247,6 +247,22 @@ beslis "$UITG" true >/dev/null
 check "  maar met een bevestigde uitgave van 200 erbij niet meer" "$(verdeel 500)" "geweigerd"
 check "  300 mag dan nog wel"                                      "$(verdeel 300)" "ok"
 
+
+echo "11. Een kost bevestigen mag nooit geweigerd worden"
+# Kwam boven bij de bulk-actie: bevestig je eerst een uitgave, dan zou een te
+# brede bewaking dat weigeren omdat het verdeelbare bedrag negatief wordt.
+# Een beslissing vastleggen is geen geldbeweging.
+UIT2=$(Q -c "with x as (insert into public.transactions
+               (organisation_id,pot_id,direction,amount,occurred_on,counterparty)
+               values ('$ORG',null,'out',250,'2026-07-01','kost eerst') returning id)
+             select id from x")
+IN2=$(new_tx 800)
+check "  de kost als eerste bevestigen lukt"     "$(beslis "$UIT2" true)" "ok"
+check "  daarna de inkomst ook"                  "$(beslis "$IN2" true)" "ok"
+check "  verdeelbaar is 800 min 250"             "$(beschikbaar)" "550.00"
+check "  550 verdelen mag"                       "$(verdeel 550)" "ok"
+check "  en 1 euro meer niet"                    "$(verdeel 1)" "geweigerd"
+
 cleanup
 
 echo

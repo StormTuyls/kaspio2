@@ -343,12 +343,47 @@ create or replace function public.check_hoofdpot_not_overdrawn()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare
   v_org         uuid := coalesce(new.organisation_id, old.organisation_id);
+  v_uitgaand    boolean := false;
   v_beschikbaar numeric(12,2);
 begin
-  -- Alleen bevestigde allocaties tellen mee. Wat nog onbeslist in de hoofdpot
-  -- ligt is geen verdeelbaar geld, en een onbesliste uitgave beperkt dus ook
-  -- niets. Zo blokkeert één vergeten bankkost de werking niet, terwijl een
-  -- kost die je bewust in de hoofdpot legt wél de ruimte verkleint.
+  -- Alleen bewegingen die geld UIT de hoofdpot halen worden bewaakt. Een
+  -- beslissing vastleggen is dat niet: een bankkost bewust in de hoofdpot
+  -- leggen mag nooit geweigerd worden, ook al zakt het verdeelbare bedrag
+  -- daardoor. Anders hangt een bulk-bevestiging af van de volgorde waarin de
+  -- rijen toevallig verwerkt worden.
+  if tg_op = 'INSERT' then
+    v_uitgaand := exists (
+      select 1 from public.pots p
+        join public.transactions t on t.id = new.transaction_id
+       where p.id = new.pot_id and p.is_hoofdpot
+         and t.direction = 'out' and t.transfer_group is not null);
+
+  elsif tg_op = 'DELETE' then
+    v_uitgaand := exists (
+      select 1 from public.pots p
+        join public.transactions t on t.id = old.transaction_id
+       where p.id = old.pot_id and p.is_hoofdpot and t.direction = 'in');
+
+  elsif tg_op = 'UPDATE' then
+    -- Inkomsten die de hoofdpot verlaten, krimpen, of hun bevestiging
+    -- verliezen. Bevestigen zelf staat er bewust niet bij.
+    v_uitgaand := exists (
+      select 1 from public.pots p
+        join public.transactions t on t.id = old.transaction_id
+       where p.id = old.pot_id and p.is_hoofdpot and t.direction = 'in')
+      and (
+        new.pot_id is distinct from old.pot_id
+        or new.amount < old.amount
+        or (old.confirmed_at is not null and new.confirmed_at is null)
+      );
+  end if;
+
+  if not v_uitgaand then
+    return null;
+  end if;
+
+  -- Verdeelbaar: wat er bevestigd binnenkwam min wat er bevestigd uit ging.
+  -- Onbeslist geld telt nergens in mee.
   select coalesce(sum(
            case when t.direction = 'in' then a.amount else -a.amount end), 0)
     into v_beschikbaar

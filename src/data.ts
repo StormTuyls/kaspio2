@@ -335,8 +335,14 @@ export function usePots(orgId: string | null) {
 // =============================================================================
 
 export type TransactionInput = {
-  /** null = onverdeeld, komt in de "Toe te wijzen" inbox (alleen admins). */
+  /** null = komt in de hoofdpot. */
   potId: string | null;
+  /**
+   * Alleen zinvol samen met potId null: meteen bevestigen dat dit geld in de
+   * hoofdpot hoort, in plaats van het in de inbox te laten belanden. Bevestigd
+   * geld is verdeelbaar; onbeslist geld niet.
+   */
+  keepInHoofdpot?: boolean;
   amount: number;
   direction: "in" | "out";
   occurredOn: string; // YYYY-MM-DD
@@ -432,7 +438,8 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
   ): Promise<{ error: string | null; count: number }> {
     if (!orgId) return { error: "Geen organisatie geselecteerd.", count: 0 };
     if (inputs.length === 0) return { error: "Geen rijen om te importeren.", count: 0 };
-    const rows = inputs.map((input) => ({
+
+    const toRow = (input: TransactionInput) => ({
       organisation_id: orgId,
       pot_id: input.potId,
       amount: input.amount,
@@ -440,14 +447,77 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
       occurred_on: input.occurredOn,
       memo: input.memo ?? null,
       counterparty: input.counterparty ?? null,
-    }));
-    const { error: err } = await supabase
-      .from("transactions")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .insert(rows as any);
-    if (err) return { error: err.message, count: 0 };
+    });
+
+    // Rijen die meteen in de hoofdpot horen gaan apart, zodat we de ids
+    // terugkrijgen en precies die kunnen bevestigen. Ids uit één grote insert
+    // terugmappen op de invoer zou op volgorde leunen, en die is niet
+    // gegarandeerd.
+    const meteen = inputs.filter((i) => i.potId === null && i.keepInHoofdpot);
+    const rest = inputs.filter((i) => !(i.potId === null && i.keepInHoofdpot));
+    let count = 0;
+
+    if (rest.length > 0) {
+      const { error: err } = await supabase
+        .from("transactions")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert(rest.map(toRow) as any);
+      if (err) return { error: err.message, count };
+      count += rest.length;
+    }
+
+    if (meteen.length > 0) {
+      const { data, error: err } = await supabase
+        .from("transactions")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert(meteen.map(toRow) as any)
+        .select("id");
+      if (err) {
+        await fetchTransactions();
+        return { error: err.message, count };
+      }
+      count += meteen.length;
+
+      const ids = ((data as { id: string }[] | null) ?? []).map((r) => r.id);
+      for (const id of ids) {
+        const { error: kErr } = await supabase.rpc(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          "keep_in_hoofdpot" as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          { p_transaction_id: id, p_confirm: true } as any,
+        );
+        if (kErr) {
+          await fetchTransactions();
+          return {
+            error: `Geïmporteerd, maar in de hoofdpot zetten lukte niet: ${kErr.message}`,
+            count,
+          };
+        }
+      }
+    }
+
     await fetchTransactions();
-    return { error: null, count: rows.length };
+    return { error: null, count };
+  }
+
+  /** Meerdere bankregels in één keer bewust in de hoofdpot houden. */
+  async function keepAllInHoofdpot(
+    transactionIds: string[],
+  ): Promise<{ error: string | null }> {
+    for (const id of transactionIds) {
+      const { error: err } = await supabase.rpc(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        "keep_in_hoofdpot" as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        { p_transaction_id: id, p_confirm: true } as any,
+      );
+      if (err) {
+        await fetchTransactions();
+        return { error: err.message };
+      }
+    }
+    await fetchTransactions();
+    return { error: null };
   }
 
   /**
@@ -744,6 +814,7 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
     addTransaction,
     assignAllToPot,
     keepInHoofdpot,
+    keepAllInHoofdpot,
     importTransactions,
     deleteTransaction,
     deleteTransactions,
