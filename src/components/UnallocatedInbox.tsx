@@ -115,7 +115,10 @@ export function UnallocatedInbox({
       <ul className="divide-y divide-navy-100 dark:divide-navy-700/60">
         {transactions.map((tx) => (
           <li key={tx.id} className="py-3">
-            <div className="flex items-center gap-3">
+            {/* Op mobiel zakken de acties naar een eigen regel: naast de knoppen
+                bleef er anders zo'n 80px over voor tegenpartij en mededeling,
+                waardoor beide na een paar letters afgekapt werden. */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               {onBulkDelete && (
                 <input
                   type="checkbox"
@@ -149,22 +152,24 @@ export function UnallocatedInbox({
                   <span className="whitespace-nowrap">{formatDate(tx.occurredOn)}</span>
                 </div>
               </div>
-              <button
-                onClick={() => setOpenId(openId === tx.id ? null : tx.id)}
-                className="btn-accent flex-shrink-0 px-3 py-1.5 text-xs"
-              >
-                {openId === tx.id ? "Sluit" : "Toewijzen"}
-              </button>
-              <button
-                onClick={async () => {
-                  if (await confirm({ title: "Transactie verwijderen?", confirmLabel: "Verwijderen", danger: true }))
-                    onDelete(tx.id);
-                }}
-                className="flex-shrink-0 rounded-md px-2 py-1 text-navy-300 hover:bg-rose-50 hover:text-rose-600 dark:text-navy-500 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
-                aria-label="Verwijderen"
-              >
-                ✕
-              </button>
+              <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
+                <button
+                  onClick={() => setOpenId(openId === tx.id ? null : tx.id)}
+                  className="btn-accent flex-shrink-0 px-3 py-1.5 text-xs"
+                >
+                  {openId === tx.id ? "Sluit" : "Toewijzen"}
+                </button>
+                <button
+                  onClick={async () => {
+                    if (await confirm({ title: "Transactie verwijderen?", confirmLabel: "Verwijderen", danger: true }))
+                      onDelete(tx.id);
+                  }}
+                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md text-navy-300 hover:bg-rose-50 hover:text-rose-600 sm:h-auto sm:w-auto sm:px-2 sm:py-1 dark:text-navy-500 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
+                  aria-label="Verwijderen"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {openId === tx.id && (

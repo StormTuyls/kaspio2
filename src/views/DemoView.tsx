@@ -142,24 +142,30 @@ function OrgSwitcher({ orgId, onChange }: { orgId: string; onChange: (id: string
   );
 }
 
+/**
+ * Sticky, dus op mobiel moet de banner op één regel passen: de uitleg en het
+ * lange terug-label verdwijnen onder sm. Twee regels kosten daar meteen 13%
+ * van de zichtbare hoogte.
+ */
 function DemoBanner({ onSignup, onExit }: { onSignup: () => void; onExit: () => void }) {
   return (
     <div className="sticky top-0 z-50 bg-navy-900 text-white">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-2.5 sm:px-8">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2.5 sm:px-8">
         <div className="flex items-center gap-2 text-sm">
           <span className="rounded-full bg-mint-500/20 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-mint-300">
             Demo
           </span>
-          <span className="text-white/80">
+          <span className="hidden text-white/80 sm:inline">
             Voorbeelddata, alleen-lezen. Niks wordt bewaard.
           </span>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={onExit}
-            className="rounded-lg px-3 py-1.5 text-sm font-medium text-white/70 transition hover:text-white"
+            className="rounded-lg px-2 py-1.5 text-sm font-medium text-white/70 transition hover:text-white sm:px-3"
           >
-            ← Terug naar site
+            ← <span className="hidden sm:inline">Terug naar site</span>
+            <span className="sm:hidden">Terug</span>
           </button>
           <button
             onClick={onSignup}

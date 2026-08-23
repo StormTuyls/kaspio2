@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { formatDate, formatEuro } from "../storage";
+import { formatDate, formatEuro, formatEuroCompact } from "../storage";
 import type { Transaction } from "../types";
 
 type Props = {
@@ -117,14 +117,14 @@ export function BalanceChart({ transactions }: Props) {
   const tipY = PAD_TOP + 4;
 
   return (
-    <div className="card p-5">
-      <div className="mb-3 flex items-baseline justify-between">
+    <div className="card p-4 sm:p-5">
+      <div className="mb-3 flex items-baseline justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold text-navy-900 dark:text-navy-50">
             Saldo over tijd
           </h3>
           <p className="text-xs text-navy-400 dark:text-navy-300">
-            Beweeg over de grafiek voor details
+            Tik of beweeg over de grafiek voor details
           </p>
           <div className="mt-2 inline-flex rounded-lg bg-canvas p-0.5 text-xs dark:bg-navy-800">
             {(
@@ -140,7 +140,7 @@ export function BalanceChart({ transactions }: Props) {
                   setMode(m);
                   setHover(null);
                 }}
-                className={`rounded-md px-2.5 py-1 font-medium transition ${
+                className={`whitespace-nowrap rounded-md px-2.5 py-1 font-medium transition ${
                   mode === m
                     ? "bg-white text-navy-900 shadow-sm dark:bg-navy-700 dark:text-white"
                     : "text-navy-500 hover:text-navy-900 dark:text-navy-300 dark:hover:text-white"
@@ -179,6 +179,7 @@ export function BalanceChart({ transactions }: Props) {
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         className={`h-48 w-full ${accent}`}
         onMouseLeave={() => setHover(null)}
+        onPointerLeave={() => setHover(null)}
       >
         <defs>
           <linearGradient id="bal-area-grad" x1="0" y1="0" x2="0" y2="1">
@@ -209,7 +210,7 @@ export function BalanceChart({ transactions }: Props) {
               textAnchor="end"
               className="fill-navy-400 text-[10px] tabular-nums dark:fill-navy-400"
             >
-              {formatEuro(t)}
+              {formatEuroCompact(t)}
             </text>
           </g>
         ))}
@@ -343,7 +344,8 @@ export function BalanceChart({ transactions }: Props) {
           </>
         )}
 
-        {/* Onzichtbare hit-zones per dag voor hover */}
+        {/* Onzichtbare hit-zones per dag. onPointerDown erbij zodat de tooltip
+            ook op touch werkt; enkel onMouseEnter doet daar niets betrouwbaars. */}
         {days.map((d, i) => (
           <rect
             key={d.date}
@@ -353,6 +355,7 @@ export function BalanceChart({ transactions }: Props) {
             height={HEIGHT - PAD_TOP - PAD_BOTTOM}
             fill="transparent"
             onMouseEnter={() => setHover(i)}
+            onPointerDown={() => setHover(i)}
           />
         ))}
       </svg>

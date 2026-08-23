@@ -355,6 +355,21 @@ export function formatEuro(value: number) {
   }).format(value);
 }
 
+/**
+ * Korte euro-notatie voor grafiek-assen: "€ 2,5k". Het volledige formatEuro
+ * ("€ 2.500,00") is breder dan de ruimte links van een grafiek en werd daar
+ * afgekapt.
+ */
+export function formatEuroCompact(value: number) {
+  if (value === 0) return "€ 0";
+  if (Math.abs(value) >= 1000) {
+    const k = value / 1000;
+    const n = Number.isInteger(k) ? String(k) : k.toFixed(1).replace(".", ",");
+    return `€ ${n}k`;
+  }
+  return `€ ${Math.round(value)}`;
+}
+
 export function formatDate(iso: string) {
   return new Intl.DateTimeFormat("nl-BE", { dateStyle: "medium" }).format(new Date(iso));
 }

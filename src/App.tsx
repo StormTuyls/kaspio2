@@ -1079,7 +1079,10 @@ function AuthedApp({
             onFeedback={() => setShowFeedback(true)}
           />
 
-          <main className="mx-auto max-w-6xl px-4 pb-24 pt-6 sm:px-8 sm:pt-8 lg:pb-8">
+          {/* De onderbalk is fixed en ~58px hoog; op een toestel met home-indicator
+              komt daar env(safe-area-inset-bottom) bovenop. pb-24 alleen liet
+              daar nog 4px over, vandaar de expliciete berekening. */}
+          <main className="mx-auto max-w-6xl px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 sm:px-8 sm:pt-8 lg:pb-8">
             {selectedPot ? (
               <PotDetail
                 pot={selectedPot}

@@ -88,12 +88,14 @@ export function DialogProvider({ children }: { children: ReactNode }) {
                 {opts.message}
               </p>
             )}
-            <div className="flex justify-end gap-2">
+            {/* Op mobiel onder elkaar, met de bevestig-knop onderaan binnen
+                duimbereik. Vanaf sm de klassieke rij rechts. */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
               {isConfirm && (
                 <button
                   type="button"
                   onClick={() => settle(false)}
-                  className="btn-secondary"
+                  className="btn-secondary w-full sm:w-auto"
                 >
                   {(state?.opts as ConfirmOpts).cancelLabel ?? "Annuleren"}
                 </button>
@@ -101,11 +103,11 @@ export function DialogProvider({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={() => settle(true)}
-                className={
+                className={`w-full sm:w-auto ${
                   isConfirm && (state.opts as ConfirmOpts).danger
                     ? "btn-danger"
                     : "btn-accent"
-                }
+                }`}
               >
                 {isConfirm
                   ? (state.opts as ConfirmOpts).confirmLabel ?? "Bevestigen"

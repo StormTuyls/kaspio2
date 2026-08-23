@@ -146,15 +146,15 @@ export function DashboardView({
   return (
     <div className="space-y-6 font-display">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="font-num text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
+        <div className="min-w-0">
+          <p className="truncate font-num text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
             {organizationName}
           </p>
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
             Dashboard
           </h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           {onManageRecurring && (
             <button onClick={onManageRecurring} className="btn-secondary text-sm">
               Terugkerend
@@ -171,7 +171,7 @@ export function DashboardView({
 
       {/* Hoofd-statistieken: de bankkaart + in/uit-stromen */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+        <div className="min-w-0 lg:col-span-2">
           <BankCard
             label={seesAll ? "Totaal saldo" : "Mijn saldo"}
             total={total}
@@ -184,14 +184,14 @@ export function DashboardView({
             onAddMoney={isAdmin ? onAddMoney : undefined}
           />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+        <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-1">
           <FlowStat label="Inkomend" sub={FLOW_LABELS[flowPeriod]} value={formatEuro(totalIn)} tone="in" />
           <FlowStat label="Uitgaand" sub={FLOW_LABELS[flowPeriod]} value={formatEuro(totalOut)} tone="out" />
         </div>
       </div>
 
       {/* Tellers */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         <CountStat
           label="Potjes"
           value={pots.length}
@@ -316,7 +316,7 @@ export function DashboardView({
 
       {/* Groepen met hun potjes */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-3 lg:col-span-2">
+        <div className="min-w-0 space-y-3 lg:col-span-2">
           <h2 className="text-lg font-bold tracking-tight text-slate-900 dark:text-navy-50">
             Groepen &amp; potjes
           </h2>
@@ -546,7 +546,7 @@ function CountStat({
     </>
   );
   const base =
-    "flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-4 text-center dark:border-navy-700/60 dark:bg-navy-900";
+    "flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-3 text-center sm:p-4 dark:border-navy-700/60 dark:bg-navy-900";
   if (!onClick) return <div className={base}>{inner}</div>;
   return (
     <button
@@ -570,7 +570,7 @@ function ActivityFeed({
   potById: Map<string, Pot>;
 }) {
   return (
-    <aside className="flex h-fit flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_6px_20px_-12px_rgba(15,23,42,0.1)] dark:border-navy-700/60 dark:bg-navy-900 dark:shadow-none">
+    <aside className="flex h-fit min-w-0 flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_6px_20px_-12px_rgba(15,23,42,0.1)] dark:border-navy-700/60 dark:bg-navy-900 dark:shadow-none">
       <h2 className="mb-4 font-num text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400 dark:text-navy-300">
         Recente activiteit
       </h2>
