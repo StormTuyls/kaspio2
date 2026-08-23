@@ -66,6 +66,13 @@ $$;
 revoke all on function public.create_invite(text, text, int, timestamptz)
   from public, anon, authenticated;
 
+-- Let op: `from public` raakt ook service_role, want elke rol erft van PUBLIC
+-- en service_role is geen eigenaar. Vandaag geeft dat niets: geen enkele edge
+-- function doet een .rpc()-call. Bouw je later wel een server-side job die
+-- codes aanmaakt, geef die rol dan expliciet toegang:
+--   grant execute on function public.create_invite(text, text, int, timestamptz)
+--     to service_role;
+
 
 -- =============================================================================
 -- 2. CONSUME_INVITE , dichtzetten
