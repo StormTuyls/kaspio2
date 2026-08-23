@@ -1,0 +1,36 @@
+# Laadvolgorde van de app-SQL. Eén bestand per regel, # is commentaar.
+# De losse bestanden in supabase/ hebben onderlinge afhankelijkheden die alleen
+# in comments staan ("Run dit NA ..."). Deze lijst maakt die volgorde expliciet
+# en uitvoerbaar.
+schema.sql
+subscriptions.sql
+unallocated-and-groups.sql
+transfers.sql
+approval-flows.sql
+pot-budgets.sql
+distribution-shares.sql
+recurring-plans.sql
+recurring-plans-autoboek.sql
+recurring-plans-cron.sql
+attachments.sql
+comp-codes.sql
+invite-codes.sql
+org-invites.sql
+member-management.sql
+org-invite-tokens.sql
+create-org-rpc.sql
+delete-organisation.sql
+leave-organisation.sql
+free-tier-limits.sql
+groups-tier-gate.sql
+subscriptions-pricing-update.sql
+notification-prefs.sql
+feedback.sql
+admin-analytics-views.sql
+realtime.sql
+
+# Bewust niet geladen:
+#   demo-seed*.sql            , seeds, gaan apart via 03-seed
+#   reset-data.sql            , wist data
+#   fix-duplicate-memberships , eenmalige reparatie op productie
+#   digest-cron.sql           , vereist pg_cron
