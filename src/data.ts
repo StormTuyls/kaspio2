@@ -16,6 +16,11 @@ import type {
   Subscription,
   Transaction,
 } from "./supabase";
+import {
+  buildPool,
+  leftoverAllocations,
+  planAllocation,
+} from "./allocatePlan";
 import { supabase } from "./supabase";
 import type { NotificationSettings, PotTargetKind } from "./types";
 import { defaultNotificationSettings } from "./types";
@@ -614,6 +619,19 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
    * rekening; enkel de verdeling verschuift. Gebruikt door de %-verdeling en
    * (later) de maandelijkse storting. Enkel admins (RLS op onverdeeld geld).
    */
+  /**
+   * Verdeel de hoofdpot over potjes.
+   *
+   * Wijst de onverdeelde inkomsten zélf toe (oudste eerst, splitsend waar een
+   * transactie over twee potjes valt) in plaats van een tegenboeking te
+   * verzinnen. Vroeger bleven die transacties op pot_id null staan, dus ze
+   * bleven in de inbox hangen en wie ze daarna alsnog toewees boekte hetzelfde
+   * geld dubbel.
+   *
+   * Wat niet uit de inbox gedekt kan worden valt terug op de oude
+   * transfer-regels. Dat gebeurt bij een org die eerder al op de oude manier
+   * verdeeld heeft: het saldo staat er dan wel, maar zonder onderliggende rij.
+   */
   async function allocateFromHoofdpot(input: {
     allocations: { toPotId: string; amount: number }[];
     occurredOn: string;
@@ -627,28 +645,94 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
     if (allocations.length === 0) return { error: "Niets om te verdelen." };
     const total = allocations.reduce((s, a) => s + a.amount, 0);
     if (!(total > 0)) return { error: "Bedrag moet groter zijn dan 0." };
-    const group = crypto.randomUUID();
-    const base = {
-      organisation_id: orgId,
-      occurred_on: input.occurredOn,
-      memo: input.memo ?? null,
-      counterparty: input.counterparty ?? "Verdeling",
-      transfer_group: group,
-    };
-    const rows = [
-      { ...base, pot_id: null, direction: "out" as const, amount: total },
-      ...allocations.map((a) => ({
-        ...base,
-        pot_id: a.toPotId,
-        direction: "in" as const,
-        amount: a.amount,
-      })),
-    ];
-    const { error: err } = await supabase
-      .from("transactions")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .insert(rows as any);
-    if (err) return { error: err.message };
+
+    // De pool: onverdeelde inkomsten, oudste eerst. Uitgaven zonder potje
+    // horen er niet bij (die halen geld weg, ze leveren niets te verdelen op)
+    // en transfer-regels evenmin.
+    const plan = planAllocation(buildPool(transactions), allocations);
+    const byId = new Map(transactions.map((t) => [t.id, t]));
+
+    // Volgorde is bewust: eerst de originelen verplaatsen (geld verlaat de
+    // hoofdpot), dan de splitsingen. Faalt stap twee, dan is er te wéinig
+    // verdeeld. Andersom zou hetzelfde geld even dubbel staan.
+    for (const u of plan.updates) {
+      const { error: updErr } = await (
+        supabase.from("transactions") as unknown as {
+          update: (v: Record<string, unknown>) => {
+            eq: (k: string, v: string) => Promise<{ error: Error | null }>;
+          };
+        }
+      )
+        .update({ pot_id: u.potId, amount: u.amount })
+        .eq("id", u.txId);
+      if (updErr) {
+        await fetchTransactions();
+        return { error: updErr.message };
+      }
+    }
+
+    if (plan.inserts.length > 0) {
+      const rows = plan.inserts.map((i) => {
+        const orig = byId.get(i.splitFrom);
+        return {
+          organisation_id: orgId,
+          pot_id: i.potId,
+          amount: i.amount,
+          direction: "in" as const,
+          occurred_on: orig?.occurred_on ?? input.occurredOn,
+          memo: orig?.memo ?? null,
+          counterparty: orig?.counterparty ?? input.counterparty ?? "Verdeling",
+          split_from: i.splitFrom,
+        };
+      });
+      const { error: insErr } = await supabase
+        .from("transactions")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert(rows as any);
+      if (insErr) {
+        await fetchTransactions();
+        return {
+          error: `Een deel is verdeeld, maar de rest faalde: ${insErr.message}`,
+        };
+      }
+    }
+
+    // Restant dat niet uit de inbox kwam: klassieke tegenboeking.
+    if (plan.remainder > 0.004) {
+      const group = crypto.randomUUID();
+      const base = {
+        organisation_id: orgId,
+        occurred_on: input.occurredOn,
+        memo: input.memo ?? null,
+        counterparty: input.counterparty ?? "Verdeling",
+        transfer_group: group,
+      };
+      // Wat er per potje nog openstaat na de inbox-dekking.
+      const leftovers = leftoverAllocations(allocations, plan);
+      const rows = [
+        {
+          ...base,
+          pot_id: null,
+          direction: "out" as const,
+          amount: plan.remainder,
+        },
+        ...leftovers.map((l) => ({
+          ...base,
+          pot_id: l.toPotId,
+          direction: "in" as const,
+          amount: l.amount,
+        })),
+      ];
+      const { error: err } = await supabase
+        .from("transactions")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert(rows as any);
+      if (err) {
+        await fetchTransactions();
+        return { error: err.message };
+      }
+    }
+
     await fetchTransactions();
     return { error: null };
   }

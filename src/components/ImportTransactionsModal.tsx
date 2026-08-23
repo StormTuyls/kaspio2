@@ -81,6 +81,18 @@ export function ImportTransactionsModal({
   onImport,
   onClose,
 }: Props) {
+  // Eigen overlay in plaats van <Modal>, dus de Escape-afhandeling moet hier
+  // apart. Zonder dit was dit de enige dialoog in de app die niet op Escape
+  // sluit.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   const [step, setStep] = useState<"upload" | "map">("upload");
   const [fileName, setFileName] = useState("");
   const [headers, setHeaders] = useState<string[]>([]);

@@ -1364,7 +1364,9 @@ function AuthedApp({
                 counterparty: "Verdeling",
               })
             }
-            unassignedCount={unallocatedTx.length}
+            incomingCount={
+              unallocatedTx.filter((t) => t.direction === "in").length
+            }
             onOpenInbox={() => {
               setShowDistribute(false);
               setShowInbox(true);
