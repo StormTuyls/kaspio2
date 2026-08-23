@@ -531,9 +531,11 @@ function useBridgedStore(
       deleteTransactions: async (ids: string[]) => {
         await deleteDbTxs(ids);
       },
-      reassignTransactions: async (ids: string[], toPotId: string) => {
-        await reassignDbTxs(ids, toPotId);
-      },
+      // Resultaat doorgeven i.p.v. inslikken: de aanroeper kan een mislukte
+      // herverdeling dan tonen. Deed hij eerder niet, dus een fout hier
+      // verdween stilletjes.
+      reassignTransactions: (ids: string[], toPotId: string) =>
+        reassignDbTxs(ids, toPotId),
       // Bulk-import (CSV). Geen per-transactie e-mails: dat zou bij een afschrift
       // honderden mails sturen. Eén batch-insert, één refresh.
       importTransactions: importDbTx,
@@ -1362,6 +1364,11 @@ function AuthedApp({
                 counterparty: "Verdeling",
               })
             }
+            unassignedCount={unallocatedTx.length}
+            onOpenInbox={() => {
+              setShowDistribute(false);
+              setShowInbox(true);
+            }}
             onManagePreset={() => {
               setShowDistribute(false);
               setShowDistributionPreset(true);
@@ -1473,6 +1480,9 @@ function AuthedApp({
           onAssign={(txId, parts) => store.assignTransaction(txId, parts)}
           onDelete={(txId) => store.deleteTransaction(txId)}
           onBulkDelete={(txIds) => store.deleteTransactions(txIds)}
+          onBulkAssign={(txIds, potId) =>
+            store.reassignTransactions(txIds, potId)
+          }
         />
       </Modal>
 

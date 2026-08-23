@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { formatDate, formatEuro } from "../storage";
 import type { Pot, Transaction } from "../types";
-import { useConfirm } from "./ConfirmDialog";
+import { useAlert, useConfirm } from "./ConfirmDialog";
 
 type Props = {
   /** Alleen de onverdeelde transacties (potId === null). */
@@ -14,6 +14,14 @@ type Props = {
   onDelete: (txId: string) => void;
   /** Bulk verwijderen van geselecteerde onverdeelde transacties. */
   onBulkDelete?: (txIds: string[]) => void | Promise<unknown>;
+  /**
+   * Bulk toewijzen: alle geselecteerde transacties in hun geheel naar één
+   * potje. Splitsen blijft per transactie, via het paneel hieronder.
+   */
+  onBulkAssign?: (
+    txIds: string[],
+    potId: string,
+  ) => Promise<{ error: string | null }>;
 };
 
 /**
@@ -27,10 +35,14 @@ export function UnallocatedInbox({
   onAssign,
   onDelete,
   onBulkDelete,
+  onBulkAssign,
 }: Props) {
   const confirm = useConfirm();
+  const alert = useAlert();
   const [openId, setOpenId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkPotId, setBulkPotId] = useState("");
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const allSelected =
     transactions.length > 0 && transactions.every((t) => selected.has(t.id));
@@ -69,6 +81,31 @@ export function UnallocatedInbox({
     setSelected(new Set());
   }
 
+  async function bulkAssign() {
+    const ids = [...selected];
+    if (ids.length === 0 || !bulkPotId || !onBulkAssign) return;
+    const potName = pots.find((p) => p.id === bulkPotId)?.name ?? "dit potje";
+    if (
+      !(await confirm({
+        title: `${ids.length} ${ids.length === 1 ? "transactie" : "transacties"} naar ${potName}?`,
+        message:
+          "Het volledige bedrag van elke geselecteerde transactie gaat naar dat potje. Wil je er één splitsen over meerdere potjes, doe die dan apart.",
+        confirmLabel: "Toewijzen",
+      }))
+    ) {
+      return;
+    }
+    setBulkBusy(true);
+    const res = await onBulkAssign(ids, bulkPotId);
+    setBulkBusy(false);
+    if (res.error) {
+      await alert({ title: "Toewijzen mislukt", message: res.error });
+      return;
+    }
+    setSelected(new Set());
+    setBulkPotId("");
+  }
+
   if (transactions.length === 0) {
     return (
       <p className="py-6 text-center text-sm text-navy-500 dark:text-navy-300">
@@ -83,31 +120,64 @@ export function UnallocatedInbox({
         Dit geld staat op de rekening maar heeft nog geen potje. Wijs het toe,
         of splits het over meerdere potjes.
       </p>
-      {onBulkDelete && (
-        <div className="flex items-center justify-between gap-3">
-          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-navy-500 dark:text-navy-300">
-            <input
-              type="checkbox"
-              checked={allSelected}
-              onChange={toggleAll}
-              className="h-4 w-4 accent-teal-600"
-            />
-            Alles selecteren
-          </label>
-          {selected.size > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-navy-500 dark:text-navy-300">
-                {selected.size} geselecteerd
-              </span>
+      {(onBulkDelete || onBulkAssign) && (
+        <div className="space-y-2 rounded-xl border border-navy-100 bg-canvas px-3 py-2.5 dark:border-navy-700/60 dark:bg-navy-800/40">
+          <div className="flex items-center justify-between gap-3">
+            <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-navy-500 dark:text-navy-300">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleAll}
+                className="h-4 w-4 accent-teal-600"
+              />
+              Alles selecteren
+            </label>
+            {selected.size > 0 && (
               <button
                 onClick={() => setSelected(new Set())}
-                className="btn-secondary px-3 py-1.5 text-xs"
+                className="text-xs font-medium text-navy-500 hover:underline dark:text-navy-300"
               >
-                Wis
+                {selected.size} geselecteerd · wis
               </button>
-              <button onClick={bulkDelete} className="btn-danger px-3 py-1.5 text-xs">
-                Verwijderen
-              </button>
+            )}
+          </div>
+
+          {/* Acties pas tonen zodra er iets geselecteerd is, en op mobiel onder
+              elkaar: de potjeskiezer heeft de volle breedte nodig. */}
+          {selected.size > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              {onBulkAssign && (
+                <>
+                  <select
+                    value={bulkPotId}
+                    onChange={(e) => setBulkPotId(e.target.value)}
+                    aria-label="Potje voor de geselecteerde transacties"
+                    className="input basis-full sm:w-auto sm:flex-1"
+                  >
+                    <option value="">Kies een potje…</option>
+                    {pots.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={bulkAssign}
+                    disabled={!bulkPotId || bulkBusy}
+                    className="btn-accent flex-1 px-3 py-1.5 text-xs sm:flex-none"
+                  >
+                    {bulkBusy ? "Bezig…" : `${selected.size} toewijzen`}
+                  </button>
+                </>
+              )}
+              {onBulkDelete && (
+                <button
+                  onClick={bulkDelete}
+                  className="btn-danger flex-1 px-3 py-1.5 text-xs sm:flex-none"
+                >
+                  Verwijderen
+                </button>
+              )}
             </div>
           )}
         </div>
