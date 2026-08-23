@@ -11,6 +11,10 @@
 #   ./scripts/testdb/testdb.sh down    stoppen
 #   ./scripts/testdb/testdb.sh status  draait hij, en wat zit erin
 #
+# Wil je ook de app ertegen draaien, dan heb je PostgREST en Auth nodig:
+#   supabase start                       (vereist Docker)
+#   ./scripts/testdb/testdb.sh supabase  schema + demodata erin laden
+#
 # Werkt op een kale Postgres (Homebrew), dus zonder Docker. Wil je ook de app
 # ertegen draaien, dan heb je de volledige Supabase-stack nodig; zie README.md.
 # =============================================================================
@@ -155,7 +159,50 @@ already_loaded() {
   [ "$(psql_t -c "select to_regclass('public.transactions') is not null" 2>/dev/null)" = "t" ]
 }
 
+# Zelfde schema, maar dan in de lokale Supabase-stack. Daar bestaan auth,
+# storage, de rollen en de realtime-publicatie al, dus de bootstrap blijft
+# achterwege. login_as komt er wel bij, dat is handig in de SQL-editor.
+load_supabase() {
+  local url="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+  pg_isready -d "$url" -q || {
+    echo "Lokale Supabase draait niet. Start hem met: supabase start"; exit 1; }
+
+  local n=0
+  echo "-> app-schema laden in de lokale Supabase"
+  while read -r line; do
+    line="${line%%#*}"; line="$(echo "$line" | xargs || true)"
+    [ -z "$line" ] && continue
+    n=$((n+1))
+    printf '   %2d. %-34s' "$n" "$line"
+    if psql "$url" -v ON_ERROR_STOP=1 -q -f "$SQL_DIR/$line" >/dev/null 2>/tmp/kaspio-sb-err; then
+      echo ok
+    else
+      echo "FOUT"; sed -n '1,10p' /tmp/kaspio-sb-err; exit 1
+    fi
+  done < "$HERE/01-order.txt"
+
+  echo "-> login_as-hulpje"
+  psql "$url" -v ON_ERROR_STOP=1 -q -c "
+    create or replace function public.login_as(p_user uuid) returns void
+    language plpgsql as \$\$
+    begin
+      if p_user is null then perform set_config('request.jwt.claims','',false);
+      else perform set_config('request.jwt.claims',
+        json_build_object('sub', p_user::text, 'role','authenticated')::text, false);
+      end if;
+    end \$\$;"
+
+  echo "-> demodata"
+  for f in demo-seed.sql demo-seed-sportclub.sql demo-seed-festival.sql demo-seed-zelfstandige.sql; do
+    printf '   %-34s' "$f"
+    psql "$url" -v ON_ERROR_STOP=1 -q -f "$SQL_DIR/$f" >/dev/null 2>&1 && echo ok || echo overgeslagen
+  done
+  psql "$url" -q -f "$HERE/04-scenario.sql" >/dev/null 2>&1
+  echo "-> klaar"
+}
+
 case "${1:-up}" in
+  supabase) load_supabase ;;
   up)     start_server
           if already_loaded; then
             echo "Databank staat er al. Gebruik 'reset' om opnieuw op te bouwen."
