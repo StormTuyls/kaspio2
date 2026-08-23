@@ -154,6 +154,7 @@ returns boolean
 language sql
 security definer
 stable
+set search_path = public
 as $$
   select exists (
     select 1 from public.memberships
@@ -168,6 +169,7 @@ returns boolean
 language sql
 security definer
 stable
+set search_path = public
 as $$
   select exists (
     select 1 from public.memberships
@@ -185,6 +187,7 @@ returns boolean
 language sql
 security definer
 stable
+set search_path = public
 as $$
   select exists (
     select 1
@@ -206,6 +209,7 @@ returns boolean
 language sql
 security definer
 stable
+set search_path = public
 as $$
   select exists (
     select 1
@@ -385,6 +389,7 @@ create or replace function public.add_owner_as_admin()
 returns trigger
 language plpgsql
 security definer
+set search_path = public
 as $$
 begin
   insert into public.memberships (organisation_id, user_id, role)
@@ -429,6 +434,7 @@ create or replace function public.log_audit()
 returns trigger
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
   v_org_id uuid;

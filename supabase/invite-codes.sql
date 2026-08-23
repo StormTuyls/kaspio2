@@ -85,7 +85,12 @@ begin
 end;
 $$;
 
-grant execute on function public.consume_invite(text, text) to anon, authenticated;
+-- De closed-beta-gate is vervangen door de org-invite-tokens
+-- (org-invite-tokens.sql). Niets in src/ roept consume_invite nog aan en in de
+-- live database staat hij dicht voor anon en authenticated. Zou je hem hier
+-- weer granten, dan zet je dat terug open: anon kon de codetabel brute-forcen
+-- ('KASP-' + 6 hex = 24 bits) en elke poging hoogde `uses` op.
+revoke all on function public.consume_invite(text, text) from public, anon, authenticated;
 
 -- =============================================================================
 -- 4. HELPER , genereer een random invite code
@@ -120,8 +125,13 @@ begin
 end;
 $$;
 
--- Niet exposen aan anon , alleen authenticated admins
--- (Voor nu: jij run dit via SQL Editor wat geen RLS toepast)
+-- Postgres grant EXECUTE standaard aan PUBLIC, dus "niet exposen" gebeurt niet
+-- vanzelf: zonder onderstaande revoke is deze functie bereikbaar via
+-- /rest/v1/rpc/create_invite voor iedereen die ingelogd is. In de live database
+-- staat hij dicht; deze regel houdt dat zo als je dit bestand opnieuw draait.
+-- Vanuit de SQL Editor (rol postgres, de eigenaar) blijft hij gewoon werken.
+revoke all on function public.create_invite(text, text, int, timestamptz)
+  from public, anon, authenticated;
 
 -- =============================================================================
 -- DONE
