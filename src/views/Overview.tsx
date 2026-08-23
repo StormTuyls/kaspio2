@@ -97,12 +97,14 @@ export function PotsView({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-navy-900 dark:text-white">
           {seesAll ? "Alle potjes" : "Mijn potjes"}
         </h1>
+        {/* Vier knoppen passen niet naast elkaar op een telefoon; op mobiel
+            krijgen ze een eigen regel en mogen ze onderling wrappen. */}
         {isAdmin && (
-          <div className="flex gap-2">
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
             {onImport && (
               <button onClick={onImport} className="btn-secondary text-sm">
                 Importeer CSV
