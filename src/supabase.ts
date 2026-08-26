@@ -205,6 +205,11 @@ export interface Transaction {
   split_from: string | null;
   /** Gezet op beide benen van een overboeking tussen potjes (uit + in). */
   transfer_group?: string | null;
+  /**
+   * Rekening waarop de verrichting stond (IBAN als tekst). NULL voor regels die
+   * Kaspio zelf maakte: verdelingen, reserveringen, overboekingen tussen potjes.
+   */
+  bank_account?: string | null;
   /** 'approved' (telt mee) of 'pending' (wacht op goedkeuring, telt niet mee). */
   status?: "approved" | "pending";
   created_at: string;

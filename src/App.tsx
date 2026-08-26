@@ -436,6 +436,7 @@ function dbTxToUiTx(
     memo: t.memo ?? undefined,
     status: t.status ?? "approved",
     transferGroup: t.transfer_group ?? null,
+    bankAccount: t.bank_account ?? null,
     createdAt: t.created_at,
   };
 }

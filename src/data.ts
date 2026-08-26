@@ -348,6 +348,13 @@ export type TransactionInput = {
   occurredOn: string; // YYYY-MM-DD
   memo?: string | null;
   counterparty?: string | null;
+  /** Rekening waarop de verrichting stond, zoals op het afschrift. */
+  bankAccount?: string | null;
+  /**
+   * Koppelt de twee benen van één interne overboeking tussen eigen rekeningen.
+   * Regels met een transferGroup blijven buiten de in/uit-cashflow.
+   */
+  transferGroup?: string | null;
 };
 
 /** Eén deel van een toewijzing: bedrag X naar potje Y. */
@@ -422,6 +429,7 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
       occurred_on: input.occurredOn,
       memo: input.memo ?? null,
       counterparty: input.counterparty ?? null,
+      bank_account: input.bankAccount ?? null,
     };
     const { error: err } = await supabase
       .from("transactions")
@@ -447,6 +455,8 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
       occurred_on: input.occurredOn,
       memo: input.memo ?? null,
       counterparty: input.counterparty ?? null,
+      bank_account: input.bankAccount ?? null,
+      transfer_group: input.transferGroup ?? null,
     });
 
     // Rijen die meteen in de hoofdpot horen gaan apart, zodat we de ids
