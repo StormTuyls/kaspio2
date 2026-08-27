@@ -256,16 +256,21 @@ export function usePots(orgId: string | null) {
     }
     setLoading(true);
     setError(null);
-    const { data, error: err } = await supabase
-      .from("pots")
-      .select("*")
-      .eq("organisation_id", orgId)
-      .order("created_at", { ascending: false });
-    if (err) setError(err.message);
+    // Ook hier pagineren: een federatie met veel takken kan over de rijlimiet
+    // van PostgREST gaan, en dan verdwijnen er stilletjes potjes uit het
+    // overzicht zonder dat er een fout komt.
+    const { data, error: err } = await fetchAllRows<Pot>(() =>
+      supabase
+        .from("pots")
+        .select("*")
+        .eq("organisation_id", orgId)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true }),
+    );
+    if (err) setError(err);
     else {
       // Filter archived in JS (defensief: NULL = niet gearchiveerd)
-      const rows = (data as Pot[]) ?? [];
-      setPots(rows.filter((p) => p.archived !== true));
+      setPots(data.filter((p) => p.archived !== true));
     }
     setLoading(false);
   }, [orgId]);
@@ -2125,13 +2130,18 @@ export function useOrgMembers(orgId: string | null) {
     // profiles wordt via twee FK's gerefereerd (user_id én invited_by), dus de
     // embed MOET gedisambigueerd worden (!user_id), anders is de query ambigu
     // en komt er een error -> lege ledenlijst.
-    const { data, error } = await supabase
-      .from("memberships")
-      .select("id, user_id, organisation_id, role, pot_id, group_id, created_at, profile:profiles!user_id(full_name, email)")
-      .eq("organisation_id", orgId)
-      .order("created_at", { ascending: true });
+    // Een pot_owner heeft één rij per potje, dus dit loopt sneller op dan je
+    // denkt. Pagineren, anders valt een deel van de leden stil weg.
+    const { data, error } = await fetchAllRows<MembershipWithProfile>(() =>
+      supabase
+        .from("memberships")
+        .select("id, user_id, organisation_id, role, pot_id, group_id, created_at, profile:profiles!user_id(full_name, email)")
+        .eq("organisation_id", orgId)
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true }),
+    );
     if (error) {
-      console.warn("[Kaspio] useOrgMembers fetch failed:", error.message);
+      console.warn("[Kaspio] useOrgMembers fetch failed:", error);
     }
     if (!error && data) {
       const rows = data as unknown as MembershipWithProfile[];
