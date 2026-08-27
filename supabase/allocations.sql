@@ -573,6 +573,7 @@ returns boolean language sql security definer stable set search_path = public as
              then m.role = 'admin'
              else m.role in ('admin', 'reader')
                or (m.role = 'pot_owner' and m.pot_id = p.id)
+               or (m.role = 'group_owner' and m.group_id = p.group_id)
         end
       )
   );
@@ -591,6 +592,7 @@ returns boolean language sql security definer stable set search_path = public as
              then m.role = 'admin'
              else m.role = 'admin'
                or (m.role = 'pot_owner' and m.pot_id = p.id)
+               or (m.role = 'group_owner' and m.group_id = p.group_id)
         end
       )
   );

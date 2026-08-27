@@ -71,6 +71,11 @@ alter table public.memberships
 -- Dezelfde vorm als voorheen, met de groep erbij. Let op de join op p.group_id:
 -- die is NULL voor een potje zonder groep, en NULL = NULL is niet waar, dus een
 -- groepsbeheerder krijgt daar vanzelf geen rechten op. Dat is de bedoeling.
+--
+-- LET OP: deze twee functies staan ook in allocations.sql, met de tak die de
+-- hoofdpot aan admins voorbehoudt. Die moet hier mee, anders draait wie dit
+-- bestand als laatste uitvoert die beperking terug en zien readers de hoofdpot
+-- weer. Wijzig je er één, wijzig dan allebei.
 
 create or replace function public.can_view_pot(p_pot_id uuid)
 returns boolean
@@ -86,9 +91,12 @@ as $$
     where p.id = p_pot_id
       and m.user_id = auth.uid()
       and (
-        m.role in ('admin', 'reader')
-        or (m.role = 'pot_owner' and m.pot_id = p.id)
-        or (m.role = 'group_owner' and m.group_id = p.group_id)
+        case when p.is_hoofdpot
+             then m.role = 'admin'
+             else m.role in ('admin', 'reader')
+               or (m.role = 'pot_owner' and m.pot_id = p.id)
+               or (m.role = 'group_owner' and m.group_id = p.group_id)
+        end
       )
   );
 $$;
@@ -107,9 +115,12 @@ as $$
     where p.id = p_pot_id
       and m.user_id = auth.uid()
       and (
-        m.role = 'admin'
-        or (m.role = 'pot_owner' and m.pot_id = p.id)
-        or (m.role = 'group_owner' and m.group_id = p.group_id)
+        case when p.is_hoofdpot
+             then m.role = 'admin'
+             else m.role = 'admin'
+               or (m.role = 'pot_owner' and m.pot_id = p.id)
+               or (m.role = 'group_owner' and m.group_id = p.group_id)
+        end
       )
   );
 $$;

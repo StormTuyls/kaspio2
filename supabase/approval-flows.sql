@@ -35,7 +35,7 @@ declare
   v_require boolean;
   v_threshold numeric;
   v_is_admin boolean;
-  v_is_pot_owner boolean;
+  v_needs_approval boolean;
 begin
   new.status := 'approved';  -- standaard
 
@@ -53,10 +53,13 @@ begin
                and user_id = auth.uid() and role = 'admin'),
       exists(select 1 from public.memberships
              where organisation_id = new.organisation_id
-               and user_id = auth.uid() and role = 'pot_owner')
-      into v_is_admin, v_is_pot_owner;
-    -- Enkel potbeheerders die geen admin zijn, moeten langs goedkeuring.
-    if v_is_pot_owner and not v_is_admin then
+               and user_id = auth.uid()
+               and role in ('pot_owner', 'group_owner'))
+      into v_is_admin, v_needs_approval;
+    -- Enkel beheerders van een potje of groep die geen admin zijn, moeten
+    -- langs goedkeuring. Een groepsbeheerder vergeten zou betekenen dat zijn
+    -- uitgaven boven de drempel stil goedgekeurd worden.
+    if v_needs_approval and not v_is_admin then
       new.status := 'pending';
     end if;
   end if;

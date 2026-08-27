@@ -1,0 +1,39 @@
+-- =============================================================================
+-- Kaspio , pot_balances lekte over organisaties heen
+-- =============================================================================
+-- Een view draait in Postgres standaard met de rechten van wie hem gemaakt
+-- heeft, niet van wie hem opvraagt. RLS op pots, allocations en transactions
+-- werd daardoor overgeslagen. En pot_balances filtert zelf nergens op
+-- organisatie, want dat hoefde niet: dat deed RLS toch al.
+--
+-- Samen betekende dat: elke ingelogde Kaspio-gebruiker kon via
+-- /rest/v1/pot_balances de naam, de kleur, het doelbedrag en het SALDO opvragen
+-- van elk potje van élke organisatie in de databank. Dus ook van andere klanten.
+--
+-- Vastgesteld met een gewoon lidaccount van één comité:
+--   /pots          ->   4 potjes (correct, RLS deed zijn werk)
+--   /pot_balances  -> 200 potjes over 17 organisaties
+--
+-- security_invoker laat de view draaien met de rechten van de aanroeper, dus
+-- gelden de policies op de onderliggende tabellen weer. Na de fix geeft
+-- /pot_balances exact hetzelfde aantal rijen als /pots.
+--
+-- Geen functionele wijziging voor wie wél recht heeft op de rij. De frontend
+-- gebruikt deze view momenteel niet (alleen de typedefinitie in supabase.ts
+-- verwijst ernaar), dus het risico op regressie is klein.
+--
+-- Let op bij nieuwe views: dit is de default, niet de uitzondering. Elke view
+-- op een tabel met RLS hoort security_invoker aan te hebben.
+--
+-- Idempotent. Draai in de Supabase SQL-editor.
+-- =============================================================================
+
+alter view public.pot_balances set (security_invoker = on);
+
+-- Verificatie:
+--   select c.relname,
+--          (select option_value from pg_options_to_table(c.reloptions)
+--            where option_name = 'security_invoker') as security_invoker
+--     from pg_class c join pg_namespace n on n.oid = c.relnamespace
+--    where n.nspname = 'public' and c.relkind = 'v';
+-- =============================================================================
