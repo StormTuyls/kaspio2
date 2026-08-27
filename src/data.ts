@@ -373,6 +373,33 @@ export type DbAllocation = {
   confirmed_at: string | null;
 };
 
+/**
+ * Haalt alles op, ook voorbij de rijlimiet van PostgREST.
+ *
+ * De API kapt een antwoord af op `db-max-rows` (bij ons 1000) en zegt dat niet
+ * in de payload: je krijgt gewoon een kortere lijst terug, zonder fout. Wie dan
+ * saldi optelt, telt een deel van de verrichtingen op en toont een bedrag dat
+ * nergens op slaat. Een club met meer dan 1000 verrichtingen, en dat is er al
+ * één met een bar, ziet dus stilletjes verkeerde cijfers.
+ *
+ * Daarom paginéren we tot een pagina korter is dan de gevraagde grootte. De
+ * order moet vastliggen, anders kan een rij tussen twee pagina's verspringen.
+ */
+const PAGE = 1000;
+
+async function fetchAllRows<T>(
+  build: () => { range: (from: number, to: number) => PromiseLike<{ data: unknown; error: { message: string } | null }> },
+): Promise<{ data: T[]; error: string | null }> {
+  const out: T[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await build().range(from, from + PAGE - 1);
+    if (error) return { data: out, error: error.message };
+    const rows = (data as T[]) ?? [];
+    out.push(...rows);
+    if (rows.length < PAGE) return { data: out, error: null };
+  }
+}
+
 export function useTransactions(orgId: string | null, potId?: string | null) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [allocations, setAllocations] = useState<DbAllocation[]>([]);
@@ -388,27 +415,36 @@ export function useTransactions(orgId: string | null, potId?: string | null) {
     }
     setLoading(true);
     setError(null);
-    let query = supabase
-      .from("transactions")
-      .select("*")
-      .eq("organisation_id", orgId)
-      .order("occurred_on", { ascending: false })
-      .order("created_at", { ascending: false });
-    if (potId) query = query.eq("pot_id", potId);
 
     // De allocaties bepalen waar het geld staat; de transacties blijven het
-    // bankfeit. De UI wordt uit de combinatie opgebouwd.
+    // bankfeit. De UI wordt uit de combinatie opgebouwd. Allebei volledig
+    // ophalen: op de som na één pagina zou het totaal er zomaar duizenden
+    // euro's naast zitten. De id-order is de tiebreaker, zodat twee rijen met
+    // dezelfde datum niet tussen pagina's kunnen wisselen.
     const [txRes, allocRes] = await Promise.all([
-      query,
-      supabase
-        .from("allocations")
-        .select("*")
-        .eq("organisation_id", orgId),
+      fetchAllRows<Transaction>(() => {
+        let q = supabase
+          .from("transactions")
+          .select("*")
+          .eq("organisation_id", orgId)
+          .order("occurred_on", { ascending: false })
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: true });
+        if (potId) q = q.eq("pot_id", potId);
+        return q;
+      }),
+      fetchAllRows<DbAllocation>(() =>
+        supabase
+          .from("allocations")
+          .select("*")
+          .eq("organisation_id", orgId)
+          .order("id", { ascending: true }),
+      ),
     ]);
-    if (txRes.error) setError(txRes.error.message);
-    else setTransactions((txRes.data as Transaction[]) ?? []);
-    if (allocRes.error) setError(allocRes.error.message);
-    else setAllocations((allocRes.data as unknown as DbAllocation[]) ?? []);
+    if (txRes.error) setError(txRes.error);
+    else setTransactions(txRes.data);
+    if (allocRes.error) setError(allocRes.error);
+    else setAllocations(allocRes.data);
     setLoading(false);
   }, [orgId, potId]);
 

@@ -1089,7 +1089,7 @@ function AuthedApp({
         <Sidebar
           tab={tab}
           isAdmin={!!isAdmin}
-          membersCount={orgMembers.length}
+          membersCount={uiMembers.length}
           potsCount={store.state.pots.length}
           auditCount={auditEntries.length}
           orgs={orgs}
@@ -1329,7 +1329,7 @@ function AuthedApp({
         tab={tab}
         isAdmin={!!isAdmin}
         potsCount={store.state.pots.length}
-        membersCount={orgMembers.length}
+        membersCount={uiMembers.length}
         onTab={(t) => {
           setTab(t);
           setSelectedPotId(null);
