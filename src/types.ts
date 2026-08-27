@@ -56,6 +56,11 @@ export type Transaction = {
   status?: "approved" | "pending";
   /** Gezet op beide benen van een overboeking tussen potjes (uit + in). */
   transferGroup?: string | null;
+  /**
+   * Rekening waarop deze verrichting stond, zoals op het afschrift. Leeg voor
+   * regels die Kaspio zelf maakte en voor imports van voor deze kolom bestond.
+   */
+  bankAccount?: string | null;
   createdAt: string;
 };
 

@@ -75,6 +75,9 @@ export function PotDetail({
   const [editing, setEditing] = useState(false);
   const [search, setSearch] = useState("");
   const [direction, setDirection] = useState<DirectionFilter>("all");
+  // "all" of een rekeningnummer. Alleen zichtbaar wanneer er in dit potje
+  // verrichtingen van meer dan één rekening staan.
+  const [account, setAccount] = useState<string>("all");
   const [expandedTx, setExpandedTx] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const isAdmin = currentUser.role === "admin";
@@ -106,22 +109,37 @@ export function PotDetail({
     totalOut: calcSpent(transactions, pot.id),
   });
 
+  // Rekeningen die in dit potje voorkomen. Werkt de organisatie met één
+  // rekening (of dateren de transacties van voor de rekeningkolom), dan blijft
+  // deze lijst leeg en verschijnt de filter niet.
+  const accounts = useMemo(() => {
+    const seen = new Set<string>();
+    for (const t of potTx) if (t.bankAccount) seen.add(t.bankAccount);
+    return [...seen].sort();
+  }, [potTx]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return potTx.filter((t) => {
       if (direction !== "all" && t.direction !== direction) return false;
+      if (account !== "all" && t.bankAccount !== account) return false;
       if (q) {
         const inName = t.counterparty.toLowerCase().includes(q);
         const inMemo = (t.memo ?? "").toLowerCase().includes(q);
-        if (!inName && !inMemo) return false;
+        const inAccount = (t.bankAccount ?? "").toLowerCase().includes(q);
+        if (!inName && !inMemo && !inAccount) return false;
       }
       return true;
     });
-  }, [potTx, search, direction]);
+  }, [potTx, search, direction, account]);
 
-  // Selectie resetten wanneer je naar een ander potje kijkt.
+  // Selectie resetten wanneer je naar een ander potje kijkt. De rekeningfilter
+  // gaat mee terug naar "alle": een ander potje heeft mogelijk niets op de
+  // rekening die hier gekozen stond, en dan kijk je naar een lege lijst zonder
+  // te zien waarom.
   useEffect(() => {
     setSelected(new Set());
+    setAccount("all");
   }, [pot.id]);
 
   const allFilteredSelected =
@@ -416,10 +434,29 @@ export function PotDetail({
                   type="search"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Zoek op tegenpartij of memo…"
+                  placeholder={
+                    accounts.length > 1
+                      ? "Zoek op tegenpartij, memo of rekening…"
+                      : "Zoek op tegenpartij of memo…"
+                  }
                   className="input pl-9"
                 />
               </div>
+              {accounts.length > 1 && (
+                <select
+                  value={account}
+                  onChange={(e) => setAccount(e.target.value)}
+                  aria-label="Filter op rekening"
+                  className="rounded-xl border border-navy-100 bg-white px-3 py-1.5 text-xs font-semibold text-navy-700 dark:border-navy-700 dark:bg-navy-800 dark:text-navy-100"
+                >
+                  <option value="all">Alle rekeningen</option>
+                  {accounts.map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
+                </select>
+              )}
               <div className="grid grid-cols-3 gap-1 rounded-xl border border-navy-100 bg-white p-1 text-xs font-semibold sm:flex dark:border-navy-700 dark:bg-navy-800">
                 {(["all", "in", "out"] as const).map((d) => (
                   <button
@@ -472,7 +509,14 @@ export function PotDetail({
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3 text-xs text-navy-500 dark:text-navy-300">
-                        <span>{formatDate(tx.occurredOn)}</span>
+                        <span className="min-w-0 truncate">
+                          {formatDate(tx.occurredOn)}
+                          {accounts.length > 1 && tx.bankAccount && (
+                            <span className="ml-2 font-mono text-[11px] text-navy-400 dark:text-navy-500">
+                              {tx.bankAccount}
+                            </span>
+                          )}
+                        </span>
                         {isAdmin && (
                           <button
                             onClick={async () => {
@@ -560,6 +604,11 @@ export function PotDetail({
                         </td>
                         <td className="px-4 py-3 font-medium text-navy-900 dark:text-navy-50">
                           {tx.counterparty}
+                          {accounts.length > 1 && tx.bankAccount && (
+                            <span className="mt-0.5 block font-mono text-[11px] font-normal text-navy-400 dark:text-navy-500">
+                              {tx.bankAccount}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-navy-500 dark:text-navy-400">
                           {tx.memo ?? "—"}

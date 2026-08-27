@@ -2,8 +2,10 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import type { Pot, Transaction } from "../types";
 import { matchRecurringPlan, type RecurringPlan, type TransactionInput } from "../data";
 import {
+  detectInternalTransfers,
   findDuplicate,
   guessColumns,
+  matchPotByName,
   normalizeCounterparty,
   sameParty,
   parseAmount,
@@ -46,6 +48,12 @@ type PreviewRow = {
   amount: number | null; // ondertekend zoals geparsed
   counterparty: string;
   memo: string;
+  /** Rekening waarop de verrichting stond (leeg als niet gemapt). */
+  account: string;
+  /** Rekening van de tegenpartij, alleen nodig om interne paren te vinden. */
+  counterpartyAccount: string;
+  /** Potnaam uit het bestand, leeg als er geen potje-kolom gemapt is. */
+  potName: string;
   valid: boolean;
 };
 
@@ -106,6 +114,9 @@ export function ImportTransactionsModal({
     amount: -1,
     counterparty: -1,
     memo: -1,
+    pot: -1,
+    account: -1,
+    counterpartyAccount: -1,
   });
   const [dirMode, setDirMode] = useState<DirectionMode>("sign");
   const [targetPot, setTargetPot] = useState<string>(
@@ -165,15 +176,53 @@ export function ImportTransactionsModal({
   // Bouw de preview op basis van de gekozen kolommen.
   const preview = useMemo<PreviewRow[]>(() => {
     if (step !== "map") return [];
+    const cell = (r: string[], idx: number) => (idx >= 0 ? (r[idx] ?? "").trim() : "");
     return rows.map((r) => {
       const occurredOn = cols.date >= 0 ? parseDate(r[cols.date] ?? "") : null;
       const amount = cols.amount >= 0 ? parseAmount(r[cols.amount] ?? "") : null;
-      const counterparty = cols.counterparty >= 0 ? (r[cols.counterparty] ?? "").trim() : "";
-      const memo = cols.memo >= 0 ? (r[cols.memo] ?? "").trim() : "";
+      const counterparty = cell(r, cols.counterparty);
+      const memo = cell(r, cols.memo);
       const valid = occurredOn !== null && amount !== null && amount !== 0;
-      return { occurredOn, amount, counterparty, memo, valid };
+      return {
+        occurredOn,
+        amount,
+        counterparty,
+        memo,
+        account: cell(r, cols.account),
+        counterpartyAccount: cell(r, cols.counterpartyAccount),
+        potName: cell(r, cols.pot),
+        valid,
+      };
     });
   }, [step, rows, cols]);
+
+  // Interne overboekingen tussen eigen rekeningen: twee benen van dezelfde
+  // verschuiving. Alleen te vinden wanneer beide rekeningkolommen gemapt zijn.
+  const transferPartner = useMemo(() => {
+    if (cols.account < 0 || cols.counterpartyAccount < 0) {
+      return preview.map(() => null);
+    }
+    return detectInternalTransfers(preview);
+  }, [preview, cols.account, cols.counterpartyAccount]);
+
+  const internalCount = transferPartner.filter((p) => p !== null).length;
+
+  // Potjes uit de bestandskolom. null = kolom niet gemapt of naam onbekend.
+  const potFromFile = useMemo(() => {
+    if (cols.pot < 0) return preview.map(() => null);
+    return preview.map((p) => matchPotByName(p.potName, pots));
+  }, [preview, cols.pot, pots]);
+
+  // Namen die geen potje opleverden, zodat je ziet wat je in je bestand moet
+  // rechtzetten in plaats van het stil op de bulk-keuze te zien belanden.
+  const unmatchedPotNames = useMemo(() => {
+    if (cols.pot < 0) return [];
+    const seen = new Set<string>();
+    preview.forEach((p, i) => {
+      if (p.valid && p.potName && potFromFile[i] === null) seen.add(p.potName);
+    });
+    return [...seen];
+  }, [preview, potFromFile, cols.pot]);
 
   // Herken domiciliëringen: per rij de bijhorende actieve domiciliëring (of null).
   const matches = useMemo(() => {
@@ -250,14 +299,21 @@ export function ImportTransactionsModal({
   }
 
   // Seed de per-rij toewijzing, in volgorde van zekerheid:
-  //   1. een herkende domiciliëring (bedrag + datum + tegenpartij kloppen),
-  //   2. een tegenpartij die je eerder al aan een potje toewees,
-  //   3. de bulk-keuze.
-  // Een expliciet gekozen bulk-potje overstemt de hints (2), maar niet een
-  // herkende domiciliëring (1): die hoort per definitie bij één potje.
+  //   1. een interne overboeking tussen eigen rekeningen,
+  //   2. het potje uit de bestandskolom,
+  //   3. een herkende domiciliëring (bedrag + datum + tegenpartij kloppen),
+  //   4. een tegenpartij die je eerder al aan een potje toewees,
+  //   5. de bulk-keuze.
+  // Een expliciet gekozen bulk-potje overstemt de hints (4), maar niet 1 tot 3.
+  // (1) hoort op geen enkele post: het is geld dat tussen je eigen rekeningen
+  // schuift, dus blijft het in de hoofdpot staan. (2) is een beslissing die je
+  // zelf in je bestand zette en weegt dus zwaarder dan wat Kaspio raadt.
   useEffect(() => {
     setRowPot(
       preview.map((p, i) => {
+        if (transferPartner[i] !== null) return HOOFDPOT;
+        const fromFile = potFromFile[i];
+        if (fromFile) return fromFile;
         const match = matches[i];
         if (match && pots.some((pot) => pot.id === match.pot_id)) {
           return match.pot_id;
@@ -269,7 +325,15 @@ export function ImportTransactionsModal({
         return targetPot;
       }),
     );
-  }, [preview, matches, targetPot, counterpartyPotHints, pots]);
+  }, [
+    preview,
+    matches,
+    targetPot,
+    counterpartyPotHints,
+    pots,
+    potFromFile,
+    transferPartner,
+  ]);
 
   const validRows = preview.filter((p) => p.valid);
   const invalidCount = preview.length - validRows.length;
@@ -313,6 +377,21 @@ export function ImportTransactionsModal({
   async function runImport(indexes: number[]) {
     setBusy(true);
     setError(null);
+
+    // Koppel de twee benen van elke interne overboeking met hetzelfde
+    // transfer_group. Alleen wanneer beide benen in déze ronde meegaan: één los
+    // been als transfer bestempelen zou het uit de cashflow houden terwijl de
+    // tegenboeking er wel in staat, en dan klopt het totaal juist niet meer.
+    const inBatch = new Set(indexes);
+    const transferGroups = new Map<number, string>();
+    for (const i of indexes) {
+      const j = transferPartner[i];
+      if (j === null || !inBatch.has(j) || transferGroups.has(i)) continue;
+      const group = crypto.randomUUID();
+      transferGroups.set(i, group);
+      transferGroups.set(j, group);
+    }
+
     const inputs: TransactionInput[] = indexes
       .map((i) => ({ p: preview[i], i }))
       .filter(({ p }) => p?.valid)
@@ -327,6 +406,8 @@ export function ImportTransactionsModal({
           occurredOn: p.occurredOn as string,
           counterparty: p.counterparty || null,
           memo: p.memo || null,
+          bankAccount: p.account || null,
+          transferGroup: transferGroups.get(i) ?? null,
         };
       });
     if (inputs.length === 0) {
@@ -406,13 +487,27 @@ export function ImportTransactionsModal({
               <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-navy-200 py-10 text-sm text-navy-500 hover:border-teal-400 hover:text-teal-700 dark:border-navy-600 dark:text-navy-300 dark:hover:border-teal-500">
                 <input
                   type="file"
-                  accept=".csv,text/csv"
+                  accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
                   className="hidden"
                   onChange={handleFile}
                 />
                 <span className="text-2xl">📄</span>
                 <span className="font-medium">Kies een CSV-bestand</span>
               </label>
+
+              {/* Veel boekhoudingen leven in Excel, niet in een bankexport. Een
+                  xlsx inlezen kan Kaspio nog niet, dus zeg hier hoe je er in
+                  twee klikken een CSV van maakt. */}
+              <div className="rounded-xl border border-navy-100 bg-canvas p-4 text-xs text-navy-500 dark:border-navy-700/60 dark:bg-navy-800/40 dark:text-navy-400">
+                <p className="mb-1 font-semibold text-navy-700 dark:text-navy-200">
+                  Staat je overzicht in Excel?
+                </p>
+                <p>
+                  Open het tabblad dat je wil importeren en kies{" "}
+                  <em>Bestand → Opslaan als → CSV UTF-8</em>. Eén tabblad per
+                  bestand: Excel bewaart alleen het blad dat open staat.
+                </p>
+              </div>
 
               {/* Hoe moet het eruit zien */}
               <div className="rounded-xl border border-navy-100 bg-canvas p-4 dark:border-navy-700/60 dark:bg-navy-800/40">
@@ -470,7 +565,35 @@ export function ImportTransactionsModal({
                 {colSelect("amount", "Bedrag", true)}
                 {colSelect("counterparty", "Tegenpartij")}
                 {colSelect("memo", "Mededeling")}
+                {colSelect("pot", "Potje (naam in het bestand)")}
+                {colSelect("account", "Rekening")}
+                {colSelect("counterpartyAccount", "Rekening tegenpartij")}
               </div>
+
+              {cols.pot >= 0 && unmatchedPotNames.length > 0 && (
+                <p className="rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+                  {unmatchedPotNames.length === 1
+                    ? "1 naam uit de potje-kolom hoort bij geen enkel potje"
+                    : `${unmatchedPotNames.length} namen uit de potje-kolom horen bij geen enkel potje`}
+                  : {unmatchedPotNames.slice(0, 5).join(", ")}
+                  {unmatchedPotNames.length > 5
+                    ? ` en ${unmatchedPotNames.length - 5} andere`
+                    : ""}
+                  . Die rijen volgen de keuze hieronder. De naam moet exact
+                  overeenkomen met het potje in Kaspio.
+                </p>
+              )}
+
+              {internalCount > 0 && (
+                <p className="rounded-xl border border-navy-200 bg-canvas px-3 py-2 text-xs text-navy-600 dark:border-navy-700/60 dark:bg-navy-800/40 dark:text-navy-300">
+                  {internalCount / 2 === 1
+                    ? "1 overboeking tussen je eigen rekeningen gevonden"
+                    : `${internalCount / 2} overboekingen tussen je eigen rekeningen gevonden`}{" "}
+                  ({internalCount} regels). Die blijven in de hoofdpot staan en
+                  tellen niet mee als inkomst of uitgave, want er gaat netto niets
+                  je rekeningen in of uit.
+                </p>
+              )}
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block">
@@ -549,10 +672,13 @@ export function ImportTransactionsModal({
                         const hintPotId = cpNorm
                           ? counterpartyPotHints[cpNorm]
                           : undefined;
-                        // Bij een herkende domiciliëring toont die badge al; geen
-                        // tweede "voorstel"-label erbij.
+                        // Bij een herkende domiciliëring, een potje uit het
+                        // bestand of een interne overboeking toont die badge al;
+                        // geen tweede "voorstel"-label erbij.
                         const suggested =
                           !matches[i] &&
+                          !potFromFile[i] &&
+                          transferPartner[i] === null &&
                           !!hintPotId &&
                           pots.some((pt) => pt.id === hintPotId) &&
                           (rowPot[i] ?? targetPot) === hintPotId;
@@ -589,7 +715,20 @@ export function ImportTransactionsModal({
                             <span className="block max-w-[14rem] truncate">
                               {p.counterparty || p.memo || "—"}
                             </span>
-                            {matches[i] && !dup && (
+                            {transferPartner[i] !== null && !dup && (
+                              <span
+                                title="Tegenboeking met hetzelfde bedrag op een van je eigen rekeningen. Telt niet mee als inkomst of uitgave."
+                                className="mt-0.5 inline-block rounded bg-navy-100 px-1.5 py-0.5 text-[10px] font-semibold text-navy-600 dark:bg-navy-700/50 dark:text-navy-200"
+                              >
+                                ↔ tussen eigen rekeningen
+                              </span>
+                            )}
+                            {transferPartner[i] === null && potFromFile[i] && !dup && (
+                              <span className="mt-0.5 inline-block rounded bg-teal-50 px-1.5 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-900/30 dark:text-teal-300">
+                                ✓ potje uit bestand
+                              </span>
+                            )}
+                            {matches[i] && !potFromFile[i] && transferPartner[i] === null && !dup && (
                               <span className="mt-0.5 inline-block rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
                                 ✨ herkende domiciliëring
                               </span>
