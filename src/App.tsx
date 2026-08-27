@@ -1588,6 +1588,7 @@ function AuthedApp({
       <Modal
         open={showInbox}
         title="Nog toe te wijzen"
+        size="lg"
         onClose={() => setShowInbox(false)}
       >
         <UnallocatedInbox

@@ -6,6 +6,13 @@ type Props = {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  /**
+   * Breedte vanaf `sm`. Standaard "md", wat past voor een formulier met een
+   * handvol velden. Gebruik "lg" voor een lijst die je moet kunnen overzien:
+   * daar telt elke kolom, en op 28rem knijp je datum, rekening en mededeling
+   * tot ze onleesbaar zijn.
+   */
+  size?: "md" | "lg";
 };
 
 /**
@@ -14,7 +21,7 @@ type Props = {
  * URL-balk van mobiele browsers `vh` niet meekrimpt, waardoor de onderkant van
  * een `85vh`-paneel buiten beeld valt.
  */
-export function Modal({ open, title, onClose, children }: Props) {
+export function Modal({ open, title, onClose, children, size = "md" }: Props) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -44,7 +51,7 @@ export function Modal({ open, title, onClose, children }: Props) {
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full flex-col rounded-t-2xl bg-white shadow-2xl sm:max-h-[85dvh] sm:max-w-md sm:rounded-2xl dark:bg-navy-900 dark:ring-1 dark:ring-navy-700/60"
+        className={`flex max-h-[92dvh] w-full flex-col rounded-t-2xl bg-white shadow-2xl sm:max-h-[85dvh] sm:rounded-2xl ${size === "lg" ? "sm:max-w-3xl" : "sm:max-w-md"} dark:bg-navy-900 dark:ring-1 dark:ring-navy-700/60`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-navy-100 px-5 py-4 dark:border-navy-700/60">

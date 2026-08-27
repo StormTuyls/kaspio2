@@ -59,6 +59,23 @@ export function UnallocatedInbox({
   const [bulkBusy, setBulkBusy] = useState(false);
   const [keepBusy, setKeepBusy] = useState<string | null>(null);
 
+  // De rekening tonen heeft alleen zin als er meer dan één in de inbox zit.
+  // Bij een club met vier rekeningen is dat juist het eerste wat je wil weten;
+  // bij een club met één zou het alleen ruis zijn.
+  const accounts = new Set(
+    transactions.map((t) => t.bankAccount).filter(Boolean) as string[],
+  );
+  const toonRekening = accounts.size > 1;
+
+  // Hoe vaak komt dezelfde tegenpartij nog voor in de inbox? Dat is het signaal
+  // dat je niet één regel maar een hele reeks in één keer kan afhandelen, en
+  // precies waar de selectievakjes voor bedoeld zijn.
+  const perTegenpartij = new Map<string, number>();
+  for (const t of transactions) {
+    const k = (t.counterparty || "").trim().toLowerCase();
+    if (k) perTegenpartij.set(k, (perTegenpartij.get(k) ?? 0) + 1);
+  }
+
   /** Selectie bevat allocatie-id's; mutaties werken op bankregels. */
   function toTransactionIds(ids: string[]): string[] {
     const set = new Set(ids);
@@ -266,7 +283,9 @@ export function UnallocatedInbox({
               >
                 {tx.direction === "in" ? "↓" : "↑"}
               </div>
-              <div className="min-w-0 flex-1">
+              {/* min-w: onder deze breedte wrapt de knoppenrij naar
+                  beneden in plaats van de tekst plat te drukken. */}
+              <div className="min-w-[15rem] flex-1">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="truncate text-sm font-medium text-navy-900 dark:text-navy-50">
                     {tx.counterparty || "Onbekend"}
@@ -276,10 +295,41 @@ export function UnallocatedInbox({
                     {formatEuro(tx.amount)}
                   </span>
                 </div>
-                <div className="flex items-baseline justify-between gap-2 text-xs text-navy-400 dark:text-navy-400">
-                  <span className="truncate">{tx.memo ?? ""}</span>
+
+                {/* Datum en rekening op één regel: kort, vast, en altijd
+                    zichtbaar. De mededeling krijgt daaronder de volle breedte,
+                    want die is lang en juist daar staat de gestructureerde
+                    referentie waaraan je de post herkent. */}
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-navy-400 dark:text-navy-500">
                   <span className="whitespace-nowrap">{formatDate(tx.occurredOn)}</span>
+                  {toonRekening && tx.bankAccount && (
+                    <>
+                      <span aria-hidden>·</span>
+                      <span className="font-mono">{tx.bankAccount}</span>
+                    </>
+                  )}
+                  {(() => {
+                    const k = (tx.counterparty || "").trim().toLowerCase();
+                    const n = (k && perTegenpartij.get(k)) || 0;
+                    return n > 1 ? (
+                      <>
+                        <span aria-hidden>·</span>
+                        <span className="text-navy-500 dark:text-navy-300">
+                          nog {n - 1} van deze tegenpartij
+                        </span>
+                      </>
+                    ) : null;
+                  })()}
                 </div>
+
+                {tx.memo && (
+                  <p
+                    className="mt-0.5 line-clamp-2 break-all text-xs text-navy-400 dark:text-navy-500"
+                    title={tx.memo}
+                  >
+                    {tx.memo}
+                  </p>
+                )}
               </div>
               <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
                 {onKeepInHoofdpot && (
