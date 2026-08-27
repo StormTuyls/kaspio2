@@ -4,6 +4,13 @@ import type { Pot, Transaction } from "../types";
 type Props = {
   /** Per org onthouden of de checklist weggeklikt is. */
   orgId: string;
+  /**
+   * Staan de potjes en transacties er nog niet? Dan zeggen lege lijsten niets.
+   * De checklist leidt "gedaan" af uit de data, dus zonder deze vlag lijkt elke
+   * org tijdens het laden leeg en flitst de checklist bij elke reload voorbij
+   * voordat de cijfers verschijnen.
+   */
+  loading?: boolean;
   pots: Pot[];
   transactions: Transaction[];
   onAddPot: () => void;
@@ -22,6 +29,7 @@ type Props = {
  */
 export function OnboardingChecklist({
   orgId,
+  loading,
   pots,
   transactions,
   onAddPot,
@@ -71,7 +79,8 @@ export function OnboardingChecklist({
   const doneCount = steps.filter((s) => s.done).length;
   const allDone = doneCount === steps.length;
 
-  if (dismissed || allDone) return null;
+  // Tijdens het laden niets tonen: "nog niet binnen" is geen "nog niet gedaan".
+  if (loading || dismissed || allDone) return null;
 
   function dismiss() {
     try {

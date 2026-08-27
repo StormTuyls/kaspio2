@@ -5,6 +5,12 @@ type Props = {
   label: string;
   /** Volledig accountsaldo: alle potjes + hoofdpot = het echte banksaldo. */
   total: number;
+  /**
+   * Zijn de bedragen nog onderweg? Dan is 0 geen saldo maar "nog niks binnen".
+   * Een bedrag van € 0,00 tonen dat een tel later naar het echte saldo springt
+   * leest als een fout in de boekhouding, dus tonen we zolang een streepje.
+   */
+  loading?: boolean;
   /** Saldo van de hoofdpot: geld dat nog naar potjes verdeeld moet worden. */
   unallocated: number;
   potCount: number;
@@ -37,6 +43,7 @@ type Props = {
 export function BankCard({
   label,
   total,
+  loading,
   unallocated,
   potCount,
   groupCount,
@@ -68,7 +75,7 @@ export function BankCard({
       </div>
 
       <p className="mt-1 font-num text-4xl font-extrabold tracking-tight tabular-nums">
-        {formatEuro(total)}
+        {loading ? "\u2014" : formatEuro(total)}
       </p>
 
       {/* De verdeelbalk hangt onderaan (mt-auto), zodat de kaart even hoog kan
@@ -81,10 +88,12 @@ export function BankCard({
 
       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs">
         <span className="text-navy-300 dark:text-navy-200">
-          <span className="font-num font-semibold tabular-nums">{formatEuro(inPots)}</span> in
-          potjes
+          <span className="font-num font-semibold tabular-nums">
+            {loading ? "\u2014" : formatEuro(inPots)}
+          </span>{" "}
+          in potjes
         </span>
-        {hasUnallocated ? (
+        {loading ? null : hasUnallocated ? (
           <span className="font-semibold text-amber-300">
             <span className="font-num tabular-nums">{formatEuro(unallocated)}</span> nog te
             verdelen

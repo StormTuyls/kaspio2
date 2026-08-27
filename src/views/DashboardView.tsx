@@ -10,6 +10,12 @@ import { BankCard } from "../components/BankCard";
 type Props = {
   pots: Pot[];
   allTransactions: Transaction[];
+  /**
+   * Staan de potjes en transacties er nog niet? Dan zijn de bedragen nog geen
+   * bedragen. Zonder dit toont het dashboard een tel lang € 0,00 en springt
+   * daarna naar het echte saldo, en dat leest als een fout.
+   */
+  loading?: boolean;
   members: Member[];
   currentUser: Member;
   organizationName: string;
@@ -43,6 +49,7 @@ type Props = {
 export function DashboardView({
   pots,
   allTransactions,
+  loading,
   members,
   currentUser,
   organizationName,
@@ -177,6 +184,7 @@ export function DashboardView({
         <div className="min-w-0 lg:col-span-2">
           <BankCard
             label={seesAll ? "Totaal saldo" : "Mijn saldo"}
+            loading={loading}
             total={total}
             unallocated={hoofdpotTotal}
             potCount={pots.length}
@@ -188,8 +196,18 @@ export function DashboardView({
           />
         </div>
         <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-1">
-          <FlowStat label="Inkomend" sub={FLOW_LABELS[flowPeriod]} value={formatEuro(totalIn)} tone="in" />
-          <FlowStat label="Uitgaand" sub={FLOW_LABELS[flowPeriod]} value={formatEuro(totalOut)} tone="out" />
+          <FlowStat
+            label="Inkomend"
+            sub={FLOW_LABELS[flowPeriod]}
+            value={loading ? "\u2014" : formatEuro(totalIn)}
+            tone="in"
+          />
+          <FlowStat
+            label="Uitgaand"
+            sub={FLOW_LABELS[flowPeriod]}
+            value={loading ? "\u2014" : formatEuro(totalOut)}
+            tone="out"
+          />
         </div>
       </div>
 
@@ -347,7 +365,7 @@ export function DashboardView({
                       </span>
                     </span>
                     <span className="flex-shrink-0 font-num text-sm font-bold tabular-nums text-slate-900 dark:text-navy-50">
-                      {formatEuro(groupBalance(sec.pots))}
+                      {loading ? "\u2014" : formatEuro(groupBalance(sec.pots))}
                     </span>
                   </button>
                   <ul className="space-y-0.5">
@@ -366,7 +384,9 @@ export function DashboardView({
                             {p.name}
                           </span>
                           <span className="flex-shrink-0 font-num tabular-nums text-slate-500 dark:text-navy-400">
-                            {formatEuro(calcBalance(allTransactions, p.id))}
+                            {loading
+                              ? "\u2014"
+                              : formatEuro(calcBalance(allTransactions, p.id))}
                           </span>
                         </button>
                       </li>

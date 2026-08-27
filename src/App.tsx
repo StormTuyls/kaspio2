@@ -452,6 +452,7 @@ function useBridgedStore(
 ) {
   const {
     pots: dbPots,
+    loading: potsLoading,
     addPot: addDbPot,
     updatePot: updateDbPot,
     deletePot: deleteDbPot,
@@ -459,6 +460,7 @@ function useBridgedStore(
   const {
     transactions: dbTx,
     allocations: dbAllocations,
+    loading: txLoading,
     keepInHoofdpot: keepDbInHoofdpot,
     keepAllInHoofdpot: keepAllDbInHoofdpot,
     addTransaction: addDbTx,
@@ -510,6 +512,12 @@ function useBridgedStore(
   return useMemo(() => {
     return {
       ...localStore,
+      /**
+       * Staan de potjes en transacties er al? Zolang dit true is zeggen lege
+       * lijsten niets: ze betekenen "nog niet binnen", niet "niks aanwezig".
+       * Alles wat een conclusie trekt uit een lege lijst moet hierop wachten.
+       */
+      dataLoading: potsLoading || txLoading,
       state: {
         ...localStore.state,
         pots,
@@ -612,6 +620,8 @@ function useBridgedStore(
     assignAllDbToPot,
     pots,
     transactions,
+    potsLoading,
+    txLoading,
     addDbPot,
     updateDbPot,
     deleteDbPot,
@@ -1313,6 +1323,7 @@ function AuthedApp({
                   <div className="mb-6">
                     <OnboardingChecklist
                       orgId={org.id}
+                      loading={store.dataLoading}
                       pots={potsForUser}
                       transactions={store.state.transactions}
                       onAddPot={() => setShowAddPot(true)}
@@ -1328,6 +1339,7 @@ function AuthedApp({
                 <DashboardView
                   pots={potsForUser}
                   allTransactions={store.state.transactions}
+                  loading={store.dataLoading}
                 members={uiMembers}
                 currentUser={currentUser}
                 organizationName={org.name}
