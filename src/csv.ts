@@ -28,18 +28,49 @@ export function exportPotCsv(pot: Pot, transactions: Transaction[]) {
     ),
   ];
 
+  downloadCsv(lines, `${slugify(pot.name)}-transacties.csv`);
+}
+
+function downloadCsv(lines: string[], filename: string) {
   // BOM so Excel detects UTF-8
   const csv = "﻿" + lines.join("\r\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${slugify(pot.name)}-transacties.csv`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+/** Gedeelde print-stijl voor de org-brede PDF's (rapport + geschiedenis). */
+const REPORT_CSS = `
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color: #1a1a18; margin: 40px; }
+  h1 { font-size: 22px; margin: 0 0 2px; }
+  h2.sec { font-size: 15px; margin: 32px 0 10px; padding-top: 12px; border-top: 1px solid #e5e7eb; }
+  h3.dt { font-size: 13px; margin: 18px 0 6px; }
+  .sub { color: #6b7280; font-size: 13px; margin: 0 0 20px; }
+  .totals { display: flex; gap: 16px; margin: 0 0 20px; flex-wrap: wrap; }
+  .tot { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 16px; min-width: 130px; }
+  .tot .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #6b7280; }
+  .tot .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 4px; }
+  th { text-align: left; border-bottom: 2px solid #1a1a18; padding: 8px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+  td { padding: 7px 10px; border-bottom: 1px solid #eee; }
+  tfoot td { font-weight: 700; border-top: 2px solid #1a1a18; border-bottom: none; }
+  .foot { margin-top: 24px; color: #9ca3af; font-size: 11px; }
+  @media print {
+    body { margin: 0; }
+    @page { margin: 16mm; }
+    h2.sec, h3.dt { page-break-after: avoid; }
+    table { page-break-inside: auto; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+  }
+`;
 
 function escapeHtml(s: string): string {
   return s
@@ -121,6 +152,121 @@ export function exportPotPdf(pot: Pot, transactions: Transaction[]) {
   openPrintWindow(html);
 }
 
+/** Naam van het potje waar een allocatie in zit, met nette val-terug. */
+function potLabel(pots: Pot[], potId: string | null): string {
+  if (potId === null) return "Onverdeeld / overig";
+  return pots.find((p) => p.id === potId)?.name ?? "Onverdeeld / overig";
+}
+
+/**
+ * Chronologische transactietabel over meerdere potjes heen. Gedeeld door de
+ * losse geschiedenis-PDF en de org-brede sectie in het financieel rapport,
+ * zodat beide er identiek uitzien.
+ */
+function historyTableHtml(transactions: Transaction[], pots: Pot[]): string {
+  const sorted = [...transactions].sort((a, b) => {
+    const d = a.occurredOn.localeCompare(b.occurredOn);
+    return d !== 0 ? d : a.counterparty.localeCompare(b.counterparty);
+  });
+  const rows = sorted
+    .map((t) => {
+      const sign = t.direction === "in" ? "+" : "-";
+      const color = t.direction === "in" ? "#059669" : "#e11d48";
+      return `<tr>
+        <td style="white-space:nowrap">${escapeHtml(t.occurredOn)}</td>
+        <td>${escapeHtml(potLabel(pots, t.potId))}</td>
+        <td>${escapeHtml(t.counterparty ?? "")}</td>
+        <td>${escapeHtml(t.memo ?? "")}</td>
+        <td style="text-align:right;color:${color};font-variant-numeric:tabular-nums;white-space:nowrap">${sign}${fmtEuro(t.amount)}</td>
+      </tr>`;
+    })
+    .join("");
+  return `<table>
+    <thead><tr><th>Datum</th><th>Potje</th><th>Tegenpartij</th><th>Memo</th><th style="text-align:right">Bedrag</th></tr></thead>
+    <tbody>${rows || `<tr><td colspan="5" style="color:#9ca3af;padding:24px;text-align:center">Geen transacties in deze periode.</td></tr>`}</tbody>
+  </table>`;
+}
+
+/**
+ * CSV van een (gefilterde) transactielijst over meerdere potjes. Anders dan
+ * exportPotCsv staat het potje hier wél als kolom in.
+ */
+export function exportTransactionsCsv(
+  transactions: Transaction[],
+  pots: Pot[],
+  filenameHint = "transacties",
+) {
+  const sorted = [...transactions].sort((a, b) =>
+    a.occurredOn.localeCompare(b.occurredOn),
+  );
+
+  const header = ["Datum", "Potje", "Type", "Bedrag", "Tegenpartij", "Memo"];
+  const lines = [
+    toRow(header),
+    ...sorted.map((t) =>
+      toRow([
+        t.occurredOn,
+        potLabel(pots, t.potId),
+        t.direction === "in" ? "Inkomend" : "Uitgaand",
+        t.amount.toFixed(2).replace(".", ","),
+        t.counterparty,
+        t.memo ?? "",
+      ]),
+    ),
+  ];
+
+  downloadCsv(lines, `${slugify(filenameHint)}.csv`);
+}
+
+export type TransactionHistoryPdfOptions = {
+  orgName: string;
+  /** Mensvriendelijk label van de periode, bv. "2026" of "alle transacties". */
+  periodLabel: string;
+  /** Extra beschrijving van de actieve filters, bv. "Potje: Jeugdwerking". */
+  scopeLabel?: string;
+  transactions: Transaction[];
+  pots: Pot[];
+};
+
+/**
+ * PDF (via printvenster) van een gefilterde transactiegeschiedenis. Toont wat
+ * er op de transactiepagina staat, inclusief de actieve filters in de kop.
+ */
+export function exportTransactionHistoryPdf(opts: TransactionHistoryPdfOptions) {
+  const { orgName, periodLabel, scopeLabel, transactions, pots } = opts;
+
+  const totalIn = transactions
+    .filter((t) => t.direction === "in")
+    .reduce((s, t) => s + t.amount, 0);
+  const totalOut = transactions
+    .filter((t) => t.direction === "out")
+    .reduce((s, t) => s + t.amount, 0);
+  const result = totalIn - totalOut;
+
+  const generated = new Intl.DateTimeFormat("nl-BE", { dateStyle: "long" }).format(
+    new Date(),
+  );
+
+  const html = `<!doctype html><html lang="nl"><head><meta charset="utf-8" />
+<title>${escapeHtml(orgName)} , transactiegeschiedenis , Kaspio</title>
+<style>${REPORT_CSS}</style></head><body>
+  <h1>${escapeHtml(orgName)}</h1>
+  <p class="sub">Transactiegeschiedenis , ${escapeHtml(periodLabel)}${
+    scopeLabel ? ` , ${escapeHtml(scopeLabel)}` : ""
+  } , gegenereerd op ${generated} via Kaspio</p>
+  <div class="totals">
+    <div class="tot"><div class="lbl">Inkomend</div><div class="val" style="color:#059669">${fmtEuro(totalIn)}</div></div>
+    <div class="tot"><div class="lbl">Uitgaand</div><div class="val" style="color:#e11d48">${fmtEuro(totalOut)}</div></div>
+    <div class="tot"><div class="lbl">Resultaat</div><div class="val">${result >= 0 ? "+" : "-"}${fmtEuro(Math.abs(result))}</div></div>
+    <div class="tot"><div class="lbl">Aantal</div><div class="val">${transactions.length}</div></div>
+  </div>
+  ${historyTableHtml(transactions, pots)}
+  <p class="foot">Kaspio , virtuele potjes op één bankrekening</p>
+</body></html>`;
+
+  openPrintWindow(html);
+}
+
 export type OrgReportOptions = {
   orgName: string;
   /** Mensvriendelijk label, bv. "2026" of "1 jan 2026 , 31 dec 2026". */
@@ -132,6 +278,11 @@ export type OrgReportOptions = {
   transactions: Transaction[];
   /** Voeg per potje de transactielijst toe. */
   includeDetails: boolean;
+  /**
+   * Voeg één chronologische lijst toe van alle transacties van de organisatie
+   * in de periode, met het potje als kolom. Staat los van includeDetails.
+   */
+  includeHistory?: boolean;
 };
 
 /**
@@ -140,7 +291,15 @@ export type OrgReportOptions = {
  * transactiedetails. Pro+ feature ("Grafieken & rapportage" op de landing).
  */
 export function exportOrgReport(opts: OrgReportOptions) {
-  const { orgName, periodLabel, start, end, pots, includeDetails } = opts;
+  const {
+    orgName,
+    periodLabel,
+    start,
+    end,
+    pots,
+    includeDetails,
+    includeHistory = false,
+  } = opts;
 
   // Enkel goedgekeurde transacties tellen mee (pending niet, net als het saldo).
   const approved = opts.transactions.filter((t) => t.status !== "pending");
@@ -241,30 +400,25 @@ export function exportOrgReport(opts: OrgReportOptions) {
     if (blocks) detailsHtml = `<h2 class="sec">Transactiedetails</h2>${blocks}`;
   }
 
+  // Org-brede, chronologische transactiegeschiedenis. Eén tabel over alle
+  // potjes heen, zodat je de rekening op datum kan volgen in plaats van per
+  // potje te moeten springen.
+  let historyHtml = "";
+  if (includeHistory) {
+    const txs = approved.filter((t) => inPeriod(t.occurredOn));
+    historyHtml = `<h2 class="sec">Transactiegeschiedenis , hele organisatie (${txs.length})</h2>${historyTableHtml(
+      txs,
+      pots,
+    )}`;
+  }
+
   const generated = new Intl.DateTimeFormat("nl-BE", { dateStyle: "long" }).format(
     new Date(),
   );
 
   const html = `<!doctype html><html lang="nl"><head><meta charset="utf-8" />
 <title>${escapeHtml(orgName)} , financieel overzicht , Kaspio</title>
-<style>
-  * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color: #1a1a18; margin: 40px; }
-  h1 { font-size: 22px; margin: 0 0 2px; }
-  h2.sec { font-size: 15px; margin: 32px 0 10px; padding-top: 12px; border-top: 1px solid #e5e7eb; }
-  h3.dt { font-size: 13px; margin: 18px 0 6px; }
-  .sub { color: #6b7280; font-size: 13px; margin: 0 0 20px; }
-  .totals { display: flex; gap: 16px; margin: 0 0 8px; flex-wrap: wrap; }
-  .tot { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 16px; min-width: 130px; }
-  .tot .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #6b7280; }
-  .tot .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 4px; }
-  th { text-align: left; border-bottom: 2px solid #1a1a18; padding: 8px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
-  td { padding: 7px 10px; border-bottom: 1px solid #eee; }
-  tfoot td { font-weight: 700; border-top: 2px solid #1a1a18; border-bottom: none; }
-  .foot { margin-top: 24px; color: #9ca3af; font-size: 11px; }
-  @media print { body { margin: 0; } @page { margin: 16mm; } h3.dt { page-break-after: avoid; } table { page-break-inside: auto; } }
-</style></head><body>
+<style>${REPORT_CSS}</style></head><body>
   <h1>${escapeHtml(orgName)}</h1>
   <p class="sub">Financieel overzicht , ${escapeHtml(periodLabel)} , gegenereerd op ${generated} via Kaspio</p>
   <div class="totals">
@@ -286,6 +440,7 @@ export function exportOrgReport(opts: OrgReportOptions) {
     </tr></tfoot>
   </table>
   ${detailsHtml}
+  ${historyHtml}
   <p class="foot">Kaspio , virtuele potjes op één bankrekening</p>
 </body></html>`;
 
