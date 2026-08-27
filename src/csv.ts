@@ -39,10 +39,21 @@ function downloadCsv(lines: string[], filename: string) {
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
+  // rel=noopener: sommige browsers behandelen een download-link anders wanneer
+  // hij een window-referentie zou kunnen meegeven.
+  a.rel = "noopener";
+  a.style.display = "none";
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+
+  // Opruimen mag pas ná de tick waarin geklikt is. Chrome start de download
+  // synchroon en overleeft het wel, maar Safari (en soms Firefox) leest de blob
+  // pas daarna: is de URL dan al ingetrokken, dan gebeurt er niets. Geen fout,
+  // geen bestand, precies het soort stilte waar je lang naar zoekt.
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+    a.remove();
+  }, 10_000);
 }
 
 /** Gedeelde print-stijl voor de org-brede PDF's (rapport + geschiedenis). */
