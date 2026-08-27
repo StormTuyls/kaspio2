@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import type { GroupedMember, OrgInvite, OrgMember } from "../data";
 import { groupMembersByUser } from "../data";
-import type { MemberRole, Pot } from "../supabase";
+import type { MemberRole, Pot, PotGroup } from "../supabase";
 import { Modal } from "../components/Modal";
 import { ManageMemberModal } from "../components/ManageMemberModal";
 
@@ -11,12 +11,14 @@ type Props = {
   members: OrgMember[];
   invites: OrgInvite[];
   pots: Pot[];
+  groups: PotGroup[];
   onInviteClick: () => void;
   onSavePermissions: (
     userId: string,
     orgId: string,
     role: MemberRole,
     potIds: string[],
+    groupIds: string[],
   ) => Promise<{ error: string | null }>;
   onRemoveMember: (
     userId: string,
@@ -31,6 +33,7 @@ export function MembersListView({
   members,
   invites,
   pots,
+  groups,
   onInviteClick,
   onSavePermissions,
   onRemoveMember,
@@ -115,6 +118,7 @@ export function MembersListView({
                 key={m.user_id}
                 member={m}
                 pots={pots}
+                groups={groups}
                 isCurrentUser={m.user_id === currentUserId}
                 isOnlyAdmin={
                   m.effectiveRole === "admin" && adminCount === 1
@@ -136,6 +140,7 @@ export function MembersListView({
             orgId={orgId}
             member={managing}
             pots={pots}
+            groups={groups}
             isOnlyAdmin={
               managing.effectiveRole === "admin" && adminCount === 1
             }
@@ -153,18 +158,23 @@ export function MembersListView({
 function MemberRow({
   member,
   pots,
+  groups,
   isCurrentUser,
   isOnlyAdmin,
   onManage,
 }: {
   member: GroupedMember;
   pots: Pot[];
+  groups: PotGroup[];
   isCurrentUser: boolean;
   isOnlyAdmin: boolean;
   onManage: () => void;
 }) {
   const potNames = member.potIds
     .map((id) => pots.find((p) => p.id === id)?.name)
+    .filter(Boolean) as string[];
+  const groupNames = member.groupIds
+    .map((id) => groups.find((g) => g.id === id)?.name)
     .filter(Boolean) as string[];
 
   return (
@@ -188,6 +198,21 @@ function MemberRow({
         <div className="text-xs text-navy-400">{member.email}</div>
         <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-navy-500">
           <span className="font-semibold">{roleLabel(member.effectiveRole)}</span>
+          {member.effectiveRole === "group_owner" && groupNames.length > 0 && (
+            <>
+              <span>·</span>
+              <span className="flex flex-wrap gap-1">
+                {groupNames.map((naam) => (
+                  <span
+                    key={naam}
+                    className="rounded-md bg-navy-100 px-1.5 py-0.5 text-[11px] text-navy-700 dark:bg-navy-700 dark:text-navy-100"
+                  >
+                    {naam}
+                  </span>
+                ))}
+              </span>
+            </>
+          )}
           {member.effectiveRole === "pot_owner" && potNames.length > 0 && (
             <>
               <span>·</span>
@@ -228,6 +253,8 @@ function roleLabel(r: MemberRole): string {
       return "Admin";
     case "pot_owner":
       return "Pot owner";
+    case "group_owner":
+      return "Groepsbeheerder";
     case "reader":
       return "Lezer";
   }

@@ -21,6 +21,8 @@ export type PotFormValues = {
   name: string;
   color: string;
   targetAmount?: number;
+  /** Bijgestelde verwachting. undefined = geen prognose, dan geldt het budget. */
+  forecastAmount?: number | null;
   targetKind: PotTargetKind;
   description?: string;
   groupId?: string | null;
@@ -31,6 +33,7 @@ type Props = {
     name: string;
     color: string;
     targetAmount?: number;
+    forecastAmount?: number;
     targetKind?: PotTargetKind;
     description?: string;
     groupId?: string | null;
@@ -50,6 +53,9 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
   const [color, setColor] = useState(initial?.color ?? POT_COLORS[0].hex);
   const [target, setTarget] = useState(
     initial?.targetAmount?.toString() ?? "",
+  );
+  const [forecast, setForecast] = useState(
+    initial?.forecastAmount?.toString() ?? "",
   );
   const [targetKind, setTargetKind] = useState<PotTargetKind>(
     initial?.targetKind ?? "saving",
@@ -89,6 +95,18 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
       }
       targetAmount = v;
     }
+    // Prognose mag leeg blijven; dan is het budget nog steeds het plan. Een
+    // prognose zonder budget mag ook: soms weet je wat het gaat worden voor er
+    // iets afgesproken is.
+    let forecastAmount: number | null = null;
+    if (forecast.trim()) {
+      const v = Number(forecast);
+      if (!Number.isFinite(v)) {
+        setError("Vul een geldige prognose in.");
+        return;
+      }
+      forecastAmount = v === 0 ? null : v;
+    }
     setBusy(true);
     try {
       // Inline nieuwe groep aanmaken indien gekozen
@@ -113,6 +131,7 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
         name: trimmed,
         color,
         targetAmount,
+        forecastAmount,
         targetKind,
         description: description.trim() || undefined,
         ...(showGroupField ? { groupId: finalGroupId } : {}),
@@ -249,6 +268,29 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
               className="input pl-7"
             />
           </div>
+        </div>
+      </Field>
+
+      <Field
+        label="Prognose"
+        hint={
+          targetKind === "budget"
+            ? "Optioneel. Wat je er nu écht denkt uit te geven. Het budget hierboven blijft staan wat het was, zodat je het verschil ziet."
+            : "Optioneel. Waar je nu denkt op uit te komen. Het doel hierboven blijft staan wat het was, zodat je het verschil ziet."
+        }
+      >
+        <div className="relative">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-navy-400">
+            €
+          </span>
+          <input
+            type="number"
+            step="0.01"
+            value={forecast}
+            onChange={(e) => setForecast(e.target.value)}
+            placeholder="Laat leeg als het budget nog klopt"
+            className="input pl-7"
+          />
         </div>
       </Field>
 

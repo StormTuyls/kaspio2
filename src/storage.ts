@@ -186,10 +186,14 @@ export function useAppState(accountId: string, bootstrapAdminName?: string) {
       name: string;
       ownerId: string;
       targetAmount?: number;
+      forecastAmount?: number | null;
       targetKind?: PotTargetKind;
     }) {
       const pot: Pot = {
         ...input,
+        // null uit het formulier betekent "geen prognose"; het UI-type kent
+        // alleen undefined, dus normaliseren we hier.
+        forecastAmount: input.forecastAmount ?? undefined,
         id: crypto.randomUUID(),
         createdAt: new Date().toISOString(),
       };
@@ -208,7 +212,9 @@ export function useAppState(accountId: string, bootstrapAdminName?: string) {
     },
     updatePot(
       id: string,
-      patch: Partial<Pick<Pot, "name" | "ownerId" | "targetAmount" | "targetKind">>,
+      patch: Partial<
+        Pick<Pot, "name" | "ownerId" | "targetAmount" | "forecastAmount" | "targetKind">
+      >,
     ) {
       setState((s) => {
         const before = s.pots.find((p) => p.id === id);

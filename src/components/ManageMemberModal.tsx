@@ -1,12 +1,13 @@
 import { useState } from "react";
 import type { GroupedMember } from "../data";
-import type { MemberRole, Pot } from "../supabase";
+import type { MemberRole, Pot, PotGroup } from "../supabase";
 import { useConfirm } from "./ConfirmDialog";
 
 type Props = {
   orgId: string;
   member: GroupedMember;
   pots: Pot[];
+  groups: PotGroup[];
   isOnlyAdmin: boolean;
   isSelf: boolean;
   onSave: (
@@ -14,6 +15,7 @@ type Props = {
     orgId: string,
     role: MemberRole,
     potIds: string[],
+    groupIds: string[],
   ) => Promise<{ error: string | null }>;
   onRemove: (
     userId: string,
@@ -26,6 +28,7 @@ export function ManageMemberModal({
   orgId,
   member,
   pots,
+  groups,
   isOnlyAdmin,
   isSelf,
   onSave,
@@ -35,6 +38,7 @@ export function ManageMemberModal({
   const confirm = useConfirm();
   const [role, setRole] = useState<MemberRole>(member.effectiveRole);
   const [potIds, setPotIds] = useState<string[]>(member.potIds);
+  const [groupIds, setGroupIds] = useState<string[]>(member.groupIds);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,8 +48,12 @@ export function ManageMemberModal({
       setError("Kies minstens één potje voor een pot owner.");
       return;
     }
+    if (role === "group_owner" && groupIds.length === 0) {
+      setError("Kies minstens één groep voor een groepsbeheerder.");
+      return;
+    }
     setBusy(true);
-    const res = await onSave(member.user_id, orgId, role, potIds);
+    const res = await onSave(member.user_id, orgId, role, potIds, groupIds);
     setBusy(false);
     if (res.error) setError(res.error);
     else onClose();
@@ -72,6 +80,12 @@ export function ManageMemberModal({
   function togglePot(id: string) {
     setPotIds((prev) =>
       prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id],
+    );
+  }
+
+  function toggleGroup(id: string) {
+    setGroupIds((prev) =>
+      prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id],
     );
   }
 
@@ -103,6 +117,13 @@ export function ManageMemberModal({
             onChange={() => setRole("pot_owner")}
             label="Pot owner"
             description="Ziet en bewerkt enkel toegewezen potjes."
+            disabled={isSelf && member.effectiveRole === "admin" && isOnlyAdmin}
+          />
+          <RoleOption
+            checked={role === "group_owner"}
+            onChange={() => setRole("group_owner")}
+            label="Groepsbeheerder"
+            description="Beheert alle potjes van een groep, ook de potjes die er later bij komen."
             disabled={isSelf && member.effectiveRole === "admin" && isOnlyAdmin}
           />
           <RoleOption
@@ -154,6 +175,47 @@ export function ManageMemberModal({
               {potIds.length} potje{potIds.length === 1 ? "" : "s"} geselecteerd
             </p>
           )}
+        </div>
+      )}
+
+      {role === "group_owner" && (
+        <div>
+          <p className="mb-2 text-sm font-medium text-navy-700 dark:text-navy-200">
+            Beheert deze groepen
+          </p>
+          {groups.length === 0 ? (
+            <p className="text-sm text-navy-400">
+              Er zijn nog geen groepen. Maak er eerst één aan bij Groepen.
+            </p>
+          ) : (
+            <div className="space-y-1.5 rounded-lg border border-navy-100 p-2 dark:border-navy-700">
+              {groups.map((g) => {
+                const aantal = pots.filter((p) => p.group_id === g.id).length;
+                return (
+                  <label
+                    key={g.id}
+                    className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-canvas dark:hover:bg-navy-800"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={groupIds.includes(g.id)}
+                      onChange={() => toggleGroup(g.id)}
+                      className="h-4 w-4"
+                    />
+                    <span className="text-sm text-navy-900 dark:text-white">
+                      {g.name}
+                    </span>
+                    <span className="ml-auto text-xs text-navy-400">
+                      {aantal} potje{aantal === 1 ? "" : "s"}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+          <p className="mt-2 text-xs text-navy-400">
+            Nieuwe potjes in deze groepen komen er vanzelf bij.
+          </p>
         </div>
       )}
 

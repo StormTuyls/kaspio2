@@ -104,10 +104,12 @@ export function PotDetail({
   const totalIn = potTx.filter((t) => t.direction === "in").reduce((s, t) => s + t.amount, 0);
   const totalOut = potTx.filter((t) => t.direction === "out").reduce((s, t) => s + t.amount, 0);
   const owner = members.find((m) => m.id === pot.ownerId);
-  const progress = potProgress(pot.targetAmount, pot.targetKind, {
-    balance,
-    totalOut: calcSpent(transactions, pot.id),
-  });
+  const progress = potProgress(
+    pot.targetAmount,
+    pot.targetKind,
+    { balance, totalOut: calcSpent(transactions, pot.id) },
+    pot.forecastAmount,
+  );
 
   // Rekeningen die in dit potje voorkomen. Werkt de organisatie met één
   // rekening (of dateren de transacties van voor de rekeningkolom), dan blijft
@@ -339,7 +341,10 @@ export function PotDetail({
                 {progress.kind === "budget" ? " uitgegeven" : ""}
               </span>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-navy-100 dark:bg-navy-700">
+            {/* De prognosemarkering staat in de balk zelf, want ze hoort op
+                dezelfde schaal als het budget. Los eronder zou je twee
+                bedragen zien zonder te zien hoe ver ze uit elkaar liggen. */}
+            <div className="relative h-2 w-full overflow-hidden rounded-full bg-navy-100 dark:bg-navy-700">
               <div
                 className={`h-full rounded-full transition-all ${
                   progress.over
@@ -348,7 +353,30 @@ export function PotDetail({
                 }`}
                 style={{ width: `${progress.barPct}%` }}
               />
+              {progress.forecast && (
+                <div
+                  className="absolute inset-y-0 w-0.5 bg-navy-500 dark:bg-navy-200"
+                  style={{ left: `${progress.forecast.markerPct}%` }}
+                  aria-hidden="true"
+                />
+              )}
             </div>
+            {progress.forecast && (
+              <p className="mt-1.5 text-xs text-navy-500 dark:text-navy-300">
+                {progress.forecast.label}{" "}
+                <span
+                  className={
+                    progress.forecast.delta > 0
+                      ? "font-semibold text-amber-600 dark:text-amber-400"
+                      : "font-semibold text-teal-600 dark:text-teal-400"
+                  }
+                >
+                  ({progress.forecast.delta > 0 ? "+" : "−"}
+                  {formatEuro(Math.abs(progress.forecast.delta))} t.o.v.{" "}
+                  {progress.kind === "budget" ? "budget" : "doel"})
+                </span>
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -683,6 +711,7 @@ export function PotDetail({
             name: pot.name,
             color: pot.color ?? "#1D9E75",
             targetAmount: pot.targetAmount,
+            forecastAmount: pot.forecastAmount,
             targetKind: pot.targetKind,
             groupId: pot.groupId ?? null,
           }}

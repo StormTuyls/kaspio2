@@ -132,7 +132,7 @@ export async function updateUserPassword(password: string) {
 // Wanneer je het schema in Supabase aanpast, update je ook deze types
 // (later vervangen door auto-generated types via `supabase gen types typescript`).
 
-export type MemberRole = "admin" | "pot_owner" | "reader";
+export type MemberRole = "admin" | "pot_owner" | "reader" | "group_owner";
 export type TransactionDirection = "in" | "out";
 
 export interface Profile {
@@ -160,6 +160,11 @@ export interface Pot {
   name: string;
   color: string;
   target_amount: number | null;
+  /**
+   * Bijgestelde verwachting naast target_amount. NULL = geen prognose, dan
+   * geldt het budget. Zelfde teken- en leesregels als target_amount.
+   */
+  forecast_amount: number | null;
   /** 'saving' = saldodoel, 'budget' = uitgavenplafond. */
   target_kind: "saving" | "budget";
   description: string | null;
@@ -186,6 +191,8 @@ export interface Membership {
   user_id: string;
   role: MemberRole;
   pot_id: string | null;
+  /** Alleen voor group_owner: de groep waarvan dit lid alle potjes beheert. */
+  group_id: string | null;
   invited_by: string | null;
   created_at: string;
 }

@@ -331,6 +331,8 @@ function roleLabel(r: MemberRole): string {
       return "Admin";
     case "pot_owner":
       return "Pot owner";
+    case "group_owner":
+      return "Groepsbeheerder";
     case "reader":
       return "Lezer";
   }

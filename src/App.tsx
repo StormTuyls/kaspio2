@@ -404,6 +404,7 @@ function dbPotToUiPot(p: DbPot, currentUserId: string): Pot {
     // (zie potsWithOwner). RLS filtert op DB-niveau welke pots de user ziet.
     ownerId: currentUserId,
     targetAmount: p.target_amount ?? undefined,
+    forecastAmount: p.forecast_amount ?? undefined,
     targetKind: p.target_kind ?? "saving",
     groupId: p.group_id ?? null,
     createdAt: p.created_at,
@@ -518,6 +519,7 @@ function useBridgedStore(
         name: string;
         color?: string;
         targetAmount?: number;
+        forecastAmount?: number | null;
         targetKind?: PotTargetKind;
         description?: string;
         groupId?: string | null;
@@ -526,6 +528,7 @@ function useBridgedStore(
           name: input.name,
           color: input.color ?? "#1D9E75",
           targetAmount: input.targetAmount,
+          forecastAmount: input.forecastAmount ?? null,
           targetKind: input.targetKind,
           description: input.description,
           groupId: input.groupId ?? null,
@@ -540,6 +543,7 @@ function useBridgedStore(
           name?: string;
           color?: string;
           targetAmount?: number;
+          forecastAmount?: number | null;
           targetKind?: PotTargetKind;
           description?: string;
           groupId?: string | null;
@@ -869,7 +873,10 @@ function AuthedApp({
     [orgMembers],
   );
 
-  // pot_id -> user_id van de (eerste) pot-verantwoordelijke, voor weergave.
+  // pot_id -> user_id van de (eerste) verantwoordelijke, voor weergave.
+  // Een rechtstreekse pot_owner wint van een groepsbeheerder: die is
+  // specifieker, en als iemand expliciet aan dít potje gekoppeld is bedoel je
+  // hem. Vandaar twee rondes in plaats van één.
   const ownerByPotId = useMemo(() => {
     const m = new Map<string, string>();
     for (const mem of orgMembers) {
@@ -877,8 +884,19 @@ function AuthedApp({
         m.set(mem.pot_id, mem.user_id);
       }
     }
+    const ownerByGroup = new Map<string, string>();
+    for (const mem of orgMembers) {
+      if (mem.role === "group_owner" && mem.group_id && !ownerByGroup.has(mem.group_id)) {
+        ownerByGroup.set(mem.group_id, mem.user_id);
+      }
+    }
+    for (const p of dbPots) {
+      if (m.has(p.id) || !p.group_id) continue;
+      const u = ownerByGroup.get(p.group_id);
+      if (u) m.set(p.id, u);
+    }
     return m;
-  }, [orgMembers]);
+  }, [orgMembers, dbPots]);
 
   // Pot-IDs waar de ingelogde user verantwoordelijke van is (multi-owner-safe).
   const myPotIds = useMemo(() => {
@@ -1252,6 +1270,7 @@ function AuthedApp({
                 members={orgMembers}
                 invites={invites}
                 pots={dbPots}
+                groups={dbGroups}
                 onInviteClick={() => setShowInvite(true)}
                 onSavePermissions={setMemberPermissions}
                 onRemoveMember={removeMember}

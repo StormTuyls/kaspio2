@@ -277,10 +277,12 @@ export function PotCard({
   const lastIncoming = [...potTx]
     .filter((t) => t.direction === "in")
     .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn))[0];
-  const progress = potProgress(pot.targetAmount, pot.targetKind, {
-    balance,
-    totalOut: calcSpent(transactions, pot.id),
-  });
+  const progress = potProgress(
+    pot.targetAmount,
+    pot.targetKind,
+    { balance, totalOut: calcSpent(transactions, pot.id) },
+    pot.forecastAmount,
+  );
 
   const dotColor = pot.color ?? "#1D9E75";
 

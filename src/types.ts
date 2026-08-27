@@ -1,4 +1,4 @@
-export type Role = "admin" | "pot_owner" | "reader";
+export type Role = "admin" | "pot_owner" | "reader" | "group_owner";
 
 export type Member = {
   id: string;
@@ -16,6 +16,11 @@ export type Pot = {
   ownerId: string;
   color?: string;
   targetAmount?: number;
+  /**
+   * Bijgestelde verwachting naast targetAmount. Leeg = geen prognose, dan is
+   * het budget nog steeds het plan.
+   */
+  forecastAmount?: number;
   /** Default 'saving' voor alles wat van voor de budgetpotjes dateert. */
   targetKind?: PotTargetKind;
   /** Optionele potgroep (tak, ploeg, werkgroep). */

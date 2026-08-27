@@ -27,12 +27,26 @@ export type PotProgress = {
   /** Budget of doelsaldo voorbijgestoken in de verkeerde richting. */
   over: boolean;
   kind: PotTargetKind;
+  /**
+   * Alleen gevuld als er een prognose is die van het budget afwijkt. Het
+   * verschil is waar een bestuur op stuurt: het budget staat vast, de prognose
+   * schuift, en het gat ertussen is het nieuws.
+   */
+  forecast?: {
+    amount: number;
+    /** Prognose min budget. Positief = het gaat meer worden dan afgesproken. */
+    delta: number;
+    /** Waar de prognose op de balk staat, 0-100. */
+    markerPct: number;
+    label: string;
+  };
 };
 
 export function potProgress(
   targetAmount: number | null | undefined,
   targetKind: PotTargetKind | undefined,
   amounts: { balance: number; totalOut: number },
+  forecastAmount?: number | null,
 ): PotProgress | null {
   // 0 en null betekenen beide "geen doel ingesteld".
   if (targetAmount == null || !Number.isFinite(targetAmount) || targetAmount === 0) {
@@ -48,6 +62,7 @@ export function potProgress(
       label: `Budget: ${formatEuro(budget)}`,
       over: amounts.totalOut > budget,
       kind: "budget",
+      forecast: buildForecast(budget, forecastAmount, true),
     };
   }
 
@@ -61,6 +76,28 @@ export function potProgress(
     // gepland.
     over: targetAmount < 0 && amounts.balance < targetAmount,
     kind: "saving",
+    forecast: buildForecast(targetAmount, forecastAmount, false),
+  };
+}
+
+/**
+ * Prognose alleen tonen als ze er is én van het budget verschilt. Een prognose
+ * gelijk aan het budget voegt niets toe en maakt de balk alleen drukker.
+ */
+function buildForecast(
+  target: number,
+  forecastAmount: number | null | undefined,
+  useAbs: boolean,
+): PotProgress["forecast"] {
+  if (forecastAmount == null || !Number.isFinite(forecastAmount)) return undefined;
+  const forecast = useAbs ? Math.abs(forecastAmount) : forecastAmount;
+  const delta = forecast - target;
+  if (Math.abs(delta) < 0.005) return undefined;
+  return {
+    amount: forecast,
+    delta,
+    markerPct: clamp(target === 0 ? 0 : (forecast / target) * 100),
+    label: `Prognose: ${formatEuro(forecast)}`,
   };
 }
 

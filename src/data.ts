@@ -234,6 +234,8 @@ export type PotInput = {
   name: string;
   color: string;
   targetAmount?: number | null;
+  /** Bijgestelde verwachting naast targetAmount. null = geen prognose. */
+  forecastAmount?: number | null;
   /** Hoe targetAmount gelezen wordt. Default 'saving'. */
   targetKind?: PotTargetKind;
   description?: string | null;
@@ -280,6 +282,7 @@ export function usePots(orgId: string | null) {
       name: input.name,
       color: input.color,
       target_amount: input.targetAmount ?? null,
+      forecast_amount: input.forecastAmount ?? null,
       target_kind: input.targetKind ?? "saving",
       description: input.description ?? null,
       group_id: input.groupId ?? null,
@@ -302,6 +305,8 @@ export function usePots(orgId: string | null) {
     if (patch.color !== undefined) updateRow.color = patch.color;
     if (patch.targetAmount !== undefined)
       updateRow.target_amount = patch.targetAmount;
+    if (patch.forecastAmount !== undefined)
+      updateRow.forecast_amount = patch.forecastAmount;
     if (patch.targetKind !== undefined) updateRow.target_kind = patch.targetKind;
     if (patch.description !== undefined)
       updateRow.description = patch.description;
@@ -2085,6 +2090,8 @@ export type OrgMember = {
   organisation_id: string;
   role: MemberRole;
   pot_id: string | null;
+  /** Alleen voor group_owner: de groep die dit lid beheert. */
+  group_id: string | null;
   created_at: string;
   full_name: string;
   email: string;
@@ -2096,6 +2103,7 @@ type MembershipWithProfile = {
   organisation_id: string;
   role: MemberRole;
   pot_id: string | null;
+  group_id: string | null;
   created_at: string;
   profile: {
     full_name: string;
@@ -2119,7 +2127,7 @@ export function useOrgMembers(orgId: string | null) {
     // en komt er een error -> lege ledenlijst.
     const { data, error } = await supabase
       .from("memberships")
-      .select("id, user_id, organisation_id, role, pot_id, created_at, profile:profiles!user_id(full_name, email)")
+      .select("id, user_id, organisation_id, role, pot_id, group_id, created_at, profile:profiles!user_id(full_name, email)")
       .eq("organisation_id", orgId)
       .order("created_at", { ascending: true });
     if (error) {
@@ -2134,6 +2142,7 @@ export function useOrgMembers(orgId: string | null) {
           organisation_id: m.organisation_id,
           role: m.role,
           pot_id: m.pot_id,
+          group_id: m.group_id ?? null,
           created_at: m.created_at,
           full_name: m.profile?.full_name ?? "Onbekend",
           email: m.profile?.email ?? "",
@@ -2154,6 +2163,7 @@ export function useOrgMembers(orgId: string | null) {
     orgId: string,
     role: MemberRole,
     potIds: string[],
+    groupIds: string[] = [],
   ): Promise<{ error: string | null }> {
     const { error } = await supabase.rpc(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -2163,6 +2173,7 @@ export function useOrgMembers(orgId: string | null) {
         p_user_id: userId,
         p_role: role,
         p_pot_ids: role === "pot_owner" ? potIds : null,
+        p_group_ids: role === "group_owner" ? groupIds : null,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
     );
@@ -2206,6 +2217,8 @@ export type GroupedMember = {
   effectiveRole: MemberRole;
   /** Pot IDs als ze pot_owner zijn. Lege array voor admin/reader. */
   potIds: string[];
+  /** Groep-IDs als ze group_owner zijn. Lege array voor de rest. */
+  groupIds: string[];
 };
 
 export function groupMembersByUser(members: OrgMember[]): GroupedMember[] {
@@ -2219,6 +2232,7 @@ export function groupMembersByUser(members: OrgMember[]): GroupedMember[] {
         email: m.email,
         effectiveRole: m.role,
         potIds: m.pot_id ? [m.pot_id] : [],
+        groupIds: m.group_id ? [m.group_id] : [],
       });
     } else {
       // Admin trumps alles
@@ -2228,6 +2242,9 @@ export function groupMembersByUser(members: OrgMember[]): GroupedMember[] {
       }
       if (m.pot_id && !existing.potIds.includes(m.pot_id)) {
         existing.potIds.push(m.pot_id);
+      }
+      if (m.group_id && !existing.groupIds.includes(m.group_id)) {
+        existing.groupIds.push(m.group_id);
       }
     }
   }
