@@ -204,10 +204,14 @@ export function GroupsView({
           {isAdmin ? "Maak er een aan om je potjes te bundelen." : ""}
         </div>
       ) : (
-        // Bewust geen twee kolommen meer: een hoofdgroep met haar subgroepen
-        // eronder is één blok, en dat naast elkaar zetten maakt niet duidelijk
-        // wat waaronder hangt.
-        <div className="space-y-5">
+        // Twee kolommen, waarbij één cel het hele blok is: de hoofdgroep met
+        // haar subgroepen eronder. Eén kolom werd bij veertien comités een
+        // scrollijst waarin je niets meer terugvindt.
+        //
+        // items-start, anders rekt elke kaart uit tot de hoogte van de langste
+        // op dezelfde rij en lijkt een groep met twee potjes even groot als een
+        // comité met vijftien.
+        <div className="grid items-start gap-5 sm:grid-cols-2">
           {roots.map((g) => {
             const children = subGroups(groups, g.id);
             const open = !collapsed.has(g.id);
@@ -369,71 +373,76 @@ function GroupCard({
   return (
     <div className="card flex flex-col p-4">
       <div className={`flex items-start justify-between gap-2 ${open ? "mb-3" : ""}`}>
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-expanded={open}
-          aria-label={`${group.name} ${open ? "inklappen" : "uitklappen"}`}
-          className="mt-0.5 flex-shrink-0 rounded p-1 text-navy-400 transition hover:bg-navy-50 hover:text-navy-700 dark:hover:bg-navy-800 dark:hover:text-white"
-        >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={`transition-transform ${open ? "rotate-90" : ""}`}
-          >
-            <path d="M9 6l6 6-6 6" />
-          </svg>
-        </button>
-        {editing ? (
-          <input
-            autoFocus
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onBlur={saveName}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") saveName();
-              if (e.key === "Escape") {
-                setName(group.name);
-                setEditing(false);
-              }
-            }}
-            maxLength={80}
-            disabled={busy}
-            className="input py-1 text-sm font-semibold"
-          />
-        ) : (
+        {/* Pijltje en naam horen als één ding links te staan; zonder deze
+            wrapper verdeelt justify-between de ruimte over drie kinderen en
+            zweeft de naam in het midden van de kaart. */}
+        <div className="flex min-w-0 flex-1 items-start gap-1">
           <button
             type="button"
-            onClick={onOpen}
-            disabled={!onOpen}
-            className="flex min-w-0 items-baseline gap-2 text-left enabled:hover:text-teal-700 dark:enabled:hover:text-teal-300"
+            onClick={onToggle}
+            aria-expanded={open}
+            aria-label={`${group.name} ${open ? "inklappen" : "uitklappen"}`}
+            className="mt-0.5 flex-shrink-0 rounded p-1 text-navy-400 transition hover:bg-navy-50 hover:text-navy-700 dark:hover:bg-navy-800 dark:hover:text-white"
           >
-            <h3
-              className={`truncate font-bold text-navy-900 dark:text-white ${
-                isSub ? "text-sm" : "text-base"
-              }`}
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`transition-transform ${open ? "rotate-90" : ""}`}
             >
-              {group.name}
-            </h3>
-            <span className="rounded-full bg-navy-100 px-1.5 text-[11px] font-semibold text-navy-500 dark:bg-navy-800 dark:text-navy-300">
-              {pots.length}
-            </span>
-            {childCount > 0 && (
-              <span className="text-[11px] font-medium text-navy-400">
-                + {childCount} subgroep{childCount > 1 ? "en" : ""}
-              </span>
-            )}
-            {onOpen && (
-              <span className="text-xs font-medium text-teal-600 dark:text-teal-400">→</span>
-            )}
+              <path d="M9 6l6 6-6 6" />
+            </svg>
           </button>
-        )}
+          {editing ? (
+            <input
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onBlur={saveName}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") saveName();
+                if (e.key === "Escape") {
+                  setName(group.name);
+                  setEditing(false);
+                }
+              }}
+              maxLength={80}
+              disabled={busy}
+              className="input py-1 text-sm font-semibold"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={onOpen}
+              disabled={!onOpen}
+              className="flex min-w-0 items-baseline gap-2 text-left enabled:hover:text-teal-700 dark:enabled:hover:text-teal-300"
+            >
+              <h3
+                className={`truncate font-bold text-navy-900 dark:text-white ${
+                  isSub ? "text-sm" : "text-base"
+                }`}
+              >
+                {group.name}
+              </h3>
+              <span className="rounded-full bg-navy-100 px-1.5 text-[11px] font-semibold text-navy-500 dark:bg-navy-800 dark:text-navy-300">
+                {pots.length}
+              </span>
+              {childCount > 0 && (
+                <span className="text-[11px] font-medium text-navy-400">
+                  + {childCount} subgroep{childCount > 1 ? "en" : ""}
+                </span>
+              )}
+              {onOpen && (
+                <span className="text-xs font-medium text-teal-600 dark:text-teal-400">→</span>
+              )}
+            </button>
+          )}
+        </div>
         <span className="flex-shrink-0 text-base font-bold tabular-nums text-navy-900 dark:text-navy-50">
           {formatEuro(balance)}
         </span>
