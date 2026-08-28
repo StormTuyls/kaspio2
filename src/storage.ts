@@ -7,6 +7,7 @@ import type {
   Member,
   NotificationSettings,
   Pot,
+  PotGroup,
   PotTargetKind,
   Role,
   Transaction,
@@ -346,6 +347,102 @@ export function calcSpent(transactions: Transaction[], potId: string) {
   return transactions
     .filter((t) => t.potId === potId && t.status !== "pending" && t.direction === "out")
     .reduce((sum, t) => sum + t.amount, 0);
+}
+
+// =============================================================================
+// Groepen en subgroepen
+// =============================================================================
+// Een groep met parentId null is een hoofdgroep, met parentId een subgroep
+// eronder. Dieper dan één niveau kan niet, dat dwingt de databank af
+// (check_group_depth in supabase/group-subgroups.sql).
+//
+// "De potjes van deze groep" is met twee niveaus dubbelzinnig: alleen de eigen
+// potjes, of ook die van de subgroepen? Daarom staat het antwoord hier, op één
+// plek, met een expliciete `deep`. Voorheen stond dezelfde filter zes keer in
+// de views, en dan verzint elke plek vroeg of laat zijn eigen antwoord.
+
+/** De hoofdgroepen, in de volgorde waarin ze binnenkwamen. */
+export function rootGroups(groups: PotGroup[]): PotGroup[] {
+  return groups.filter((g) => !g.parentId);
+}
+
+/** De subgroepen van één hoofdgroep. */
+export function subGroups(groups: PotGroup[], parentId: string): PotGroup[] {
+  return groups.filter((g) => g.parentId === parentId);
+}
+
+/**
+ * De potjes van een groep. Met deep=true ook die van haar subgroepen, wat je
+ * wil zodra je een totaal toont voor een hoofdgroep. Voor een subgroep maakt
+ * deep niets uit: die heeft per definitie geen kinderen.
+ */
+export function potsInGroup(
+  pots: Pot[],
+  groups: PotGroup[],
+  groupId: string,
+  deep = false,
+): Pot[] {
+  if (!deep) return pots.filter((p) => p.groupId === groupId);
+  const ids = new Set<string>([groupId]);
+  for (const g of groups) if (g.parentId === groupId) ids.add(g.id);
+  return pots.filter((p) => p.groupId && ids.has(p.groupId));
+}
+
+/**
+ * Potjes die nergens in hangen. Ook potjes met een groupId die niet (meer) in
+ * `groups` zit tellen mee: die groep is verwijderd of onzichtbaar voor deze
+ * gebruiker, en dan hoort het potje niet stil te verdwijnen uit het overzicht.
+ */
+export function ungroupedPots(pots: Pot[], groups: PotGroup[]): Pot[] {
+  return pots.filter(
+    (p) => !p.groupId || !groups.some((g) => g.id === p.groupId),
+  );
+}
+
+/**
+ * Saldo van een groep, subgroepen inbegrepen. Dit is de reden dat het totaal
+ * van een hoofdgroep vanzelf klopt met de som van haar subgroepen: het wordt
+ * op één plek uit dezelfde potjes berekend.
+ */
+export function groupBalance(
+  transactions: Transaction[],
+  pots: Pot[],
+  groups: PotGroup[],
+  groupId: string,
+): number {
+  return potsInGroup(pots, groups, groupId, true).reduce(
+    (sum, p) => sum + calcBalance(transactions, p.id),
+    0,
+  );
+}
+
+// Ingeklapte groepen in de zijbalk, per organisatie. Bewust in localStorage en
+// niet in de databank: het is een weergavevoorkeur van dit toestel, en met
+// twintig groepen is elke keer opnieuw opengeklapt beginnen vervelend.
+const COLLAPSED_GROUPS_KEY_PREFIX = "kaspio:collapsed-groups:";
+
+export function loadCollapsedGroups(orgId: string): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = window.localStorage.getItem(COLLAPSED_GROUPS_KEY_PREFIX + orgId);
+    if (!raw) return new Set();
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? new Set(parsed.filter((x): x is string => typeof x === "string")) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+export function saveCollapsedGroups(orgId: string, ids: Set<string>) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      COLLAPSED_GROUPS_KEY_PREFIX + orgId,
+      JSON.stringify([...ids]),
+    );
+  } catch {
+    // Privémodus of vol quotum: dan onthouden we het gewoon niet.
+  }
 }
 
 export function visiblePots(pots: Pot[], currentUser: Member | null): Pot[] {
