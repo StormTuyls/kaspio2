@@ -30,9 +30,13 @@ export type PotFormValues = {
 };
 
 type Props = {
+  /**
+   * Voorinvulling. Alles optioneel, ook naam en kleur: bij "+ Potje" vanaf een
+   * groepskaart geef je alleen groupId mee en blijft de rest leeg.
+   */
   initial?: {
-    name: string;
-    color: string;
+    name?: string;
+    color?: string;
     targetAmount?: number;
     forecastAmount?: number;
     targetKind?: PotTargetKind;
