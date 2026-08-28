@@ -768,6 +768,9 @@ function AuthedApp({
     () => parseRoute(window.location.pathname).groupId,
   );
   const [showAddPot, setShowAddPot] = useState(false);
+  // In welke groep het nieuwe potje meteen moet landen. Gezet vanaf de "+ Potje"
+  // knop op een groepskaart; undefined = het formulier begint zonder groep.
+  const [addPotGroupId, setAddPotGroupId] = useState<string | null>(null);
   const [showAddTx, setShowAddTx] = useState(false);
   const [showAddMoney, setShowAddMoney] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
@@ -1282,6 +1285,11 @@ function AuthedApp({
                 onDeleteGroup={deleteGroup}
                 onSelectPot={(id) => setSelectedPotId(id)}
                 onOpenGroup={(id) => setSelectedGroupId(id)}
+                canAddPot={canAddPot}
+                onAddPot={(groupId) => {
+                  setAddPotGroupId(groupId);
+                  setShowAddPot(true);
+                }}
               />
             ) : tab === "transacties" ? (
               <Suspense
@@ -1421,16 +1429,32 @@ function AuthedApp({
         }}
       />
 
-      <Modal open={showAddPot} title="Nieuw potje" onClose={() => setShowAddPot(false)}>
-        <PotForm
-          groups={uiGroups}
-          onCreateGroup={addGroup}
-          onSubmit={async (values) => {
-            await store.addPot(values);
-            setShowAddPot(false);
-          }}
-          onCancel={() => setShowAddPot(false)}
-        />
+      <Modal
+        open={showAddPot}
+        title="Nieuw potje"
+        onClose={() => {
+          setShowAddPot(false);
+          setAddPotGroupId(null);
+        }}
+      >
+        {/* Alleen renderen als hij open is, anders houdt PotForm de ingevulde
+            groep van de vorige keer vast. */}
+        {showAddPot && (
+          <PotForm
+            initial={addPotGroupId ? { groupId: addPotGroupId } : undefined}
+            groups={uiGroups}
+            onCreateGroup={addGroup}
+            onSubmit={async (values) => {
+              await store.addPot(values);
+              setShowAddPot(false);
+              setAddPotGroupId(null);
+            }}
+            onCancel={() => {
+              setShowAddPot(false);
+              setAddPotGroupId(null);
+            }}
+          />
+        )}
       </Modal>
 
       <Modal open={showAddTx} title="Nieuwe transactie" onClose={() => setShowAddTx(false)}>

@@ -39,6 +39,10 @@ type Props = {
   onSelectPot: (potId: string) => void;
   /** Open het dashboard van één groep. */
   onOpenGroup?: (groupId: string) => void;
+  /** Open het potjesformulier met deze groep al ingevuld. */
+  onAddPot?: (groupId: string) => void;
+  /** false = potjeslimiet bereikt, dan wordt "+ Potje" een upgrade-aanzet. */
+  canAddPot?: boolean;
 };
 
 export function GroupsView({
@@ -54,6 +58,8 @@ export function GroupsView({
   onDeleteGroup,
   onSelectPot,
   onOpenGroup,
+  onAddPot,
+  canAddPot = true,
 }: Props) {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
@@ -225,12 +231,19 @@ export function GroupsView({
                   childCount={children.length}
                   roots={roots}
                   isAdmin={isAdmin}
+                  canUseGroups={canUseGroups}
                   open={open}
                   onToggle={() => toggle(g.id)}
                   onUpdate={onUpdateGroup}
                   onDelete={onDeleteGroup}
                   onSelectPot={onSelectPot}
                   onOpen={onOpenGroup ? () => onOpenGroup(g.id) : undefined}
+                  onAddPot={
+                    onAddPot ? () => onAddPot(g.id) : undefined
+                  }
+                  canAddPot={canAddPot}
+                  onUpgrade={onUpgrade}
+                  onCreateSub={(naam) => onCreateGroup(naam, g.id)}
                 />
                 {open && children.length > 0 && (
                   <div className="ml-4 mt-3 space-y-3 border-l-2 border-navy-100 pl-4 dark:border-navy-700/60">
@@ -244,12 +257,18 @@ export function GroupsView({
                         childCount={0}
                         roots={roots}
                         isAdmin={isAdmin}
+                        canUseGroups={canUseGroups}
                         open={!collapsed.has(c.id)}
                         onToggle={() => toggle(c.id)}
                         onUpdate={onUpdateGroup}
                         onDelete={onDeleteGroup}
                         onSelectPot={onSelectPot}
                         onOpen={onOpenGroup ? () => onOpenGroup(c.id) : undefined}
+                        onAddPot={
+                          onAddPot ? () => onAddPot(c.id) : undefined
+                        }
+                        canAddPot={canAddPot}
+                        onUpgrade={onUpgrade}
                       />
                     ))}
                   </div>
@@ -289,12 +308,17 @@ function GroupCard({
   childCount,
   roots,
   isAdmin,
+  canUseGroups,
   open,
   onToggle,
   onUpdate,
   onDelete,
   onSelectPot,
   onOpen,
+  onAddPot,
+  canAddPot,
+  onUpgrade,
+  onCreateSub,
 }: {
   group: PotGroup;
   /** Alleen de eigen potjes; de subgroepen krijgen hun eigen kaart. */
@@ -305,6 +329,7 @@ function GroupCard({
   childCount: number;
   roots: PotGroup[];
   isAdmin: boolean;
+  canUseGroups: boolean;
   /** Dicht = alleen de kop met het totaal. Bij een hoofdgroep ook zonder haar subgroepen. */
   open: boolean;
   onToggle: () => void;
@@ -315,12 +340,19 @@ function GroupCard({
   onDelete: (id: string) => Promise<{ error: string | null }>;
   onSelectPot: (potId: string) => void;
   onOpen?: () => void;
+  onAddPot?: () => void;
+  canAddPot: boolean;
+  onUpgrade?: () => void;
+  /** Alleen op een hoofdgroep: een subgroep hieronder aanmaken. */
+  onCreateSub?: (name: string) => Promise<{ error: string | null }>;
 }) {
   const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(group.name);
   const [busy, setBusy] = useState(false);
   const [moveError, setMoveError] = useState<string | null>(null);
+  const [subName, setSubName] = useState<string | null>(null);
+  const [subError, setSubError] = useState<string | null>(null);
 
   const isSub = !!group.parentId;
   // Een groep met subgroepen kan er zelf niet onder hangen: dat zou drie
@@ -351,6 +383,23 @@ function GroupCard({
     });
     setBusy(false);
     if (res.error) setMoveError(res.error);
+  }
+
+  async function submitSub() {
+    const naam = (subName ?? "").trim();
+    if (!naam) {
+      setSubError("Geef de subgroep een naam.");
+      return;
+    }
+    setSubError(null);
+    setBusy(true);
+    const res = await onCreateSub!(naam);
+    setBusy(false);
+    if (res.error) {
+      setSubError(res.error);
+      return;
+    }
+    setSubName(null);
   }
 
   async function remove() {
@@ -470,6 +519,26 @@ function GroupCard({
 
       {open && isAdmin && !editing && (
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-navy-100 pt-3 dark:border-navy-700/60">
+          {onAddPot && (
+            <button
+              onClick={canAddPot ? onAddPot : onUpgrade}
+              className="text-xs font-semibold text-teal-700 hover:underline dark:text-teal-300"
+            >
+              {canAddPot ? "+ Potje" : "Upgrade voor meer potjes"}
+            </button>
+          )}
+          {/* Alleen op een hoofdgroep: dieper dan twee niveaus kan niet. */}
+          {onCreateSub && canUseGroups && subName === null && (
+            <button
+              onClick={() => {
+                setSubName("");
+                setSubError(null);
+              }}
+              className="text-xs font-semibold text-teal-700 hover:underline dark:text-teal-300"
+            >
+              + Subgroep
+            </button>
+          )}
           <button
             onClick={() => setEditing(true)}
             className="text-xs font-medium text-navy-500 hover:text-navy-900 dark:text-navy-300 dark:hover:text-white"
@@ -507,6 +576,50 @@ function GroupCard({
       )}
       {moveError && (
         <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">{moveError}</p>
+      )}
+
+      {subName !== null && (
+        <div className="mt-3 border-t border-navy-100 pt-3 dark:border-navy-700/60">
+          <div className="flex gap-2">
+            <input
+              autoFocus
+              type="text"
+              value={subName}
+              onChange={(e) => setSubName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submitSub();
+                if (e.key === "Escape") {
+                  setSubName(null);
+                  setSubError(null);
+                }
+              }}
+              placeholder={`Subgroep onder ${group.name}`}
+              maxLength={80}
+              disabled={busy}
+              className="input flex-1 py-1 text-sm"
+            />
+            <button
+              onClick={() => {
+                setSubName(null);
+                setSubError(null);
+              }}
+              className="btn-secondary px-2 py-1 text-xs"
+              disabled={busy}
+            >
+              Annuleren
+            </button>
+            <button
+              onClick={submitSub}
+              className="btn-accent px-2 py-1 text-xs"
+              disabled={busy}
+            >
+              {busy ? "Bezig…" : "Aanmaken"}
+            </button>
+          </div>
+          {subError && (
+            <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">{subError}</p>
+          )}
+        </div>
       )}
     </div>
   );
