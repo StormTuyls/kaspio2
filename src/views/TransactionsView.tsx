@@ -8,7 +8,13 @@
 // =============================================================================
 
 import { useMemo, useState } from "react";
-import { formatDate, formatEuro } from "../storage";
+import {
+  formatDate,
+  formatEuro,
+  potsInGroup,
+  rootGroups,
+  subGroups,
+} from "../storage";
 import type { Pot, PotGroup, Transaction, TransactionDirection } from "../types";
 import type { SubTier } from "../supabase";
 import { chartsEnabled } from "../data";
@@ -67,10 +73,13 @@ export function TransactionsView({
   const potById = useMemo(() => new Map(pots.map((p) => [p.id, p])), [pots]);
   const visiblePotIds = useMemo(() => new Set(pots.map((p) => p.id)), [pots]);
 
-  /** Potjes in de gekozen groep; zonder groepfilter zijn dat er gewoon alle. */
-  const potsInGroup = useMemo(
-    () => (groupId === ALL ? pots : pots.filter((p) => p.groupId === groupId)),
-    [pots, groupId],
+  // Potjes in de gekozen groep; zonder groepfilter zijn dat er gewoon alle.
+  // Diep: filteren op "Infrastructuur" hoort ook de posten uit haar subgroepen
+  // te tonen, anders krijg je een lege lijst bij een comité dat al zijn potjes
+  // in blokken heeft zitten.
+  const scopePots = useMemo(
+    () => (groupId === ALL ? pots : potsInGroup(pots, groups, groupId, true)),
+    [pots, groups, groupId],
   );
 
   // De transacties waar deze gebruiker überhaupt bij mag. Onverdeeld geld
@@ -83,7 +92,7 @@ export function TransactionsView({
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const groupPotIds = new Set(potsInGroup.map((p) => p.id));
+    const groupPotIds = new Set(scopePots.map((p) => p.id));
 
     return scoped
       .filter((t) => {
@@ -111,7 +120,7 @@ export function TransactionsView({
         const d = b.occurredOn.localeCompare(a.occurredOn);
         return d !== 0 ? d : b.createdAt.localeCompare(a.createdAt);
       });
-  }, [scoped, period, direction, potId, groupId, potsInGroup, search]);
+  }, [scoped, period, direction, potId, groupId, scopePots, search]);
 
   // Totalen over de filter. 'pending' telt niet mee, net als in het saldo.
   const totals = useMemo(() => {
@@ -147,7 +156,13 @@ export function TransactionsView({
     if (potId !== ALL) return `Potje: ${potById.get(potId)?.name ?? potId}`;
     if (groupId !== ALL) {
       const g = groups.find((x) => x.id === groupId);
-      return `Groep: ${g?.name ?? groupId}`;
+      if (!g) return `Groep: ${groupId}`;
+      // Bij een subgroep de hoofdgroep ervoor, anders zegt "Groep: Onderhoud"
+      // in de PDF niet genoeg: er kunnen er meerdere zo heten.
+      const parent = g.parentId
+        ? groups.find((x) => x.id === g.parentId)
+        : undefined;
+      return `Groep: ${parent ? `${parent.name} > ` : ""}${g.name}`;
     }
     return "alle potjes";
   }
@@ -243,11 +258,28 @@ export function TransactionsView({
               className="input disabled:opacity-60"
             >
               <option value={ALL}>Alle groepen</option>
-              {groups.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
+              {/* Een hoofdgroep blijft zelf kiesbaar: die filtert dan op haar
+                  eigen potjes plus die van al haar subgroepen. */}
+              {rootGroups(groups).map((g) => {
+                const children = subGroups(groups, g.id);
+                if (children.length === 0) {
+                  return (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  );
+                }
+                return (
+                  <optgroup key={g.id} label={g.name}>
+                    <option value={g.id}>{g.name} (alles)</option>
+                    {children.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
             </select>
           </label>
 
@@ -263,7 +295,7 @@ export function TransactionsView({
               <option value={ALL}>
                 {groupId === ALL ? "Alle potjes" : "Alle potjes in de groep"}
               </option>
-              {potsInGroup.map((p) => (
+              {scopePots.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>

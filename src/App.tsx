@@ -2,7 +2,16 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react
 import type { CSSProperties, ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import "./App.css";
-import { useAppState, calcBalance } from "./storage";
+import {
+  useAppState,
+  calcBalance,
+  loadCollapsedGroups,
+  potsInGroup,
+  rootGroups,
+  saveCollapsedGroups,
+  subGroups,
+  ungroupedPots,
+} from "./storage";
 import {
   acceptPendingInvites,
   approveTransaction,
@@ -46,7 +55,7 @@ import type { Organisation } from "./supabase";
 import type { Pot as DbPot, Transaction as DbTransaction } from "./supabase";
 import type { Pot, PotGroup, PotTargetKind, Role, Transaction } from "./types";
 import { signOut, supabase, useSession } from "./supabase";
-import { PotsView, Avatar } from "./views/Overview";
+import { PotsView, Avatar, NONE_KEY } from "./views/Overview";
 import { DashboardView } from "./views/DashboardView";
 import { GroupsView } from "./views/GroupsView";
 import { GroupDetail } from "./views/GroupDetail";
@@ -749,7 +758,7 @@ function AuthedApp({
   const {
     groups: dbGroups,
     addGroup,
-    renameGroup,
+    updateGroup,
     deleteGroup,
   } = usePotGroups(orgId);
   const [selectedPotId, setSelectedPotId] = useState<string | null>(
@@ -900,13 +909,22 @@ function AuthedApp({
         ownerByGroup.set(mem.group_id, mem.user_id);
       }
     }
+    // Zelfde overerving als de RLS in group-subgroups.sql: wie een hoofdgroep
+    // beheert, beheert ook haar subgroepen. Zonder deze tweede lookup toont de
+    // app een andere verantwoordelijke dan de databank hanteert.
+    const parentOf = new Map<string, string | null>(
+      dbGroups.map((g) => [g.id, g.parent_id ?? null]),
+    );
     for (const p of dbPots) {
       if (m.has(p.id) || !p.group_id) continue;
-      const u = ownerByGroup.get(p.group_id);
+      const parent = parentOf.get(p.group_id) ?? null;
+      const u =
+        ownerByGroup.get(p.group_id) ??
+        (parent ? ownerByGroup.get(parent) : undefined);
       if (u) m.set(p.id, u);
     }
     return m;
-  }, [orgMembers, dbPots]);
+  }, [orgMembers, dbPots, dbGroups]);
 
   // Pot-IDs waar de ingelogde user verantwoordelijke van is (multi-owner-safe).
   const myPotIds = useMemo(() => {
@@ -938,9 +956,18 @@ function AuthedApp({
       : potsWithOwner.filter((p) => myPotIds.has(p.id));
   const selectedPot = potsForUser.find((p) => p.id === selectedPotId) ?? null;
 
-  // Potgroepen (takken/ploegen) voor weergave-groepering.
+  // Potgroepen (takken/ploegen/comités) voor weergave-groepering. parentId en
+  // sortOrder moeten mee: zonder die twee is de boom weg en tonen alle views
+  // een vlakke lijst waarin subgroepen niet van hoofdgroepen te onderscheiden
+  // zijn.
   const uiGroups: PotGroup[] = useMemo(
-    () => dbGroups.map((g) => ({ id: g.id, name: g.name })),
+    () =>
+      dbGroups.map((g) => ({
+        id: g.id,
+        name: g.name,
+        parentId: g.parent_id ?? null,
+        sortOrder: g.sort_order,
+      })),
     [dbGroups],
   );
   const selectedGroup = uiGroups.find((g) => g.id === selectedGroupId) ?? null;
@@ -1205,12 +1232,14 @@ function AuthedApp({
             ) : selectedGroup ? (
               <GroupDetail
                 group={selectedGroup}
+                groups={uiGroups}
                 pots={potsForUser}
                 allTransactions={store.state.transactions}
                 members={uiMembers}
                 tier={tier}
                 onBack={() => setSelectedGroupId(null)}
                 onSelectPot={(id) => setSelectedPotId(id)}
+                onOpenGroup={(id) => setSelectedGroupId(id)}
               />
             ) : tab === "potjes" ? (
               <PotsView
@@ -1241,6 +1270,7 @@ function AuthedApp({
               />
             ) : tab === "groepen" ? (
               <GroupsView
+                orgId={org.id}
                 groups={uiGroups}
                 pots={potsForUser}
                 allTransactions={store.state.transactions}
@@ -1248,7 +1278,7 @@ function AuthedApp({
                 canUseGroups={groupsEnabled(tier)}
                 onUpgrade={goToUpgrade}
                 onCreateGroup={addGroup}
-                onRenameGroup={renameGroup}
+                onUpdateGroup={updateGroup}
                 onDeleteGroup={deleteGroup}
                 onSelectPot={(id) => setSelectedPotId(id)}
                 onOpenGroup={(id) => setSelectedGroupId(id)}
@@ -1702,23 +1732,64 @@ function Sidebar({
   // als de pot-detail en het dashboard (voorheen telde dit pending wel mee).
   const balanceFor = (potId: string) => calcBalance(transactions, potId);
 
-  // Potjes per groep voor de sidebar-lijst; groepsloze potjes achteraan.
-  const sidebarSections: { id: string | null; label: string | null; pots: Pot[] }[] = [
-    ...groups
-      .map((g) => ({
-        id: g.id as string | null,
-        label: g.name as string | null,
-        pots: pots.filter((p) => p.groupId === g.id),
-      }))
-      .filter((s) => s.pots.length > 0),
+  // Potjes per groep voor de sidebar-lijst, twee niveaus diep: een hoofdgroep
+  // met haar eigen potjes en daaronder haar subgroepen. Groepsloze potjes
+  // achteraan. Een hoofdgroep zonder potjes en zonder gevulde subgroep valt
+  // weg, anders staat de zijbalk vol lege kopjes.
+  const sidebarSections: {
+    id: string | null;
+    label: string | null;
+    pots: Pot[];
+    children: { id: string; label: string; pots: Pot[] }[];
+    /** Potjes inclusief subgroepen, voor het getal naast de kop. */
+    count: number;
+  }[] = [
+    ...rootGroups(groups)
+      .map((g) => {
+        const own = potsInGroup(pots, groups, g.id);
+        const children = subGroups(groups, g.id)
+          .map((c) => ({
+            id: c.id,
+            label: c.name,
+            pots: potsInGroup(pots, groups, c.id),
+          }))
+          .filter((c) => c.pots.length > 0);
+        return {
+          id: g.id as string | null,
+          label: g.name as string | null,
+          pots: own,
+          children,
+          count: own.length + children.reduce((n, c) => n + c.pots.length, 0),
+        };
+      })
+      .filter((s) => s.count > 0),
     {
       id: null,
       label: null,
-      pots: pots.filter(
-        (p) => !p.groupId || !groups.some((g) => g.id === p.groupId),
-      ),
+      pots: ungroupedPots(pots, groups),
+      children: [],
+      count: ungroupedPots(pots, groups).length,
     },
-  ].filter((s) => s.pots.length > 0);
+  ].filter((s) => s.count > 0);
+
+  // Ingeklapte hoofdgroepen. Met twintig groepen en honderd potjes is dit het
+  // verschil tussen bruikbaar en eindeloos scrollen, dus de stand blijft per
+  // organisatie bewaard. NONE_KEY staat voor de sectie zonder groep, want die
+  // heeft geen id om als sleutel te gebruiken.
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() =>
+    loadCollapsedGroups(`sidebar:${currentOrg.id}`),
+  );
+  useEffect(() => {
+    setCollapsedGroups(loadCollapsedGroups(`sidebar:${currentOrg.id}`));
+  }, [currentOrg.id]);
+  const toggleGroup = (key: string) =>
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      saveCollapsedGroups(`sidebar:${currentOrg.id}`, next);
+      return next;
+    });
   return (
     <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-navy-900 bg-navy-900 px-5 py-6 text-navy-100 lg:sticky lg:top-0 lg:flex lg:h-screen dark:border-navy-800">
       <div className="mb-8">
@@ -1808,52 +1879,89 @@ function Sidebar({
       {pots.length > 0 && (
         <div className="mt-6 flex-1 overflow-y-auto border-t border-navy-800 pt-4">
           {sidebarSections.map((section, si) => {
+            const key = section.id ?? NONE_KEY;
             const headerLabel =
               section.label ?? (sidebarSections.length > 1 ? "Overige" : "Potjes");
+            const open = !collapsedGroups.has(key);
             return (
-            <div key={section.id ?? "__rest__"} className={si > 0 ? "mt-3" : ""}>
-              <button
-                type="button"
-                onClick={() => onSelectGroup(section.id)}
-                className="mb-1 flex w-full items-center justify-between gap-2 rounded-md px-2 py-1 text-left text-[10px] font-bold uppercase tracking-wider text-navy-400 transition hover:bg-white/5 hover:text-navy-200"
-                title="Toon in dashboard"
-              >
-                <span className="truncate">{headerLabel}</span>
-                <span className="font-normal normal-case text-navy-500">
-                  {section.pots.length}
-                </span>
-              </button>
-              <ul className="space-y-0.5 text-sm">
-                {section.pots.map((p) => {
-                  const active = tab === "potjes" && selectedPotId === p.id;
-                  return (
-                    <li key={p.id}>
-                      <button
-                        onClick={() => {
-                          onTab("potjes");
-                          onSelectPot(p.id);
-                        }}
-                        className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition ${
-                          active
-                            ? "bg-white/10 font-semibold text-white"
-                            : "text-navy-200 hover:bg-white/5 hover:text-white"
-                        }`}
+              <div key={key} className={si > 0 ? "mt-3" : ""}>
+                {/* Twee knoppen naast elkaar: het pijltje klapt in of uit, de
+                    naam springt naar de groep. Eén knop voor allebei zou
+                    betekenen dat je niet meer kan inklappen zonder weg te
+                    navigeren. */}
+                <div className="mb-1 flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-wider text-navy-400">
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(key)}
+                    aria-expanded={open}
+                    aria-label={`${headerLabel} ${open ? "inklappen" : "uitklappen"}`}
+                    className="flex-shrink-0 rounded p-1 transition hover:bg-white/5 hover:text-navy-200"
+                  >
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`transition-transform ${open ? "rotate-90" : ""}`}
+                    >
+                      <path d="M9 6l6 6-6 6" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onSelectGroup(section.id)}
+                    className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-md px-1 py-1 text-left transition hover:bg-white/5 hover:text-navy-200"
+                    title="Toon in dashboard"
+                  >
+                    <span className="truncate">{headerLabel}</span>
+                    <span className="font-normal normal-case text-navy-500">
+                      {section.count}
+                    </span>
+                  </button>
+                </div>
+                {open && (
+                  <>
+                    <SidebarPotList
+                      pots={section.pots}
+                      tab={tab}
+                      selectedPotId={selectedPotId}
+                      balanceFor={balanceFor}
+                      onSelectPot={onSelectPot}
+                      onTab={onTab}
+                    />
+                    {section.children.map((c) => (
+                      <div
+                        key={c.id}
+                        className="mt-1 border-l border-navy-800 pl-2"
                       >
-                        <span
-                          aria-hidden
-                          className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                          style={{ backgroundColor: p.color ?? "#1D9E75" }}
+                        <button
+                          type="button"
+                          onClick={() => onSelectGroup(c.id)}
+                          className="mb-0.5 flex w-full items-center justify-between gap-2 rounded-md px-2 py-0.5 text-left text-[10px] font-semibold uppercase tracking-wider text-navy-500 transition hover:bg-white/5 hover:text-navy-300"
+                          title="Toon in dashboard"
+                        >
+                          <span className="truncate">{c.label}</span>
+                          <span className="font-normal normal-case">
+                            {c.pots.length}
+                          </span>
+                        </button>
+                        <SidebarPotList
+                          pots={c.pots}
+                          tab={tab}
+                          selectedPotId={selectedPotId}
+                          balanceFor={balanceFor}
+                          onSelectPot={onSelectPot}
+                          onTab={onTab}
                         />
-                        <span className="truncate">{p.name}</span>
-                        <span className="ml-auto text-[11px] text-navy-400">
-                          €{Math.round(balanceFor(p.id))}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
             );
           })}
         </div>
@@ -1870,6 +1978,57 @@ function Sidebar({
         Bekijk website
       </button>
     </aside>
+  );
+}
+
+/** De potjeslijst binnen één (sub)groep in de zijbalk. */
+function SidebarPotList({
+  pots,
+  tab,
+  selectedPotId,
+  balanceFor,
+  onSelectPot,
+  onTab,
+}: {
+  pots: Pot[];
+  tab: Tab;
+  selectedPotId: string | null;
+  balanceFor: (potId: string) => number;
+  onSelectPot: (id: string) => void;
+  onTab: (t: Tab) => void;
+}) {
+  if (pots.length === 0) return null;
+  return (
+    <ul className="space-y-0.5 text-sm">
+      {pots.map((p) => {
+        const active = tab === "potjes" && selectedPotId === p.id;
+        return (
+          <li key={p.id}>
+            <button
+              onClick={() => {
+                onTab("potjes");
+                onSelectPot(p.id);
+              }}
+              className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition ${
+                active
+                  ? "bg-white/10 font-semibold text-white"
+                  : "text-navy-200 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              <span
+                aria-hidden
+                className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                style={{ backgroundColor: p.color ?? "#1D9E75" }}
+              />
+              <span className="truncate">{p.name}</span>
+              <span className="ml-auto text-[11px] text-navy-400">
+                €{Math.round(balanceFor(p.id))}
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

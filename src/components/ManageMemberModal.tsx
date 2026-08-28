@@ -189,28 +189,47 @@ export function ManageMemberModal({
             </p>
           ) : (
             <div className="space-y-1.5 rounded-lg border border-navy-100 p-2 dark:border-navy-700">
-              {groups.map((g) => {
-                const aantal = pots.filter((p) => p.group_id === g.id).length;
-                return (
-                  <label
-                    key={g.id}
-                    className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-canvas dark:hover:bg-navy-800"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={groupIds.includes(g.id)}
-                      onChange={() => toggleGroup(g.id)}
-                      className="h-4 w-4"
-                    />
-                    <span className="text-sm text-navy-900 dark:text-white">
-                      {g.name}
-                    </span>
-                    <span className="ml-auto text-xs text-navy-400">
-                      {aantal} potje{aantal === 1 ? "" : "s"}
-                    </span>
-                  </label>
-                );
-              })}
+              {groups
+                .filter((g) => !g.parent_id)
+                .map((g) => {
+                  const children = groups.filter((c) => c.parent_id === g.id);
+                  return (
+                    <div key={g.id}>
+                      <GroupCheck
+                        group={g}
+                        // Het aantal moet de subgroepen meetellen, precies zoals
+                        // de RLS doet: wie deze hoofdgroep beheert, beheert ook
+                        // wat eronder hangt. Anders staat er "0 potjes" bij een
+                        // groep waarvan hij er vijftien krijgt.
+                        count={
+                          pots.filter(
+                            (p) =>
+                              p.group_id === g.id ||
+                              children.some((c) => c.id === p.group_id),
+                          ).length
+                        }
+                        checked={groupIds.includes(g.id)}
+                        onToggle={() => toggleGroup(g.id)}
+                      />
+                      {children.map((c) => (
+                        <div key={c.id} className="ml-5 border-l border-navy-100 pl-2 dark:border-navy-700">
+                          <GroupCheck
+                            group={c}
+                            count={pots.filter((p) => p.group_id === c.id).length}
+                            checked={
+                              groupIds.includes(c.id) || groupIds.includes(g.id)
+                            }
+                            // Zit de hoofdgroep er al bij, dan is de subgroep
+                            // sowieso gedekt. Apart aanvinken zou een tweede
+                            // lidmaatschap maken dat niets toevoegt.
+                            disabled={groupIds.includes(g.id)}
+                            onToggle={() => toggleGroup(c.id)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
             </div>
           )}
           <p className="mt-2 text-xs text-navy-400">
@@ -293,6 +312,43 @@ function RoleOption({
           {description}
         </div>
       </div>
+    </label>
+  );
+}
+
+/** Eén aanvinkbare groep in de lijst hierboven. */
+function GroupCheck({
+  group,
+  count,
+  checked,
+  disabled = false,
+  onToggle,
+}: {
+  group: PotGroup;
+  count: number;
+  checked: boolean;
+  disabled?: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <label
+      className={`flex items-center gap-2.5 rounded-md px-2 py-1.5 ${
+        disabled
+          ? "cursor-default opacity-60"
+          : "cursor-pointer hover:bg-canvas dark:hover:bg-navy-800"
+      }`}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={onToggle}
+        className="h-4 w-4"
+      />
+      <span className="text-sm text-navy-900 dark:text-white">{group.name}</span>
+      <span className="ml-auto text-xs text-navy-400">
+        {count} potje{count === 1 ? "" : "s"}
+      </span>
     </label>
   );
 }

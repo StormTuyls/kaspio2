@@ -1301,8 +1301,15 @@ export function useRecurringPlans(orgId: string | null) {
 }
 
 // =============================================================================
-// usePotGroups , platte groepen (takken, ploegen) binnen een org
+// usePotGroups , groepen (takken, ploegen, comités) binnen een org
 // =============================================================================
+// Twee niveaus: een groep met parent_id null is een hoofdgroep, met parent_id
+// een subgroep eronder. Dieper kan niet, dat dwingt de databank af. De fetch
+// haalt beide niveaus in één lijst op; wie een boom wil bouwt die zelf uit
+// parentId (zie potsInGroup en groupBalance in storage.ts).
+//
+// Geen paginatie: een organisatie met meer dan dertig groepen hebben we nog
+// niet gezien, en PostgREST kapt pas af op 1000.
 
 export function usePotGroups(orgId: string | null) {
   const [groups, setGroups] = useState<PotGroup[]>([]);
@@ -1330,9 +1337,13 @@ export function usePotGroups(orgId: string | null) {
   }, [fetchGroups]);
   useRealtimeRefresh("pot_groups", orgId, fetchGroups);
 
-  /** Maak een groep aan en geef het nieuwe id terug. */
+  /**
+   * Maak een groep aan en geef het nieuwe id terug. Met parentId wordt het een
+   * subgroep; de databank weigert een subgroep onder een subgroep.
+   */
   async function addGroup(
     name: string,
+    parentId?: string | null,
   ): Promise<{ error: string | null; groupId?: string }> {
     if (!orgId) return { error: "Geen organisatie geselecteerd." };
     const trimmed = name.trim();
@@ -1349,7 +1360,11 @@ export function usePotGroups(orgId: string | null) {
         };
       }
     )
-      .insert({ organisation_id: orgId, name: trimmed })
+      .insert({
+        organisation_id: orgId,
+        name: trimmed,
+        parent_id: parentId ?? null,
+      })
       .select()
       .single();
     if (error) return { error: error.message };
@@ -1357,12 +1372,24 @@ export function usePotGroups(orgId: string | null) {
     return { error: null, groupId: data?.id };
   }
 
-  async function renameGroup(
+  /**
+   * Wijzig naam, hoofdgroep of volgorde. parentId expliciet op null zetten
+   * maakt er weer een hoofdgroep van; het veld weglaten laat hem ongemoeid.
+   */
+  async function updateGroup(
     id: string,
-    name: string,
+    patch: { name?: string; parentId?: string | null; sortOrder?: number },
   ): Promise<{ error: string | null }> {
-    const trimmed = name.trim();
-    if (!trimmed) return { error: "Geef de groep een naam." };
+    const row: Record<string, unknown> = {};
+    if (patch.name !== undefined) {
+      const trimmed = patch.name.trim();
+      if (!trimmed) return { error: "Geef de groep een naam." };
+      row.name = trimmed;
+    }
+    if (patch.parentId !== undefined) row.parent_id = patch.parentId;
+    if (patch.sortOrder !== undefined) row.sort_order = patch.sortOrder;
+    if (Object.keys(row).length === 0) return { error: null };
+
     const { error } = await (
       supabase.from("pot_groups") as unknown as {
         update: (v: Record<string, unknown>) => {
@@ -1370,7 +1397,7 @@ export function usePotGroups(orgId: string | null) {
         };
       }
     )
-      .update({ name: trimmed })
+      .update(row)
       .eq("id", id);
     if (error) return { error: error.message };
     await fetchGroups();
@@ -1389,7 +1416,7 @@ export function usePotGroups(orgId: string | null) {
     groups,
     loading,
     addGroup,
-    renameGroup,
+    updateGroup,
     deleteGroup,
     refresh: fetchGroups,
   };

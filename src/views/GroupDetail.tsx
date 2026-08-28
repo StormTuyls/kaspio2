@@ -1,5 +1,12 @@
 import { useMemo, useState } from "react";
-import { calcBalance, formatDate, formatEuro } from "../storage";
+import {
+  calcBalance,
+  formatDate,
+  formatEuro,
+  groupBalance,
+  potsInGroup,
+  subGroups,
+} from "../storage";
 import type { Member, Pot, PotGroup, Transaction } from "../types";
 import type { SubTier } from "../supabase";
 import { chartsEnabled } from "../data";
@@ -7,12 +14,16 @@ import { BalanceChart } from "../components/BalanceChart";
 
 type Props = {
   group: PotGroup;
+  /** Alle groepen van de org, nodig om de subgroepen van deze groep te vinden. */
+  groups: PotGroup[];
   pots: Pot[];
   allTransactions: Transaction[];
   members: Member[];
   tier?: SubTier;
   onBack: () => void;
   onSelectPot: (potId: string) => void;
+  /** Spring naar een andere groep (hoofdgroep of subgroep). */
+  onOpenGroup: (groupId: string) => void;
 };
 
 type Period = "month" | "year" | "all";
@@ -32,18 +43,31 @@ function periodStart(period: Period, now: Date): string | null {
 
 export function GroupDetail({
   group,
+  groups,
   pots,
   allTransactions,
   members,
   tier = "free",
   onBack,
   onSelectPot,
+  onOpenGroup,
 }: Props) {
   const [period, setPeriod] = useState<Period>("month");
 
+  const parent = group.parentId
+    ? (groups.find((g) => g.id === group.parentId) ?? null)
+    : null;
+  const children = useMemo(
+    () => subGroups(groups, group.id),
+    [groups, group.id],
+  );
+
+  // Diep: bij een hoofdgroep tellen de potjes uit haar subgroepen mee. Anders
+  // zou het saldo hier lager staan dan op de groepenpagina, waar het wel het
+  // bloktotaal toont.
   const groupPots = useMemo(
-    () => pots.filter((p) => p.groupId === group.id),
-    [pots, group.id],
+    () => potsInGroup(pots, groups, group.id, true),
+    [pots, groups, group.id],
   );
   const potIds = useMemo(() => new Set(groupPots.map((p) => p.id)), [groupPots]);
 
@@ -84,9 +108,19 @@ export function GroupDetail({
         </button>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="font-num text-[11px] font-semibold uppercase tracking-[0.22em] text-teal-600 dark:text-teal-300">
-              Groep
-            </p>
+            {parent ? (
+              <button
+                type="button"
+                onClick={() => onOpenGroup(parent.id)}
+                className="font-num text-[11px] font-semibold uppercase tracking-[0.22em] text-teal-600 hover:underline dark:text-teal-300"
+              >
+                {parent.name} ›
+              </button>
+            ) : (
+              <p className="font-num text-[11px] font-semibold uppercase tracking-[0.22em] text-teal-600 dark:text-teal-300">
+                Groep
+              </p>
+            )}
             <h1 className="text-2xl font-extrabold tracking-tight text-navy-900 dark:text-white">
               {group.name}
             </h1>
@@ -150,10 +184,44 @@ export function GroupDetail({
         </div>
       )}
 
+      {/* Subgroepen, met hun eigen totaal. Samen zijn ze het saldo hierboven,
+          samen met de potjes die rechtstreeks in deze groep hangen. */}
+      {children.length > 0 && (
+        <div>
+          <h2 className="mb-2 text-sm font-bold uppercase tracking-wider text-navy-400">
+            Subgroepen
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {children.map((c) => {
+              const cPots = potsInGroup(pots, groups, c.id);
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => onOpenGroup(c.id)}
+                  className="card flex items-center justify-between gap-3 p-4 text-left transition hover:border-teal-300 dark:hover:border-teal-500/60"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold text-navy-900 dark:text-navy-50">
+                      {c.name}
+                    </span>
+                    <span className="block text-xs text-navy-400 dark:text-navy-300">
+                      {cPots.length} {cPots.length === 1 ? "potje" : "potjes"}
+                    </span>
+                  </span>
+                  <span className="flex-shrink-0 font-num font-bold tabular-nums text-navy-900 dark:text-navy-50">
+                    {formatEuro(groupBalance(allTransactions, pots, groups, c.id))}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Potjes in de groep */}
       <div>
         <h2 className="mb-2 text-sm font-bold uppercase tracking-wider text-navy-400">
-          Potjes in deze groep
+          {children.length > 0 ? "Alle potjes, subgroepen inbegrepen" : "Potjes in deze groep"}
         </h2>
         {groupPots.length === 0 ? (
           <div className="card border-dashed py-10 text-center text-sm text-navy-400 dark:text-navy-300">

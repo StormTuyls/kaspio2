@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import type { PotGroup, PotTargetKind } from "../types";
+import { rootGroups, subGroups } from "../storage";
 
 // Kaspio kleurpalet — eerste optie is de primary teal.
 const POT_COLORS = [
@@ -189,7 +190,7 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
       {showGroupField && (
         <Field
           label="Groep"
-          hint="Optioneel. Bv. een tak, ploeg of werkgroep. Potjes in dezelfde groep staan samen in het overzicht."
+          hint="Optioneel. Bv. een tak, ploeg of werkgroep. Potjes in dezelfde groep staan samen in het overzicht. Een nieuwe groep hier wordt altijd een hoofdgroep; verhangen doe je op de groepenpagina."
         >
           <div className="space-y-2">
             <select
@@ -198,11 +199,29 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
               className="input"
             >
               <option value="">Geen groep</option>
-              {groups!.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
+              {/* Een hoofdgroep met subgroepen wordt een optgroup met zichzelf
+                  bovenaan: een potje mag ook rechtstreeks in de hoofdgroep
+                  hangen, en dat moet dus kiesbaar blijven. */}
+              {rootGroups(groups!).map((g) => {
+                const children = subGroups(groups!, g.id);
+                if (children.length === 0) {
+                  return (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  );
+                }
+                return (
+                  <optgroup key={g.id} label={g.name}>
+                    <option value={g.id}>{g.name} (rechtstreeks)</option>
+                    {children.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
               <option value={NEW_GROUP}>+ Nieuwe groep…</option>
             </select>
             {groupId === NEW_GROUP && (

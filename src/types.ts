@@ -31,6 +31,12 @@ export type Pot = {
 export type PotGroup = {
   id: string;
   name: string;
+  /**
+   * De hoofdgroep waar deze subgroep onder hangt. null = hoofdgroep. Maximaal
+   * één niveau diep, de databank dwingt dat af (check_group_depth).
+   */
+  parentId: string | null;
+  sortOrder: number;
 };
 
 export type TransactionDirection = "in" | "out";

@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { calcBalance, calcSpent, formatDate, formatEuro } from "../storage";
+import {
+  calcBalance,
+  calcSpent,
+  formatDate,
+  formatEuro,
+  potsInGroup,
+  rootGroups,
+  ungroupedPots,
+} from "../storage";
 import { potProgress } from "../potProgress";
 import type { Member, Pot, PotGroup, Transaction } from "../types";
 import { UpgradeHint } from "../components/UpgradeHint";
@@ -58,16 +66,17 @@ export function PotsView({
 
   const memberById = new Map(members.map((m) => [m.id, m] as const));
 
-  // Groepeer potjes: secties per groep (in groeps-volgorde), rest ongegroepeerd.
-  const groupSections = groups
-    .map((g) => ({ group: g, pots: pots.filter((p) => p.groupId === g.id) }))
+  // Groepeer potjes: één sectie per hoofdgroep, rest ongegroepeerd. Subgroepen
+  // krijgen hier geen eigen sectie; hun potjes tellen mee in die van hun
+  // hoofdgroep. Dit is het potjesoverzicht, de opdeling in blokken staat op de
+  // groepenpagina.
+  const groupSections = rootGroups(groups)
+    .map((g) => ({ group: g, pots: potsInGroup(pots, groups, g.id, true) }))
     .filter((s) => s.pots.length > 0);
-  const ungrouped = pots.filter(
-    (p) => !p.groupId || !groups.some((g) => g.id === p.groupId),
-  );
+  const ungrouped = ungroupedPots(pots, groups);
   const hasGroups = groupSections.length > 0;
 
-  const groupBalance = (groupPots: Pot[]) =>
+  const sumBalance = (groupPots: Pot[]) =>
     groupPots.reduce((sum, p) => sum + calcBalance(allTransactions, p.id), 0);
 
   // Inklapbare groep-secties: ingeklapte ids in een Set.
@@ -236,7 +245,7 @@ export function PotsView({
                     </span>
                   </span>
                   <span className="flex-shrink-0 text-sm font-semibold tabular-nums text-navy-700 dark:text-navy-200">
-                    {formatEuro(groupBalance(secPots))}
+                    {formatEuro(sumBalance(secPots))}
                   </span>
                 </button>
                 {!isCollapsed && (

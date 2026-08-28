@@ -181,6 +181,8 @@ export interface PotGroup {
   id: string;
   organisation_id: string;
   name: string;
+  /** De hoofdgroep waar deze subgroep onder hangt. null = hoofdgroep. */
+  parent_id: string | null;
   sort_order: number;
   created_at: string;
 }

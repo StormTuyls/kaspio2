@@ -1,5 +1,12 @@
 import { useState, type ReactNode } from "react";
-import { calcBalance, formatDate, formatEuro } from "../storage";
+import {
+  calcBalance,
+  formatDate,
+  formatEuro,
+  potsInGroup,
+  rootGroups,
+  ungroupedPots,
+} from "../storage";
 import type { Member, Pot, PotGroup, Transaction } from "../types";
 import type { SubTier } from "../supabase";
 import { chartsEnabled, isReservationDue, type RecurringPlan } from "../data";
@@ -133,22 +140,23 @@ export function DashboardView({
     .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn))
     .slice(0, 8);
 
-  const groupBalance = (gp: Pot[]) =>
+  const sumBalance = (gp: Pot[]) =>
     gp.reduce((s, p) => s + calcBalance(allTransactions, p.id), 0);
 
-  // Groep-secties (+ ongegroepeerd als laatste) voor de mini-kaarten.
+  // Groep-secties (+ ongegroepeerd als laatste) voor de mini-kaarten. Alleen
+  // hoofdgroepen, met de potjes van hun subgroepen erin geteld: dit is een
+  // overzichtsscherm, geen boekhoudscherm. Wie de blokken apart wil ziet ze op
+  // de groepenpagina.
   const sections: { id: string | null; name: string; pots: Pot[] }[] = [
-    ...groups
+    ...rootGroups(groups)
       .map((g) => ({
         id: g.id as string | null,
         name: g.name,
-        pots: pots.filter((p) => p.groupId === g.id),
+        pots: potsInGroup(pots, groups, g.id, true),
       }))
       .filter((s) => s.pots.length > 0),
   ];
-  const ungrouped = pots.filter(
-    (p) => !p.groupId || !groups.some((g) => g.id === p.groupId),
-  );
+  const ungrouped = ungroupedPots(pots, groups);
   if (ungrouped.length > 0) {
     sections.push({ id: null, name: "Overige potjes", pots: ungrouped });
   }
@@ -365,7 +373,7 @@ export function DashboardView({
                       </span>
                     </span>
                     <span className="flex-shrink-0 font-num text-sm font-bold tabular-nums text-slate-900 dark:text-navy-50">
-                      {loading ? "\u2014" : formatEuro(groupBalance(sec.pots))}
+                      {loading ? "\u2014" : formatEuro(sumBalance(sec.pots))}
                     </span>
                   </button>
                   <ul className="space-y-0.5">

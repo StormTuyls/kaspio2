@@ -1,10 +1,25 @@
-import { useState } from "react";
-import { calcBalance, formatEuro } from "../storage";
+import { useEffect, useState } from "react";
+import {
+  calcBalance,
+  formatEuro,
+  groupBalance,
+  loadCollapsedGroups,
+  potsInGroup,
+  rootGroups,
+  saveCollapsedGroups,
+  subGroups,
+  ungroupedPots,
+} from "../storage";
 import type { Pot, PotGroup, Transaction } from "../types";
 import { UpgradeHint } from "../components/UpgradeHint";
 import { useConfirm } from "../components/ConfirmDialog";
 
+/** Waarde in de <select> die "geen hoofdgroep, dit is er zelf een" betekent. */
+const ROOT = "__root__";
+
 type Props = {
+  /** Nodig om de ingeklapte stand per organisatie te bewaren. */
+  orgId: string;
   groups: PotGroup[];
   pots: Pot[];
   allTransactions: Transaction[];
@@ -12,8 +27,14 @@ type Props = {
   /** Potgroepen zijn een Team-feature; anders enkel een upgrade-aanzet. */
   canUseGroups: boolean;
   onUpgrade?: () => void;
-  onCreateGroup: (name: string) => Promise<{ error: string | null }>;
-  onRenameGroup: (id: string, name: string) => Promise<{ error: string | null }>;
+  onCreateGroup: (
+    name: string,
+    parentId?: string | null,
+  ) => Promise<{ error: string | null }>;
+  onUpdateGroup: (
+    id: string,
+    patch: { name?: string; parentId?: string | null },
+  ) => Promise<{ error: string | null }>;
   onDeleteGroup: (id: string) => Promise<{ error: string | null }>;
   onSelectPot: (potId: string) => void;
   /** Open het dashboard van één groep. */
@@ -21,6 +42,7 @@ type Props = {
 };
 
 export function GroupsView({
+  orgId,
   groups,
   pots,
   allTransactions,
@@ -28,22 +50,50 @@ export function GroupsView({
   canUseGroups,
   onUpgrade,
   onCreateGroup,
-  onRenameGroup,
+  onUpdateGroup,
   onDeleteGroup,
   onSelectPot,
   onOpenGroup,
 }: Props) {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newParent, setNewParent] = useState<string>(ROOT);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const groupBalance = (gp: Pot[]) =>
-    gp.reduce((s, p) => s + calcBalance(allTransactions, p.id), 0);
+  const roots = rootGroups(groups);
+  const ungrouped = ungroupedPots(pots, groups);
 
-  const ungrouped = pots.filter(
-    (p) => !p.groupId || !groups.some((g) => g.id === p.groupId),
+  // Ingeklapte kaarten. Een dichtgeklapte hoofdgroep verbergt haar potjes én
+  // haar subgroepen; je houdt de kop met het bloktotaal over. Met veertien
+  // comités en honderdtwintig posten is dat het verschil tussen een pagina die
+  // je overziet en een die je moet doorscrollen.
+  //
+  // Eigen sleutel, los van de zijbalk: daar klap je in om ruimte te maken, hier
+  // om overzicht te houden, en dat zijn twee verschillende beslissingen.
+  const [collapsed, setCollapsed] = useState<Set<string>>(() =>
+    loadCollapsedGroups(`groepen:${orgId}`),
   );
+  useEffect(() => {
+    setCollapsed(loadCollapsedGroups(`groepen:${orgId}`));
+  }, [orgId]);
+
+  function persist(next: Set<string>) {
+    saveCollapsedGroups(`groepen:${orgId}`, next);
+    setCollapsed(next);
+  }
+  const toggle = (id: string) => {
+    const next = new Set(collapsed);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    persist(next);
+  };
+  // "Alles" kijkt alleen naar de hoofdgroepen: als er nog één openstaat, klapt
+  // de knop alles dicht. Anders zou hij bij een half opengeklapte pagina niets
+  // zichtbaars doen.
+  const anyOpen = roots.some((g) => !collapsed.has(g.id));
+  const toggleAll = () =>
+    persist(anyOpen ? new Set(groups.map((g) => g.id)) : new Set());
 
   async function submitNew() {
     setError(null);
@@ -53,13 +103,14 @@ export function GroupsView({
       return;
     }
     setBusy(true);
-    const res = await onCreateGroup(name);
+    const res = await onCreateGroup(name, newParent === ROOT ? null : newParent);
     setBusy(false);
     if (res.error) {
       setError(res.error);
       return;
     }
     setNewName("");
+    setNewParent(ROOT);
     setCreating(false);
   }
 
@@ -67,11 +118,18 @@ export function GroupsView({
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-navy-900 dark:text-white">Groepen</h1>
-        {isAdmin && canUseGroups && !creating && (
-          <button onClick={() => setCreating(true)} className="btn-accent text-sm">
-            + Nieuwe groep
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {roots.length > 1 && (
+            <button onClick={toggleAll} className="btn-secondary text-sm">
+              {anyOpen ? "Alles inklappen" : "Alles uitklappen"}
+            </button>
+          )}
+          {isAdmin && canUseGroups && !creating && (
+            <button onClick={() => setCreating(true)} className="btn-accent text-sm">
+              + Nieuwe groep
+            </button>
+          )}
+        </div>
       </div>
 
       {!canUseGroups && (
@@ -85,7 +143,9 @@ export function GroupsView({
 
       <p className="text-sm text-navy-500 dark:text-navy-300">
         Groepen bundelen potjes per tak, ploeg of werkgroep. Een potje koppel je
-        aan een groep bij het aanmaken of bewerken van het potje.
+        aan een groep bij het aanmaken of bewerken van het potje. Hoort er nog
+        een laag tussen, bijvoorbeeld een comité met blokken eronder, dan hang je
+        een groep onder een andere. Dieper dan twee niveaus gaat niet.
       </p>
 
       {isAdmin && creating && (
@@ -100,11 +160,25 @@ export function GroupsView({
             maxLength={80}
             className="input flex-1"
           />
+          <select
+            value={newParent}
+            onChange={(e) => setNewParent(e.target.value)}
+            className="input sm:w-52"
+            aria-label="Hoofdgroep"
+          >
+            <option value={ROOT}>Hoofdgroep</option>
+            {roots.map((g) => (
+              <option key={g.id} value={g.id}>
+                Onder {g.name}
+              </option>
+            ))}
+          </select>
           <div className="flex gap-2">
             <button
               onClick={() => {
                 setCreating(false);
                 setNewName("");
+                setNewParent(ROOT);
                 setError(null);
               }}
               className="btn-secondary text-sm"
@@ -130,20 +204,55 @@ export function GroupsView({
           {isAdmin ? "Maak er een aan om je potjes te bundelen." : ""}
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {groups.map((g) => (
-            <GroupCard
-              key={g.id}
-              group={g}
-              pots={pots.filter((p) => p.groupId === g.id)}
-              balance={groupBalance}
-              isAdmin={isAdmin}
-              onRename={onRenameGroup}
-              onDelete={onDeleteGroup}
-              onSelectPot={onSelectPot}
-              onOpen={onOpenGroup ? () => onOpenGroup(g.id) : undefined}
-            />
-          ))}
+        // Bewust geen twee kolommen meer: een hoofdgroep met haar subgroepen
+        // eronder is één blok, en dat naast elkaar zetten maakt niet duidelijk
+        // wat waaronder hangt.
+        <div className="space-y-5">
+          {roots.map((g) => {
+            const children = subGroups(groups, g.id);
+            const open = !collapsed.has(g.id);
+            return (
+              <div key={g.id}>
+                <GroupCard
+                  group={g}
+                  pots={potsInGroup(pots, groups, g.id)}
+                  balance={groupBalance(allTransactions, pots, groups, g.id)}
+                  allTransactions={allTransactions}
+                  childCount={children.length}
+                  roots={roots}
+                  isAdmin={isAdmin}
+                  open={open}
+                  onToggle={() => toggle(g.id)}
+                  onUpdate={onUpdateGroup}
+                  onDelete={onDeleteGroup}
+                  onSelectPot={onSelectPot}
+                  onOpen={onOpenGroup ? () => onOpenGroup(g.id) : undefined}
+                />
+                {open && children.length > 0 && (
+                  <div className="ml-4 mt-3 space-y-3 border-l-2 border-navy-100 pl-4 dark:border-navy-700/60">
+                    {children.map((c) => (
+                      <GroupCard
+                        key={c.id}
+                        group={c}
+                        pots={potsInGroup(pots, groups, c.id)}
+                        balance={groupBalance(allTransactions, pots, groups, c.id)}
+                        allTransactions={allTransactions}
+                        childCount={0}
+                        roots={roots}
+                        isAdmin={isAdmin}
+                        open={!collapsed.has(c.id)}
+                        onToggle={() => toggle(c.id)}
+                        onUpdate={onUpdateGroup}
+                        onDelete={onDeleteGroup}
+                        onSelectPot={onSelectPot}
+                        onOpen={onOpenGroup ? () => onOpenGroup(c.id) : undefined}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -172,17 +281,33 @@ function GroupCard({
   group,
   pots,
   balance,
+  allTransactions,
+  childCount,
+  roots,
   isAdmin,
-  onRename,
+  open,
+  onToggle,
+  onUpdate,
   onDelete,
   onSelectPot,
   onOpen,
 }: {
   group: PotGroup;
+  /** Alleen de eigen potjes; de subgroepen krijgen hun eigen kaart. */
   pots: Pot[];
-  balance: (gp: Pot[]) => number;
+  /** Saldo inclusief subgroepen, dus voor een hoofdgroep het bloktotaal. */
+  balance: number;
+  allTransactions: Transaction[];
+  childCount: number;
+  roots: PotGroup[];
   isAdmin: boolean;
-  onRename: (id: string, name: string) => Promise<{ error: string | null }>;
+  /** Dicht = alleen de kop met het totaal. Bij een hoofdgroep ook zonder haar subgroepen. */
+  open: boolean;
+  onToggle: () => void;
+  onUpdate: (
+    id: string,
+    patch: { name?: string; parentId?: string | null },
+  ) => Promise<{ error: string | null }>;
   onDelete: (id: string) => Promise<{ error: string | null }>;
   onSelectPot: (potId: string) => void;
   onOpen?: () => void;
@@ -191,6 +316,12 @@ function GroupCard({
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(group.name);
   const [busy, setBusy] = useState(false);
+  const [moveError, setMoveError] = useState<string | null>(null);
+
+  const isSub = !!group.parentId;
+  // Een groep met subgroepen kan er zelf niet onder hangen: dat zou drie
+  // niveaus geven en de databank weigert het (check_group_depth).
+  const canMove = childCount === 0;
 
   async function saveName() {
     const trimmed = name.trim();
@@ -200,7 +331,7 @@ function GroupCard({
       return;
     }
     setBusy(true);
-    const res = await onRename(group.id, trimmed);
+    const res = await onUpdate(group.id, { name: trimmed });
     setBusy(false);
     if (res.error) {
       setName(group.name);
@@ -208,11 +339,25 @@ function GroupCard({
     setEditing(false);
   }
 
+  async function move(value: string) {
+    setMoveError(null);
+    setBusy(true);
+    const res = await onUpdate(group.id, {
+      parentId: value === ROOT ? null : value,
+    });
+    setBusy(false);
+    if (res.error) setMoveError(res.error);
+  }
+
   async function remove() {
+    const message =
+      childCount > 0
+        ? `De ${childCount} subgroep${childCount > 1 ? "en" : ""} blijven bestaan en komen bovenaan te staan. De potjes blijven waar ze zitten.`
+        : "De potjes blijven bestaan en worden groepsloos.";
     if (
       !(await confirm({
         title: `Groep "${group.name}" verwijderen?`,
-        message: "De potjes blijven bestaan en worden groepsloos.",
+        message,
         confirmLabel: "Verwijderen",
         danger: true,
       }))
@@ -223,7 +368,28 @@ function GroupCard({
 
   return (
     <div className="card flex flex-col p-4">
-      <div className="mb-3 flex items-start justify-between gap-2">
+      <div className={`flex items-start justify-between gap-2 ${open ? "mb-3" : ""}`}>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          aria-label={`${group.name} ${open ? "inklappen" : "uitklappen"}`}
+          className="mt-0.5 flex-shrink-0 rounded p-1 text-navy-400 transition hover:bg-navy-50 hover:text-navy-700 dark:hover:bg-navy-800 dark:hover:text-white"
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`transition-transform ${open ? "rotate-90" : ""}`}
+          >
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        </button>
         {editing ? (
           <input
             autoFocus
@@ -248,41 +414,53 @@ function GroupCard({
             disabled={!onOpen}
             className="flex min-w-0 items-baseline gap-2 text-left enabled:hover:text-teal-700 dark:enabled:hover:text-teal-300"
           >
-            <h3 className="truncate text-base font-bold text-navy-900 dark:text-white">
+            <h3
+              className={`truncate font-bold text-navy-900 dark:text-white ${
+                isSub ? "text-sm" : "text-base"
+              }`}
+            >
               {group.name}
             </h3>
             <span className="rounded-full bg-navy-100 px-1.5 text-[11px] font-semibold text-navy-500 dark:bg-navy-800 dark:text-navy-300">
               {pots.length}
             </span>
+            {childCount > 0 && (
+              <span className="text-[11px] font-medium text-navy-400">
+                + {childCount} subgroep{childCount > 1 ? "en" : ""}
+              </span>
+            )}
             {onOpen && (
               <span className="text-xs font-medium text-teal-600 dark:text-teal-400">→</span>
             )}
           </button>
         )}
         <span className="flex-shrink-0 text-base font-bold tabular-nums text-navy-900 dark:text-navy-50">
-          {formatEuro(balance(pots))}
+          {formatEuro(balance)}
         </span>
       </div>
 
-      {pots.length === 0 ? (
-        <p className="text-sm text-navy-400 dark:text-navy-400">
-          Nog geen potjes in deze groep.
-        </p>
-      ) : (
-        <ul className="-mx-1.5 divide-y divide-navy-100 dark:divide-navy-700/60">
-          {pots.map((p) => (
-            <PotRow
-              key={p.id}
-              pot={p}
-              balance={balance([p])}
-              onSelect={() => onSelectPot(p.id)}
-            />
-          ))}
-        </ul>
-      )}
+      {open &&
+        (pots.length === 0 ? (
+          <p className="text-sm text-navy-400 dark:text-navy-400">
+            {childCount > 0
+              ? "Geen potjes rechtstreeks in deze groep; ze zitten in de subgroepen."
+              : "Nog geen potjes in deze groep."}
+          </p>
+        ) : (
+          <ul className="-mx-1.5 divide-y divide-navy-100 dark:divide-navy-700/60">
+            {pots.map((p) => (
+              <PotRow
+                key={p.id}
+                pot={p}
+                balance={calcBalance(allTransactions, p.id)}
+                onSelect={() => onSelectPot(p.id)}
+              />
+            ))}
+          </ul>
+        ))}
 
-      {isAdmin && !editing && (
-        <div className="mt-3 flex gap-2 border-t border-navy-100 pt-3 dark:border-navy-700/60">
+      {open && isAdmin && !editing && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-navy-100 pt-3 dark:border-navy-700/60">
           <button
             onClick={() => setEditing(true)}
             className="text-xs font-medium text-navy-500 hover:text-navy-900 dark:text-navy-300 dark:hover:text-white"
@@ -295,7 +473,31 @@ function GroupCard({
           >
             Verwijderen
           </button>
+          <select
+            value={group.parentId ?? ROOT}
+            onChange={(e) => move(e.target.value)}
+            disabled={busy || !canMove}
+            className="input ml-auto w-auto py-1 text-xs disabled:opacity-50"
+            aria-label={`Hoofdgroep van ${group.name}`}
+            title={
+              canMove
+                ? "Onder welke hoofdgroep hangt deze groep?"
+                : "Een groep met subgroepen kan er zelf niet onder hangen."
+            }
+          >
+            <option value={ROOT}>Hoofdgroep</option>
+            {roots
+              .filter((r) => r.id !== group.id)
+              .map((r) => (
+                <option key={r.id} value={r.id}>
+                  Onder {r.name}
+                </option>
+              ))}
+          </select>
         </div>
+      )}
+      {moveError && (
+        <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">{moveError}</p>
       )}
     </div>
   );

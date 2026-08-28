@@ -60,9 +60,12 @@ type OrgSeed = {
 };
 
 function buildOrg(seed: OrgSeed): DemoOrg {
-  const groups: PotGroup[] = seed.groups.map((g) => ({
+  // De demo blijft één niveau: platte hoofdgroepen, geen subgroepen.
+  const groups: PotGroup[] = seed.groups.map((g, i) => ({
     id: `${seed.id}-${g.key}`,
     name: g.name,
+    parentId: null,
+    sortOrder: i,
   }));
   const pots: Pot[] = seed.pots.map((p) => ({
     id: `${seed.id}-${p.key}`,
