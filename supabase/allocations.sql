@@ -555,6 +555,13 @@ begin
   return new;
 end $$;
 
+-- LET OP: deze twee functies staan ook in group-subgroups.sql, daar met de
+-- overerving naar subgroepen erbij (een groepsbeheerder van "Infrastructuur"
+-- ziet ook "Infrastructuur > Onderhoud"). Dat bestand draait als laatste en is
+-- de versie die telt. Wijzig je hier iets, wijzig het daar dan ook, anders
+-- verliest een groepsbeheerder zijn subgroepen zodra iemand dit bestand los
+-- opnieuw draait.
+--
 -- Zichtbaarheid gelijk houden aan vandaag. Onverdeeld geld was alleen voor
 -- admins (zie de policy transactions_select_for_pot_viewers, die voor
 -- pot_id IS NULL is_org_admin eist). Nu de hoofdpot een echt potje wordt zou

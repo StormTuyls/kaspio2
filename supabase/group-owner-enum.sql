@@ -1,0 +1,31 @@
+-- =============================================================================
+-- Kaspio , enum-waarde 'group_owner' op public.member_role
+-- =============================================================================
+-- group-owners.sql voert een rol in die naar een groep wijst in plaats van naar
+-- één potje. Die rol heeft een nieuwe waarde in public.member_role nodig, en
+-- die moet in een apart bestand:
+--
+--   Postgres laat een nieuwe enum-waarde niet gebruiken in de transactie die
+--   ze toevoegt ("unsafe use of new value of enum type"). Zet je de alter type
+--   in hetzelfde bestand als de policies en functies die de waarde noemen, dan
+--   loopt dat stuk zodra iemand het geheel in één transactie draait, zoals de
+--   Supabase SQL-editor doet.
+--
+-- Dit bestand hoort dus alleen deze ene regel te bevatten, en het moet vóór
+-- approval-flows.sql, group-owners.sql en allocations.sql draaien. Die drie
+-- noemen 'group_owner' met naam.
+--
+-- Stond tot nu nergens in versiebeheer: op productie is de waarde met de hand
+-- gezet. Daardoor liep scripts/testdb/testdb.sh reset vast op allocations.sql
+-- met "invalid input value for enum member_role: group_owner".
+--
+-- Idempotent. Draai in de Supabase SQL-editor.
+-- =============================================================================
+
+alter type public.member_role add value if not exists 'group_owner';
+
+-- Verificatie:
+--   select enumlabel from pg_enum e
+--     join pg_type t on t.oid = e.enumtypid
+--    where t.typname = 'member_role' order by e.enumsortorder;
+-- =============================================================================

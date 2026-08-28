@@ -22,9 +22,12 @@
 -- plek om te vergeten. Bijkomend voordeel: een comité kan meer dan één
 -- verantwoordelijke hebben, en dat komt vaker voor dan één.
 --
--- Vereist dat 'group_owner' al aan public.member_role is toegevoegd (aparte
--- migratie, want een nieuwe enum-waarde is niet bruikbaar in de transactie
--- waarin ze gemaakt wordt).
+-- Vereist dat 'group_owner' al aan public.member_role is toegevoegd. Dat
+-- gebeurt in group-owner-enum.sql, een apart bestand omdat een nieuwe
+-- enum-waarde niet bruikbaar is in de transactie waarin ze gemaakt wordt.
+--
+-- De RLS-functies die deze rol lezen staan NIET hier, maar in allocations.sql
+-- en group-subgroups.sql. Zie deel 3 hieronder voor waarom.
 --
 -- Idempotent. Draai in de Supabase SQL-editor.
 -- =============================================================================
@@ -66,64 +69,21 @@ alter table public.memberships
   );
 
 -- =============================================================================
--- 3. ZICHTBAARHEID EN SCHRIJFRECHT
+-- 3. ZICHTBAARHEID EN SCHRIJFRECHT , staat niet hier
 -- =============================================================================
--- Dezelfde vorm als voorheen, met de groep erbij. Let op de join op p.group_id:
--- die is NULL voor een potje zonder groep, en NULL = NULL is niet waar, dus een
--- groepsbeheerder krijgt daar vanzelf geen rechten op. Dat is de bedoeling.
+-- can_view_pot en can_write_pot kregen hier ooit hun group_owner-tak, in een
+-- kopie van de versie uit allocations.sql. Dat werkte alleen zolang niemand die
+-- twee bestanden in de verkeerde volgorde draaide: wie als laatste liep, won,
+-- en de kopie hier miste bijvoorbeeld de subgroep-overerving.
 --
--- LET OP: deze twee functies staan ook in allocations.sql, met de tak die de
--- hoofdpot aan admins voorbehoudt. Die moet hier mee, anders draait wie dit
--- bestand als laatste uitvoert die beperking terug en zien readers de hoofdpot
--- weer. Wijzig je er één, wijzig dan allebei.
-
-create or replace function public.can_view_pot(p_pot_id uuid)
-returns boolean
-language sql
-security definer
-stable
-set search_path = public
-as $$
-  select exists (
-    select 1
-    from public.pots p
-    join public.memberships m on m.organisation_id = p.organisation_id
-    where p.id = p_pot_id
-      and m.user_id = auth.uid()
-      and (
-        case when p.is_hoofdpot
-             then m.role = 'admin'
-             else m.role in ('admin', 'reader')
-               or (m.role = 'pot_owner' and m.pot_id = p.id)
-               or (m.role = 'group_owner' and m.group_id = p.group_id)
-        end
-      )
-  );
-$$;
-
-create or replace function public.can_write_pot(p_pot_id uuid)
-returns boolean
-language sql
-security definer
-stable
-set search_path = public
-as $$
-  select exists (
-    select 1
-    from public.pots p
-    join public.memberships m on m.organisation_id = p.organisation_id
-    where p.id = p_pot_id
-      and m.user_id = auth.uid()
-      and (
-        case when p.is_hoofdpot
-             then m.role = 'admin'
-             else m.role = 'admin'
-               or (m.role = 'pot_owner' and m.pot_id = p.id)
-               or (m.role = 'group_owner' and m.group_id = p.group_id)
-        end
-      )
-  );
-$$;
+-- Bovendien kon dit bestand daardoor niet vóór allocations.sql draaien (de
+-- functies noemen p.is_hoofdpot) terwijl allocations.sql wél de kolom
+-- memberships.group_id uit deel 1 hierboven nodig heeft. Een kringetje.
+--
+-- Dus: dit bestand levert alleen nog de kolom en de constraint. De twee
+-- functies staan in allocations.sql en, met de overerving naar subgroepen
+-- erbij, in group-subgroups.sql. Dat laatste is de versie die telt.
+-- Laadvolgorde: group-owners.sql, dan allocations.sql, dan group-subgroups.sql.
 
 -- =============================================================================
 -- 4. RECHTEN ZETTEN

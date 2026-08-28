@@ -3,11 +3,18 @@
 # in comments staan ("Run dit NA ..."). Deze lijst maakt die volgorde expliciet
 # en uitvoerbaar.
 schema.sql
+
+# Nieuwe enum-waarde apart en vroeg: approval-flows, group-owners en
+# allocations noemen 'group_owner' met naam.
+group-owner-enum.sql
+
 subscriptions.sql
 unallocated-and-groups.sql
 transfers.sql
+bank-account.sql
 approval-flows.sql
 pot-budgets.sql
+pot-forecast.sql
 distribution-shares.sql
 recurring-plans.sql
 recurring-plans-autoboek.sql
@@ -17,7 +24,13 @@ comp-codes.sql
 invite-codes.sql
 org-invites.sql
 member-management.sql
+
+# Na member-management: vervangt set_member_permissions door de versie met
+# p_group_ids, en heeft pot_groups uit unallocated-and-groups nodig.
+group-owners.sql
+
 org-invite-tokens.sql
+fix-anon-invite-lookup.sql
 create-org-rpc.sql
 delete-organisation.sql
 leave-organisation.sql
@@ -31,6 +44,13 @@ realtime.sql
 
 # Nieuw model: hoofdpot als echt potje plus allocaties.
 allocations.sql
+
+# Na allocations: zet security_invoker op de daar herbouwde pot_balances-view.
+fix-pot-balances-leak.sql
+
+# Subgroepen: parent_id op pot_groups, plus de RLS die een groepsbeheerder
+# naar beneden laat erven.
+group-subgroups.sql
 
 # Bewust niet geladen:
 #   demo-seed*.sql            , seeds, gaan apart via 03-seed
