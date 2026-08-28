@@ -1270,6 +1270,7 @@ function AuthedApp({
               />
             ) : tab === "groepen" ? (
               <GroupsView
+                orgId={org.id}
                 groups={uiGroups}
                 pots={potsForUser}
                 allTransactions={store.state.transactions}
@@ -1776,17 +1777,17 @@ function Sidebar({
   // organisatie bewaard. NONE_KEY staat voor de sectie zonder groep, want die
   // heeft geen id om als sleutel te gebruiken.
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() =>
-    loadCollapsedGroups(currentOrg.id),
+    loadCollapsedGroups(`sidebar:${currentOrg.id}`),
   );
   useEffect(() => {
-    setCollapsedGroups(loadCollapsedGroups(currentOrg.id));
+    setCollapsedGroups(loadCollapsedGroups(`sidebar:${currentOrg.id}`));
   }, [currentOrg.id]);
   const toggleGroup = (key: string) =>
     setCollapsedGroups((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
-      saveCollapsedGroups(currentOrg.id, next);
+      saveCollapsedGroups(`sidebar:${currentOrg.id}`, next);
       return next;
     });
   return (

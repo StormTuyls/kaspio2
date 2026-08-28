@@ -416,15 +416,19 @@ export function groupBalance(
   );
 }
 
-// Ingeklapte groepen in de zijbalk, per organisatie. Bewust in localStorage en
+// Ingeklapte groepen, per scherm en per organisatie. Bewust in localStorage en
 // niet in de databank: het is een weergavevoorkeur van dit toestel, en met
 // twintig groepen is elke keer opnieuw opengeklapt beginnen vervelend.
+//
+// `scope` houdt de zijbalk en de groepenpagina uit elkaar. Iets dichtklappen in
+// de zijbalk om ruimte te maken hoort niet ook de pagina waar je naar kijkt
+// dicht te klappen. Gebruik "sidebar:<orgId>" en "groepen:<orgId>".
 const COLLAPSED_GROUPS_KEY_PREFIX = "kaspio:collapsed-groups:";
 
-export function loadCollapsedGroups(orgId: string): Set<string> {
+export function loadCollapsedGroups(scope: string): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
-    const raw = window.localStorage.getItem(COLLAPSED_GROUPS_KEY_PREFIX + orgId);
+    const raw = window.localStorage.getItem(COLLAPSED_GROUPS_KEY_PREFIX + scope);
     if (!raw) return new Set();
     const parsed: unknown = JSON.parse(raw);
     return Array.isArray(parsed) ? new Set(parsed.filter((x): x is string => typeof x === "string")) : new Set();
@@ -433,11 +437,11 @@ export function loadCollapsedGroups(orgId: string): Set<string> {
   }
 }
 
-export function saveCollapsedGroups(orgId: string, ids: Set<string>) {
+export function saveCollapsedGroups(scope: string, ids: Set<string>) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(
-      COLLAPSED_GROUPS_KEY_PREFIX + orgId,
+      COLLAPSED_GROUPS_KEY_PREFIX + scope,
       JSON.stringify([...ids]),
     );
   } catch {
