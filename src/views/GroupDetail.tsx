@@ -24,6 +24,17 @@ type Props = {
   onSelectPot: (potId: string) => void;
   /** Spring naar een andere groep (hoofdgroep of subgroep). */
   onOpenGroup: (groupId: string) => void;
+  isAdmin?: boolean;
+  /** Open het potjesformulier met deze groep al ingevuld. */
+  onAddPot?: (groupId: string) => void;
+  /** false = potjeslimiet bereikt, dan wordt "+ Potje" een upgrade-aanzet. */
+  canAddPot?: boolean;
+  onUpgrade?: () => void;
+  /** Alleen bij een hoofdgroep: een subgroep hieronder aanmaken. */
+  onCreateSubgroup?: (
+    name: string,
+    parentId: string,
+  ) => Promise<{ error: string | null }>;
 };
 
 type Period = "month" | "year" | "all";
@@ -51,8 +62,16 @@ export function GroupDetail({
   onBack,
   onSelectPot,
   onOpenGroup,
+  isAdmin = false,
+  onAddPot,
+  canAddPot = true,
+  onUpgrade,
+  onCreateSubgroup,
 }: Props) {
   const [period, setPeriod] = useState<Period>("month");
+  const [subName, setSubName] = useState<string | null>(null);
+  const [subBusy, setSubBusy] = useState(false);
+  const [subError, setSubError] = useState<string | null>(null);
 
   const parent = group.parentId
     ? (groups.find((g) => g.id === group.parentId) ?? null)
@@ -92,6 +111,23 @@ export function GroupDetail({
     .filter((t) => t.direction === "out")
     .reduce((s, t) => s + t.amount, 0);
 
+  async function submitSub() {
+    const naam = (subName ?? "").trim();
+    if (!naam) {
+      setSubError("Geef de subgroep een naam.");
+      return;
+    }
+    setSubError(null);
+    setSubBusy(true);
+    const res = await onCreateSubgroup!(naam, group.id);
+    setSubBusy(false);
+    if (res.error) {
+      setSubError(res.error);
+      return;
+    }
+    setSubName(null);
+  }
+
   const potName = (id: string | null) =>
     groupPots.find((p) => p.id === id)?.name ?? "—";
   const ownerName = (pot: Pot) =>
@@ -125,7 +161,29 @@ export function GroupDetail({
               {group.name}
             </h1>
           </div>
-          <div className="inline-flex rounded-xl border border-navy-100 bg-white p-1 text-sm dark:border-navy-700/60 dark:bg-navy-900">
+          <div className="flex flex-wrap items-center gap-2">
+            {isAdmin && onAddPot && (
+              <button
+                onClick={canAddPot ? () => onAddPot(group.id) : onUpgrade}
+                className="btn-secondary text-sm"
+              >
+                {canAddPot ? "+ Potje" : "Upgrade voor meer potjes"}
+              </button>
+            )}
+            {/* Alleen bij een hoofdgroep: een subgroep kan zelf geen
+                subgroepen hebben. */}
+            {isAdmin && onCreateSubgroup && !parent && subName === null && (
+              <button
+                onClick={() => {
+                  setSubName("");
+                  setSubError(null);
+                }}
+                className="btn-secondary text-sm"
+              >
+                + Subgroep
+              </button>
+            )}
+            <div className="inline-flex rounded-xl border border-navy-100 bg-white p-1 text-sm dark:border-navy-700/60 dark:bg-navy-900">
             {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
               <button
                 key={p}
@@ -139,8 +197,47 @@ export function GroupDetail({
                 {PERIOD_LABELS[p]}
               </button>
             ))}
+            </div>
           </div>
         </div>
+
+        {subName !== null && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            <input
+              autoFocus
+              type="text"
+              value={subName}
+              onChange={(e) => setSubName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submitSub();
+                if (e.key === "Escape") {
+                  setSubName(null);
+                  setSubError(null);
+                }
+              }}
+              placeholder={`Subgroep onder ${group.name}`}
+              maxLength={80}
+              disabled={subBusy}
+              className="input min-w-0 flex-1 sm:max-w-sm"
+            />
+            <button
+              onClick={() => {
+                setSubName(null);
+                setSubError(null);
+              }}
+              className="btn-secondary text-sm"
+              disabled={subBusy}
+            >
+              Annuleren
+            </button>
+            <button onClick={submitSub} className="btn-accent text-sm" disabled={subBusy}>
+              {subBusy ? "Bezig…" : "Aanmaken"}
+            </button>
+          </div>
+        )}
+        {subError && (
+          <p className="mt-2 text-sm text-rose-600 dark:text-rose-400">{subError}</p>
+        )}
       </div>
 
       {/* Stat-tegels */}

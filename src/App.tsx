@@ -1243,6 +1243,14 @@ function AuthedApp({
                 onBack={() => setSelectedGroupId(null)}
                 onSelectPot={(id) => setSelectedPotId(id)}
                 onOpenGroup={(id) => setSelectedGroupId(id)}
+                isAdmin={!!isAdmin}
+                canAddPot={canAddPot}
+                onUpgrade={goToUpgrade}
+                onAddPot={(groupId) => {
+                  setAddPotGroupId(groupId);
+                  setShowAddPot(true);
+                }}
+                onCreateSubgroup={(name, parentId) => addGroup(name, parentId)}
               />
             ) : tab === "potjes" ? (
               <PotsView
