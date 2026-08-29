@@ -7,12 +7,14 @@ import {
   rootGroups,
   ungroupedPots,
 } from "../storage";
+import { POT_KLEUR_STANDAARD } from "../types";
 import type { Member, Pot, PotGroup, Transaction } from "../types";
 import type { SubTier } from "../supabase";
 import { chartsEnabled, isReservationDue, type RecurringPlan } from "../data";
 import { CashflowChart } from "../components/CashflowChart";
 import { UpgradeHint } from "../components/UpgradeHint";
 import { BankCard } from "../components/BankCard";
+import { Segment } from "../components/Segment";
 
 type Props = {
   pots: Pot[];
@@ -163,12 +165,10 @@ export function DashboardView({
     <div className="space-y-10">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-[0.8125rem] text-ink-600 dark:text-ink-400">
+          <p className="truncate text-[0.8125rem] text-zacht">
             {organizationName}
           </p>
-          <h1 className="text-2xl font-extrabold tracking-tight text-ink-900 dark:text-white">
-            Dashboard
-          </h1>
+          <h1 className="titel">Dashboard</h1>
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           {onManageRecurring && (
@@ -202,10 +202,8 @@ export function DashboardView({
         </div>
         <div className="flex min-w-0 flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-[0.8125rem] font-medium text-ink-600 dark:text-ink-400">
-              Geldstroom
-            </h2>
-            <PeriodTabs value={flowPeriod} onChange={setFlowPeriod} />
+            <h2 className="sectiekop">Geldstroom</h2>
+            <Segment opties={FLOW_TABS} waarde={flowPeriod} onChange={setFlowPeriod} label="Periode voor de geldstroom" />
           </div>
           <FlowStat
             label="Inkomend"
@@ -225,38 +223,38 @@ export function DashboardView({
 
       {/* Te bevestigen: openstaande maandelijkse stortingen */}
       {dueStortingen.length > 0 && onBookStorting && (
-        <div className="rounded-md border border-in-300 bg-in-100/70 p-4 dark:border-in-700/50 dark:bg-in-700/15">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-bold tracking-tight text-in-700 dark:text-in-300">
+        <section aria-labelledby="kop-te-bevestigen" className="panel p-4 sm:p-5">
+          <h2 id="kop-te-bevestigen" className="sectiekop mb-3 flex items-center gap-2">
             Te bevestigen
-            <span className="rounded-full bg-in-100 px-2 py-0.5 font-num text-xs font-bold text-in-700 dark:bg-in-700/40 dark:text-in-400">
-              {dueStortingen.length}
-            </span>
+            <span className="tag tag--in font-num">{dueStortingen.length}</span>
           </h2>
-          <ul className="space-y-2">
-            {dueStortingen.map((plan) => {
+          <ul>
+            {dueStortingen.map((plan, i) => {
               const potName = potById.get(plan.pot_id)?.name ?? "potje";
               return (
                 <li
                   key={plan.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-in-100 bg-white px-3.5 py-2.5 dark:border-in-700/40 dark:bg-ink-950"
+                  className={`flex flex-wrap items-center justify-between gap-3 py-2.5 ${
+                    i > 0 ? "rule" : ""
+                  }`}
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-ink-900 dark:text-ink-100">
+                    <p className="truncate text-sm font-medium text-sterk">
                       {plan.kind === "domiciliering"
                         ? `Zet ${plan.counterparty || "de domiciliëring"} klaar in ${potName}`
                         : `Storting in ${potName}`}
                     </p>
-                    <p className="font-num text-xs text-ink-600 dark:text-ink-500">
+                    <p className="text-xs text-zacht">
                       {plan.counterparty || "Maandelijkse storting"}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-num text-sm font-bold tabular-nums text-in-700 dark:text-in-400">
+                  <div className="flex items-center gap-3">
+                    <span className="amount amount--in text-sm font-bold">
                       {formatEuro(plan.amount)}
                     </span>
                     <button
                       onClick={() => onBookStorting(plan)}
-                      className="rounded-lg bg-in-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-in-600"
+                      className="btn btn--primary"
                     >
                       Boek
                     </button>
@@ -265,56 +263,50 @@ export function DashboardView({
               );
             })}
           </ul>
-        </div>
+        </section>
       )}
 
       {/* Wacht op goedkeuring (admin) */}
       {isAdmin && pendingApprovals.length > 0 && (
-        <div className="rounded-md border border-uit-300 bg-white p-5 dark:border-uit-700/40 dark:bg-ink-950">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-bold tracking-tight text-ink-900 dark:text-ink-100">
+        <section aria-labelledby="kop-goedkeuring" className="panel p-4 sm:p-5">
+          <h2 id="kop-goedkeuring" className="sectiekop mb-3 flex items-center gap-2">
             Wacht op goedkeuring
-            <span className="rounded-full bg-uit-100 px-2 py-0.5 font-num text-xs font-bold text-uit-700 dark:bg-uit-700/40 dark:text-uit-400">
-              {pendingApprovals.length}
-            </span>
+            <span className="tag tag--uit font-num">{pendingApprovals.length}</span>
           </h2>
-          <ul className="space-y-2">
-            {pendingApprovals.map((t) => (
+          <ul>
+            {pendingApprovals.map((t, i) => (
               <li
                 key={t.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink-200 bg-ink-50/60 px-3 py-2.5 dark:border-ink-800/60 dark:bg-ink-900/40"
+                className={`flex flex-wrap items-center justify-between gap-3 py-2.5 ${
+                  i > 0 ? "rule" : ""
+                }`}
               >
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-ink-900 dark:text-ink-100">
+                  <div className="truncate text-sm font-medium text-sterk">
                     {t.counterparty || "Uitgave"}
-                    <span className="ml-2 font-normal text-ink-600">
+                    <span className="ml-2 font-normal text-zacht">
                       {t.potId ? potById.get(t.potId)?.name ?? "—" : "Nog toe te wijzen"}
                     </span>
                   </div>
-                  <div className="font-num text-xs text-ink-600">
+                  <div className="font-num text-xs text-zacht">
                     {formatDate(t.occurredOn)}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-num text-sm font-semibold tabular-nums text-fout-600 dark:text-fout-400">
+                  <span className="amount amount--uit text-sm font-semibold">
                     −{formatEuro(t.amount)}
                   </span>
-                  <button
-                    onClick={() => onApprove?.(t.id)}
-                    className="rounded-lg bg-in-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-in-600"
-                  >
+                  <button onClick={() => onApprove?.(t.id)} className="btn btn--primary">
                     Goedkeuren
                   </button>
-                  <button
-                    onClick={() => onReject?.(t.id)}
-                    className="rounded-lg border border-ink-300 px-3 py-1.5 text-xs font-semibold text-fout-600 transition hover:bg-fout-100 dark:border-ink-800"
-                  >
+                  <button onClick={() => onReject?.(t.id)} className="btn btn--danger">
                     Afwijzen
                   </button>
                 </div>
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       )}
 
       {txInScope.length > 0 &&
@@ -331,11 +323,9 @@ export function DashboardView({
       {/* Groepen met hun potjes */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="min-w-0 space-y-3 lg:col-span-2">
-          <h2 className="text-lg font-bold tracking-tight text-ink-900 dark:text-ink-100">
-            Groepen &amp; potjes
-          </h2>
+          <h2 className="sectiekop">Groepen &amp; potjes</h2>
           {pots.length === 0 ? (
-            <div className="rounded-md border border-dashed border-ink-300 bg-white/60 py-12 text-center text-sm text-ink-700 dark:border-ink-800 dark:bg-ink-950/30 dark:text-ink-500">
+            <div className="rounded-md border border-dashed border-ink-300 bg-white/60 py-12 text-center text-sm text-basis dark:border-ink-800 dark:bg-ink-950/30">
               Nog geen potjes. Maak er een aan op de Potjes-pagina.
             </div>
           ) : (
@@ -343,21 +333,21 @@ export function DashboardView({
               {sections.map((sec) => (
                 <div
                   key={sec.id ?? "__none__"}
-                  className="flex flex-col rounded-md border border-ink-300/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_6px_20px_-12px_rgba(15,23,42,0.1)] dark:border-ink-800/60 dark:bg-ink-950 dark:shadow-none"
+                  className="panel flex flex-col p-4"
                 >
                   <button
                     onClick={() => onOpenGroup(sec.id)}
                     className="group mb-3 flex items-baseline justify-between gap-2 text-left"
                   >
                     <span className="flex min-w-0 items-baseline gap-2">
-                      <span className="truncate font-num text-[11px] font-bold text-ink-700 transition group-hover:text-ink-700 dark:text-ink-500 dark:group-hover:text-ink-700">
+                      <span className="truncate text-[0.8125rem] font-semibold text-basis transition-colors group-hover:text-sterk">
                         {sec.name}
                       </span>
-                      <span className="rounded-full bg-ink-100 px-1.5 text-[11px] font-semibold text-ink-700 dark:bg-ink-900 dark:text-ink-500">
+                      <span className="rounded-full bg-ink-100 px-1.5 text-[11px] font-semibold text-basis dark:bg-ink-900">
                         {sec.pots.length}
                       </span>
                     </span>
-                    <span className="flex-shrink-0 font-num text-sm font-bold tabular-nums text-ink-900 dark:text-ink-100">
+                    <span className="flex-shrink-0 font-num text-sm font-bold tabular-nums text-sterk">
                       {loading ? "\u2014" : formatEuro(sumBalance(sec.pots))}
                     </span>
                   </button>
@@ -371,12 +361,12 @@ export function DashboardView({
                           <span
                             aria-hidden
                             className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                            style={{ backgroundColor: p.color ?? "#4f46e5" }}
+                            style={{ backgroundColor: p.color ?? POT_KLEUR_STANDAARD }}
                           />
                           <span className="min-w-0 flex-1 truncate text-ink-800 dark:text-ink-300">
                             {p.name}
                           </span>
-                          <span className="flex-shrink-0 font-num tabular-nums text-ink-700 dark:text-ink-600">
+                          <span className="flex-shrink-0 font-num tabular-nums text-basis">
                             {loading
                               ? "\u2014"
                               : formatEuro(calcBalance(allTransactions, p.id))}
@@ -388,7 +378,7 @@ export function DashboardView({
                   {sec.pots.length > 5 && (
                     <button
                       onClick={() => onOpenGroup(sec.id)}
-                      className="mt-2 text-left text-xs font-semibold text-ink-700 hover:underline dark:text-ink-700"
+                      className="mt-2 text-left text-xs font-semibold text-basis hover:underline"
                     >
                       + {sec.pots.length - 5} meer
                     </button>
@@ -441,31 +431,6 @@ function flowWindowStart(p: FlowPeriod): string {
   return `${b.getFullYear()}-${pad(b.getMonth() + 1)}-${pad(b.getDate())}`;
 }
 
-function PeriodTabs({
-  value,
-  onChange,
-}: {
-  value: FlowPeriod;
-  onChange: (p: FlowPeriod) => void;
-}) {
-  return (
-    <div className="inline-flex rounded-xl bg-ink-100 p-1 dark:bg-ink-900">
-      {FLOW_TABS.map((t) => (
-        <button
-          key={t.id}
-          onClick={() => onChange(t.id)}
-          className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
-            value === t.id
-              ? "bg-white text-ink-700 shadow-sm dark:bg-ink-800 dark:text-white"
-              : "text-ink-700 hover:text-ink-800 dark:text-ink-500"
-          }`}
-        >
-          {t.label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function Icon({
   children,
@@ -503,12 +468,12 @@ function FlowStat({
 }) {
   const positive = tone === "in";
   return (
-    <div className="rounded-md border border-ink-200 bg-white p-4 dark:border-ink-800 dark:bg-ink-900">
+    <div className="panel p-4">
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-xs font-semibold text-ink-600 dark:text-ink-500">
+        <p className="text-xs font-semibold text-zacht">
           {label}
           {sub && (
-            <span className="ml-1.5 normal-case tracking-normal text-ink-600 dark:text-ink-600">
+            <span className="ml-1.5 normal-case tracking-normal text-zacht">
               · {sub}
             </span>
           )}
@@ -550,12 +515,12 @@ function ActivityFeed({
   potById: Map<string, Pot>;
 }) {
   return (
-    <aside className="flex h-fit min-w-0 flex-col rounded-md border border-ink-300/80 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_6px_20px_-12px_rgba(15,23,42,0.1)] dark:border-ink-800/60 dark:bg-ink-950 dark:shadow-none">
-      <h2 className="mb-4 font-num text-[11px] font-bold text-ink-600 dark:text-ink-500">
+    <aside className="panel flex h-fit min-w-0 flex-col p-5">
+      <h2 className="sectiekop mb-4">
         Recente activiteit
       </h2>
       {recent.length === 0 ? (
-        <p className="text-sm text-ink-600 dark:text-ink-600">Nog geen transacties.</p>
+        <p className="text-sm text-zacht">Nog geen transacties.</p>
       ) : (
         <ul className="space-y-3">
           {recent.map((tx) => {
@@ -581,21 +546,21 @@ function ActivityFeed({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="truncate text-sm font-medium text-ink-900 dark:text-ink-100">
+                    <span className="truncate text-sm font-medium text-sterk">
                       {tx.counterparty}
                     </span>
                     <span
                       className={`whitespace-nowrap font-num text-sm font-semibold tabular-nums ${
                         positive
                           ? "text-in-600 dark:text-in-400"
-                          : "text-fout-600 dark:text-fout-400"
+                          : "text-uit-600 dark:text-uit-400"
                       }`}
                     >
                       {positive ? "+" : "−"}
                       {formatEuro(tx.amount)}
                     </span>
                   </div>
-                  <div className="flex items-baseline justify-between gap-2 text-xs text-ink-600 dark:text-ink-600">
+                  <div className="flex items-baseline justify-between gap-2 text-xs text-zacht">
                     <span className="truncate">{potLabel}</span>
                     <span className="whitespace-nowrap font-num">{formatDate(tx.occurredOn)}</span>
                   </div>

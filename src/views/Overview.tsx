@@ -168,10 +168,10 @@ export function PotsView({
 
       {pots.length === 0 ? (
         <div className="card border-dashed py-14 text-center">
-          <p className="mb-1 text-base font-semibold text-ink-900 dark:text-ink-100">
+          <p className="mb-1 text-base font-semibold text-sterk">
             {isAdmin ? "Nog geen potjes" : "Je hebt nog geen potjes"}
           </p>
-          <p className="mb-5 text-sm text-ink-700 dark:text-ink-500">
+          <p className="mb-5 text-sm text-basis">
             {isAdmin
               ? "Maak je eerste potje aan om geldstromen te organiseren."
               : "Vraag de admin om je een potje toe te wijzen."}
@@ -227,7 +227,7 @@ export function PotsView({
                 <button
                   type="button"
                   onClick={() => toggle(key)}
-                  className="flex w-full items-center justify-between gap-2 rounded-xl px-2 py-1.5 text-left transition hover:bg-ink-50 dark:hover:bg-ink-900/50"
+                  className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left transition hover:bg-ink-50 dark:hover:bg-ink-900/50"
                   aria-expanded={!isCollapsed}
                 >
                   <span className="flex min-w-0 items-center gap-2">
@@ -249,13 +249,13 @@ export function PotsView({
                     <h3
                       className={`truncate text-[0.9375rem] font-semibold ${
                         muted
-                          ? "text-ink-600 dark:text-ink-400"
-                          : "text-ink-900 dark:text-ink-100"
+                          ? "text-zacht"
+                          : "text-sterk"
                       }`}
                     >
                       {label}
                     </h3>
-                    <span className="rounded-full bg-ink-100 px-1.5 text-[11px] font-semibold text-ink-700 dark:bg-ink-900 dark:text-ink-500">
+                    <span className="rounded-full bg-ink-100 px-1.5 text-[11px] font-semibold text-basis dark:bg-ink-900">
                       {secPots.length}
                     </span>
                   </span>
@@ -334,13 +334,13 @@ export function PotCard({
       <div className="min-w-0">
         <button
           onClick={onSelect}
-          className="max-w-full truncate text-left text-[0.9375rem] font-medium text-ink-900 underline-offset-4 hover:underline dark:text-ink-100"
+          className="max-w-full truncate text-left text-[0.9375rem] font-medium text-sterk underline-offset-4 hover:underline"
         >
           {pot.name}
         </button>
         {/* Alleen tonen wat er echt is. */}
         {(owner || progress) && (
-          <div className="mt-0.5 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[0.75rem] text-ink-600 dark:text-ink-400">
+          <div className="mt-0.5 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[0.75rem] text-zacht">
             {owner && <span className="truncate">{owner.name}</span>}
             {progress && (
               <span className="flex items-baseline gap-1.5">
@@ -393,11 +393,11 @@ export function RecentActivity({
 }) {
   return (
     <aside className="card flex h-fit flex-col p-5">
-      <h2 className="mb-4 text-sm font-semibold text-ink-600 dark:text-ink-500">
+      <h2 className="mb-4 text-sm font-semibold text-zacht">
         Recente activiteit
       </h2>
       {recent.length === 0 ? (
-        <p className="text-sm text-ink-600 dark:text-ink-600">Nog geen transacties.</p>
+        <p className="text-sm text-zacht">Nog geen transacties.</p>
       ) : (
         <ul className="space-y-3">
           {recent.map((tx) => {
@@ -423,7 +423,7 @@ export function RecentActivity({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="truncate text-sm font-medium text-ink-900 dark:text-ink-100">
+                    <span className="truncate text-sm font-medium text-sterk">
                       {tx.counterparty}
                     </span>
                     <span
@@ -437,7 +437,7 @@ export function RecentActivity({
                       {formatEuro(tx.amount)}
                     </span>
                   </div>
-                  <div className="flex items-baseline justify-between gap-2 text-xs text-ink-600 dark:text-ink-600">
+                  <div className="flex items-baseline justify-between gap-2 text-xs text-zacht">
                     <span className="truncate">{potLabel}</span>
                     <span className="whitespace-nowrap">{formatDate(tx.occurredOn)}</span>
                   </div>
@@ -480,19 +480,19 @@ export function Stat({
           : ""
       }`}
     >
-      <p className="mb-1 text-xs font-semibold text-ink-600 dark:text-ink-500">
+      <p className="mb-1 text-xs font-semibold text-zacht">
         {label}
       </p>
       <p
         className={`font-extrabold ${
           isHero
             ? "text-in-700 dark:text-in-400"
-            : "text-ink-900 dark:text-ink-100"
+            : "text-sterk"
         } ${big ? "text-3xl" : "text-2xl"}`}
       >
         {value}
       </p>
-      {delta && <p className="mt-0.5 text-xs text-ink-700 dark:text-ink-600">{delta}</p>}
+      {delta && <p className="mt-0.5 text-xs text-basis">{delta}</p>}
     </div>
   );
 }

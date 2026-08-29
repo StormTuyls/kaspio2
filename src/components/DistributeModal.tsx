@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
+import { POT_KLEUR_STANDAARD } from "../types";
 import type { Pot } from "../types";
 import { computeShares } from "../data";
 import { formatEuro } from "../storage";
 
+import { Foutmelding } from "./Foutmelding";
 type Props = {
   pots: Pot[];
   /** De verdeel-preset: percentage per potje. Mag leeg zijn. */
@@ -100,7 +102,7 @@ export function DistributeModal({
   if (pots.length === 0) {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-ink-muted dark:text-ink-500">
+        <p className="text-sm text-ink-muted dark:text-ink-400">
           Maak eerst een potje aan om geld naartoe te verdelen.
         </p>
         <div className="flex justify-end">
@@ -119,7 +121,7 @@ export function DistributeModal({
           wat er gaat gebeuren, want de verdeling gaat over bedragen terwijl de
           inbox over losse transacties gaat. */}
       {incomingCount > 0 && (
-        <div className="rounded-xl border border-ink-200 bg-ink-50 p-3 dark:border-ink-800/60 dark:bg-ink-900/40">
+        <div className="rounded-lg border border-ink-200 bg-ink-50 p-3 dark:border-ink-800/60 dark:bg-ink-900/40">
           <p className="text-sm text-ink-800 dark:text-ink-200">
             {incomingCount === 1
               ? "De inkomst die nog toe te wijzen staat, wordt hiermee zelf over de gekozen potjes verdeeld en verdwijnt dus uit je inbox."
@@ -139,7 +141,7 @@ export function DistributeModal({
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-ink-muted dark:text-ink-500">
+        <p className="text-sm text-ink-muted dark:text-ink-400">
           In de hoofdpot:{" "}
           <span className="font-num font-semibold tabular-nums text-ink-900 dark:text-white">
             {formatEuro(available)}
@@ -163,7 +165,7 @@ export function DistributeModal({
               <span
                 aria-hidden
                 className="h-3 w-3 flex-shrink-0 rounded-full"
-                style={{ backgroundColor: pot.color ?? "#1D9E75" }}
+                style={{ backgroundColor: pot.color ?? POT_KLEUR_STANDAARD }}
               />
               <span className="min-w-0 flex-1 truncate text-sm text-ink-800 dark:text-ink-200">
                 {pot.name}
@@ -200,8 +202,8 @@ export function DistributeModal({
         })}
       </ul>
 
-      <div className="flex items-center justify-between rounded-xl bg-ink-50 px-4 py-2.5 text-sm dark:bg-ink-900">
-        <span className="text-ink-muted dark:text-ink-500">
+      <div className="flex items-center justify-between rounded-lg bg-ink-50 px-4 py-2.5 text-sm dark:bg-ink-900">
+        <span className="text-ink-muted dark:text-ink-400">
           {overAvailable ? "Tekort in de hoofdpot" : "Blijft in de hoofdpot"}
         </span>
         <span
@@ -223,9 +225,9 @@ export function DistributeModal({
       )}
 
       {error && (
-        <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
+        <Foutmelding>
           {error}
-        </div>
+        </Foutmelding>
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-2 pt-1">

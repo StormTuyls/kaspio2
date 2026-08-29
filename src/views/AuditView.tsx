@@ -24,11 +24,11 @@ export function AuditView({ entries, onClear }: Props) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-ink-600 dark:text-ink-500">
+          <p className="text-sm font-semibold text-zacht">
             Organisatie
           </p>
           <h1 className="text-2xl font-bold text-ink-900 dark:text-white">Activiteit</h1>
-          <p className="mt-1 text-sm text-ink-700 dark:text-ink-500">
+          <p className="mt-1 text-sm text-basis">
             Wie wijzigde wat, en wanneer. Laatste {entries.length} gebeurtenissen.
           </p>
         </div>
@@ -54,7 +54,7 @@ export function AuditView({ entries, onClear }: Props) {
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
                 filter === f
                   ? "bg-ink-950 text-white dark:bg-white dark:text-ink-900"
-                  : "text-ink-700 hover:bg-ink-50 dark:text-ink-500 dark:hover:bg-ink-900"
+                  : "text-basis hover:bg-ink-50 dark:hover:bg-ink-900"
               }`}
             >
               {labelFor(f)}
@@ -64,10 +64,10 @@ export function AuditView({ entries, onClear }: Props) {
 
         {filtered.length === 0 ? (
           <div className="px-6 py-16 text-center">
-            <p className="mb-1 text-base font-semibold text-ink-900 dark:text-ink-100">
+            <p className="mb-1 text-base font-semibold text-sterk">
               Niets te tonen
             </p>
-            <p className="text-sm text-ink-700 dark:text-ink-500">
+            <p className="text-sm text-basis">
               {entries.length === 0
                 ? "Zodra er iets gebeurt, verschijnt het hier."
                 : "Geen gebeurtenissen die overeenkomen met je filter."}
@@ -80,10 +80,10 @@ export function AuditView({ entries, onClear }: Props) {
                 <Avatar name={e.actorName} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <span className="font-semibold text-ink-900 dark:text-ink-100">
+                    <span className="font-semibold text-sterk">
                       {e.actorName}
                     </span>
-                    <span className="text-sm text-ink-700 dark:text-ink-500">
+                    <span className="text-sm text-basis">
                       {actionVerb(e)} <EntityChip type={e.entityType} /> "
                       <span className="font-medium text-ink-800 dark:text-ink-200">
                         {e.entityName}
@@ -92,10 +92,10 @@ export function AuditView({ entries, onClear }: Props) {
                     </span>
                   </div>
                   {e.details && (
-                    <p className="mt-0.5 text-sm text-ink-700 dark:text-ink-600">{e.details}</p>
+                    <p className="mt-0.5 text-sm text-basis">{e.details}</p>
                   )}
                 </div>
-                <span className="whitespace-nowrap text-xs text-ink-600 dark:text-ink-600">
+                <span className="whitespace-nowrap text-xs text-zacht">
                   {formatDateTime(e.createdAt)}
                 </span>
               </li>
@@ -131,7 +131,7 @@ function actionVerb(e: AuditEntry): string {
 function EntityChip({ type }: { type: AuditEntityType }) {
   const styles: Record<AuditEntityType, string> = {
     pot: "bg-in-100 text-in-600 dark:bg-in-700/30 dark:text-in-400",
-    transaction: "bg-ink-100 text-ink-800 dark:bg-ink-800/30 dark:text-ink-600",
+    transaction: "bg-ink-100 text-ink-800 dark:bg-ink-800/30 dark:text-ink-200",
     member: "bg-ink-50 text-ink-800 dark:bg-ink-900 dark:text-ink-200",
     settings: "bg-uit-100 text-uit-700 dark:bg-uit-700/30 dark:text-uit-400",
   };

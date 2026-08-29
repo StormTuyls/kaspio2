@@ -65,6 +65,7 @@
   --color-uit-100: oklch(0.95 0.033 70);
 
   /* Uitsluitend fouten en verwijderen. */
+  --color-fout-700: oklch(0.44 0.175 25);
   --color-fout-600: oklch(0.525 0.19 25);
   --color-fout-400: oklch(0.7 0.16 25);
   --color-fout-100: oklch(0.945 0.026 25);
@@ -77,6 +78,25 @@
   --radius-DEFAULT: 0.5rem;
   --radius-md: 0.625rem;
   --radius-lg: 0.75rem;
+
+  /* ---------------------------------------------------------------------
+     Semantische kleur , dit is de laag die componenten horen te gebruiken.
+     Een component schrijft `text-zacht`, niet `text-ink-600 dark:text-ink-500`.
+     De donkere tegenhangers staan in `html.dark` hieronder; omdat Tailwind v4
+     een utility uitzendt als `color: var(--color-zacht)` volgt de klasse het
+     thema vanzelf. Zo bestaat er nog maar één plek waar donker gedefinieerd is,
+     en kan een component niet meer per ongeluk een paar kiezen dat AA niet haalt.
+
+     Meting (op de pagina, per thema) staat in scripts/design/contrast.py.
+     --------------------------------------------------------------------- */
+  --color-sterk: oklch(0.225 0.013 250);   /* hoofdtekst        licht ink-900 */
+  --color-basis: oklch(0.385 0.013 250);   /* secundaire tekst  licht ink-700 */
+  --color-zacht: oklch(0.47 0.013 250);    /* tertiaire tekst   licht ink-600 */
+  --color-zwak: oklch(0.556 0.013 250);    /* placeholder       licht ink-500 */
+  --color-vlak: #ffffff;                   /* verhoogd vlak                   */
+  --color-vlak-gedempt: oklch(0.974 0.003 250);
+  --color-rand: oklch(0.895 0.006 250);
+  --color-rand-sterk: oklch(0.81 0.008 250);
 
   /* Eén curve voor alles. */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -168,6 +188,17 @@ html.dark {
   --actie-hover: #ffffff;
   --focus: var(--color-ink-300);
   --oppervlak-chroom: oklch(0.125 0.012 250);
+
+  /* De semantische laag draait mee. Gemeten op --oppervlak (ink-950):
+     sterk 16.26:1, basis 10.67:1, zacht 6.20:1, zwak 6.20:1. */
+  --color-sterk: oklch(0.943 0.0045 250);  /* ink-100 */
+  --color-basis: oklch(0.81 0.008 250);    /* ink-300 */
+  --color-zacht: oklch(0.66 0.011 250);    /* ink-400 */
+  --color-zwak: oklch(0.66 0.011 250);     /* ink-400 */
+  --color-vlak: oklch(0.225 0.013 250);
+  --color-vlak-gedempt: oklch(0.2 0.013 250);
+  --color-rand: oklch(0.3 0.013 250);
+  --color-rand-sterk: oklch(0.38 0.013 250);
   color-scheme: dark;
 }
 

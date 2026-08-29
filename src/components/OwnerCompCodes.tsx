@@ -45,18 +45,18 @@ export function OwnerCompCodes() {
     <div className="card border-uit-300 p-6 dark:border-uit-700/40">
       <div className="mb-1 flex items-center gap-2">
         <span className="badge-amber">Owner</span>
-        <h2 className="text-base font-semibold text-ink-900 dark:text-ink-100">
+        <h2 className="text-base font-semibold text-sterk">
           Test-/promocodes
         </h2>
       </div>
-      <p className="mb-4 text-sm text-ink-700 dark:text-ink-500">
+      <p className="mb-4 text-sm text-basis">
         Genereer een link die de organisatie van wie 'm inwisselt gratis naar Pro
         of Team tilt. Voor testers en demo's. Enkel jij ziet dit.
       </p>
 
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
+          <span className="mb-1 block text-xs font-medium text-basis">
             Tier
           </span>
           <select
@@ -69,7 +69,7 @@ export function OwnerCompCodes() {
           </select>
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
+          <span className="mb-1 block text-xs font-medium text-basis">
             Max. keer inwisselen
           </span>
           <input
@@ -81,7 +81,7 @@ export function OwnerCompCodes() {
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
+          <span className="mb-1 block text-xs font-medium text-basis">
             Notitie (optioneel)
           </span>
           <input
@@ -101,8 +101,8 @@ export function OwnerCompCodes() {
       {error && <p className="mt-3 text-sm text-fout-600 dark:text-fout-400">{error}</p>}
 
       {code && (
-        <div className="mt-4 rounded-xl border border-ink-200 bg-ink-50 p-3 dark:border-ink-800/60 dark:bg-ink-900/40">
-          <p className="mb-2 text-xs font-medium text-ink-700 dark:text-ink-500">
+        <div className="mt-4 rounded-lg border border-ink-200 bg-ink-50 p-3 dark:border-ink-800/60 dark:bg-ink-900/40">
+          <p className="mb-2 text-xs font-medium text-basis">
             Deelbare link ({tier === "pro" ? "Pro" : "Team"}):
           </p>
           <div className="flex items-center gap-2">

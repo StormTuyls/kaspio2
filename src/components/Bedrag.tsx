@@ -37,7 +37,7 @@ export function Bedrag({
   const nul = centen === 0;
 
   const kleur = !gekleurd || nul
-    ? "text-ink-900 dark:text-ink-100"
+    ? "text-sterk"
     : negatief
       ? "text-uit-600 dark:text-uit-400"
       : "text-in-600 dark:text-in-400";

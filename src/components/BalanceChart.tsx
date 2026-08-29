@@ -120,10 +120,10 @@ export function BalanceChart({ transactions }: Props) {
     <div className="card p-4 sm:p-5">
       <div className="mb-3 flex items-baseline justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-ink-900 dark:text-ink-100">
+          <h3 className="text-sm font-semibold text-sterk">
             Saldo over tijd
           </h3>
-          <p className="text-xs text-ink-600 dark:text-ink-500">
+          <p className="text-xs text-zacht">
             Tik of beweeg over de grafiek voor details
           </p>
           <div className="mt-2 inline-flex rounded-lg bg-ink-50 p-0.5 text-xs dark:bg-ink-900">
@@ -143,7 +143,7 @@ export function BalanceChart({ transactions }: Props) {
                 className={`whitespace-nowrap rounded-md px-2.5 py-1 font-medium transition ${
                   mode === m
                     ? "bg-white text-ink-900 shadow-sm dark:bg-ink-800 dark:text-white"
-                    : "text-ink-700 hover:text-ink-900 dark:text-ink-500 dark:hover:text-white"
+                    : "text-basis hover:text-ink-900 dark:hover:text-white"
                 }`}
               >
                 {label}
@@ -151,7 +151,7 @@ export function BalanceChart({ transactions }: Props) {
             ))}
           </div>
           {showBars && (
-            <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-ink-700 dark:text-ink-500">
+            <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-basis">
               <span className="flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-sm bg-in-600" /> Inkomend
               </span>
@@ -168,7 +168,7 @@ export function BalanceChart({ transactions }: Props) {
         </div>
         <span
           className={`text-base font-bold tabular-nums ${
-            negative ? "text-uit-700 dark:text-uit-400" : "text-ink-900 dark:text-ink-100"
+            negative ? "text-uit-700 dark:text-uit-400" : "text-sterk"
           }`}
         >
           {formatEuro(last.balance)}

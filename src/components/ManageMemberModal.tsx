@@ -3,6 +3,7 @@ import type { GroupedMember } from "../data";
 import type { MemberRole, Pot, PotGroup } from "../supabase";
 import { useConfirm } from "./ConfirmDialog";
 
+import { Foutmelding } from "./Foutmelding";
 type Props = {
   orgId: string;
   member: GroupedMember;
@@ -95,7 +96,7 @@ export function ManageMemberModal({
         <div className="text-base font-bold text-ink-900 dark:text-white">
           {member.full_name}
         </div>
-        <div className="text-sm text-ink-700 dark:text-ink-500">
+        <div className="text-sm text-basis">
           {member.email}
         </div>
       </div>
@@ -142,7 +143,7 @@ export function ManageMemberModal({
             Toegang tot potjes
           </p>
           {pots.length === 0 ? (
-            <p className="text-sm text-ink-600">
+            <p className="text-sm text-zacht">
               Geen potjes beschikbaar. Maak eerst een potje aan.
             </p>
           ) : (
@@ -171,7 +172,7 @@ export function ManageMemberModal({
             </div>
           )}
           {potIds.length > 0 && (
-            <p className="mt-2 text-xs text-ink-600">
+            <p className="mt-2 text-xs text-zacht">
               {potIds.length} potje{potIds.length === 1 ? "" : "s"} geselecteerd
             </p>
           )}
@@ -184,7 +185,7 @@ export function ManageMemberModal({
             Beheert deze groepen
           </p>
           {groups.length === 0 ? (
-            <p className="text-sm text-ink-600">
+            <p className="text-sm text-zacht">
               Er zijn nog geen groepen. Maak er eerst één aan bij Groepen.
             </p>
           ) : (
@@ -232,16 +233,16 @@ export function ManageMemberModal({
                 })}
             </div>
           )}
-          <p className="mt-2 text-xs text-ink-600">
+          <p className="mt-2 text-xs text-zacht">
             Nieuwe potjes in deze groepen komen er vanzelf bij.
           </p>
         </div>
       )}
 
       {error && (
-        <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
+        <Foutmelding>
           {error}
-        </div>
+        </Foutmelding>
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
@@ -308,7 +309,7 @@ function RoleOption({
         <div className="text-sm font-semibold text-ink-900 dark:text-white">
           {label}
         </div>
-        <div className="text-xs text-ink-700 dark:text-ink-500">
+        <div className="text-xs text-basis">
           {description}
         </div>
       </div>
@@ -346,7 +347,7 @@ function GroupCheck({
         className="h-4 w-4"
       />
       <span className="text-sm text-ink-900 dark:text-white">{group.name}</span>
-      <span className="ml-auto text-xs text-ink-600">
+      <span className="ml-auto text-xs text-zacht">
         {count} potje{count === 1 ? "" : "s"}
       </span>
     </label>

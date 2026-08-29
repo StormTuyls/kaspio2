@@ -57,7 +57,7 @@ export function DemoView({ onSignup, onExit }: Props) {
             <Mark size={30} />
             <OrgSwitcher orgId={org.id} onChange={switchOrg} />
           </div>
-          <nav className="flex items-center gap-1 rounded-xl bg-ink-50 p-1 dark:bg-ink-900">
+          <nav className="flex items-center gap-1 rounded-lg bg-ink-50 p-1 dark:bg-ink-900">
             <TabButton active={!selectedPot && tab === "overzicht"} onClick={() => switchTab("overzicht")}>
               Overzicht
             </TabButton>
@@ -124,7 +124,7 @@ function OrgSwitcher({ orgId, onChange }: { orgId: string; onChange: (id: string
       <select
         value={orgId}
         onChange={(e) => onChange(e.target.value)}
-        className="cursor-pointer rounded-lg border border-ink-300 bg-white py-1.5 pl-3 pr-8 text-sm font-bold text-ink-900 shadow-sm transition hover:border-ink-300 focus:outline-none focus:ring-2 focus:ring-in-600 dark:border-ink-800 dark:bg-ink-900 dark:text-white"
+        className="cursor-pointer rounded-lg border border-ink-300 bg-white py-1.5 pl-3 pr-8 text-sm font-bold text-ink-900 shadow-sm transition hover:border-ink-400 focus:outline-none focus:ring-2 focus:ring-in-600 dark:border-ink-800 dark:bg-ink-900 dark:text-white"
       >
         {DEMO_ORGS.map((o) => (
           <option key={o.id} value={o.id}>
@@ -132,12 +132,20 @@ function OrgSwitcher({ orgId, onChange }: { orgId: string; onChange: (id: string
           </option>
         ))}
       </select>
-      <span
+      <svg
         aria-hidden
-        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-600"
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-zacht"
       >
-        ▾
-      </span>
+        <path d="M6 9l6 6 6-6" />
+      </svg>
     </label>
   );
 }
@@ -149,7 +157,7 @@ function OrgSwitcher({ orgId, onChange }: { orgId: string; onChange: (id: string
  */
 function DemoBanner({ onSignup, onExit }: { onSignup: () => void; onExit: () => void }) {
   return (
-    <div className="sticky top-0 z-50 bg-ink-950 text-white">
+    <div className="sticky top-0 z-[var(--z-sticky)] bg-ink-950 text-white">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2.5 sm:px-8">
         <div className="flex items-center gap-2 text-sm">
           <span className="rounded-full bg-in-600/20 px-2 py-0.5 text-xs font-bold text-in-400">
@@ -169,7 +177,7 @@ function DemoBanner({ onSignup, onExit }: { onSignup: () => void; onExit: () => 
           </button>
           <button
             onClick={onSignup}
-            className="rounded-lg bg-in-600 px-4 py-1.5 text-sm font-bold text-ink-900 transition hover:bg-in-600"
+            className="btn btn--primary bg-in-600 text-white hover:bg-in-700"
           >
             Gratis account maken
           </button>
@@ -194,7 +202,7 @@ function TabButton({
       className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
         active
           ? "bg-white text-ink-900 shadow-sm dark:bg-ink-800 dark:text-white"
-          : "text-ink-700 hover:text-ink-900 dark:text-ink-500 dark:hover:text-white"
+          : "text-basis hover:text-ink-900 dark:hover:text-white"
       }`}
     >
       {children}

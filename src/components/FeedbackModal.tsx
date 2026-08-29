@@ -71,7 +71,7 @@ export function FeedbackModal({ open, onClose, orgId, tier }: Props) {
             </svg>
           </div>
           <p className="text-sm font-semibold text-ink-900 dark:text-white">Bedankt voor je feedback.</p>
-          <p className="mt-1 text-sm text-ink-700 dark:text-ink-500">We lezen alles. Soms volgt er een antwoord.</p>
+          <p className="mt-1 text-sm text-basis">We lezen alles. Soms volgt er een antwoord.</p>
           <button onClick={close} className="btn-primary mt-5 w-full">Sluiten</button>
         </div>
       ) : (
@@ -89,10 +89,10 @@ export function FeedbackModal({ open, onClose, orgId, tier }: Props) {
                     type="button"
                     aria-pressed={active}
                     onClick={() => setKind(k.value)}
-                    className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                    className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
                       active
                         ? "border-in-600 bg-in-100 text-in-700 dark:border-in-600 dark:bg-in-600/15 dark:text-in-300"
-                        : "border-ink-300 text-ink-700 hover:bg-ink-50 dark:border-ink-800 dark:text-ink-500 dark:hover:bg-ink-900"
+                        : "border-ink-300 text-basis hover:bg-ink-50 dark:border-ink-800 dark:hover:bg-ink-900"
                     }`}
                   >
                     {k.label}

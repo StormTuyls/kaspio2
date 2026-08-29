@@ -81,7 +81,7 @@ export function OrgSwitcher({
       >
         <span
           className={`min-w-0 flex-1 truncate text-xs ${
-            isDark ? "text-ink-300" : "text-ink-700"
+            isDark ? "text-ink-300" : "text-basis"
           }`}
         >
           {selected.name}
@@ -95,7 +95,7 @@ export function OrgSwitcher({
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={isDark ? "text-ink-400" : "text-ink-600"}
+          className={isDark ? "text-ink-400" : "text-zacht"}
         >
           <polyline points="6 9 12 15 18 9" />
         </svg>
@@ -104,9 +104,9 @@ export function OrgSwitcher({
       {open && (
         <div
           role="menu"
-          className="absolute left-0 right-0 top-full z-40 mt-1 rounded-lg border border-ink-200 bg-white py-1 shadow-lg dark:border-ink-800 dark:bg-ink-900"
+          className="absolute left-0 right-0 top-full z-[var(--z-dropdown)] mt-1 rounded-lg border border-ink-200 bg-white py-1 shadow-lg dark:border-ink-800 dark:bg-ink-900"
         >
-          <div className="px-3 py-1.5 text-[10px] font-bold text-ink-600">
+          <div className="px-3 py-1.5 text-[10px] font-bold text-zacht">
             Organisaties
           </div>
           {orgs.map((o) => (

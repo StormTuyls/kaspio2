@@ -18,7 +18,7 @@ export function Landing({ onLogin, onSignup, onDemo, onExitPreview }: Props) {
   return (
     <div className="min-h-screen bg-white text-ink-900 antialiased">
       {onExitPreview && (
-        <div className="sticky top-0 z-50 flex items-center justify-center gap-3 bg-ink-950 px-4 py-2 text-sm text-white">
+        <div className="sticky top-0 z-[var(--z-overlay)] flex items-center justify-center gap-3 bg-ink-950 px-4 py-2 text-sm text-white">
           <span>Je bekijkt de Kaspio-website.</span>
           <button
             onClick={onExitPreview}
@@ -150,7 +150,7 @@ function Header({ onLogin, onSignup }: { onLogin: () => void; onSignup: () => vo
 
   return (
     <header
-      className={`sticky top-0 z-40 transition-all duration-300 ${
+      className={`sticky top-0 z-[var(--z-sticky)] transition-all duration-300 ${
         scrolled
           ? "border-b border-ink-300/80 bg-white/85 backdrop-blur-md"
           : "border-b border-transparent bg-transparent"
@@ -167,13 +167,13 @@ function Header({ onLogin, onSignup }: { onLogin: () => void; onSignup: () => vo
         <div className="flex items-center gap-3">
           <button
             onClick={onLogin}
-            className="hidden rounded-lg px-4 py-2 text-sm font-semibold text-ink-700 transition hover:text-ink-700 sm:inline-flex"
+            className="hidden rounded-lg px-4 py-2 text-sm font-semibold text-ink-700 transition hover:text-ink-950 sm:inline-flex"
           >
             Inloggen
           </button>
           <button
             onClick={onSignup}
-            className="rounded-lg bg-ink-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-ink-900/10 transition hover:-translate-y-0.5 hover:bg-ink-950 hover:shadow-md hover:shadow-ink-900/10"
+            className="rounded-lg bg-ink-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-ink-900/10 transition hover:-translate-y-0.5 hover:bg-ink-800 hover:shadow-md hover:shadow-ink-900/10"
           >
             Gratis starten →
           </button>
@@ -201,19 +201,19 @@ function Hero({ onSignup, onDemo }: { onSignup: () => void; onDemo: () => void }
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[minmax(0,46%)_minmax(0,54%)] lg:gap-8">
         <div className="text-left">
           <Reveal>
-            <span className="mb-6 inline-flex items-center gap-2 rounded-full bg-ink-100 px-3 py-1 text-[0.75rem] font-medium text-ink-700 dark:bg-ink-900 dark:text-ink-300">
+            <span className="mb-6 inline-flex items-center gap-2 rounded-full bg-ink-100 px-3 py-1 text-[0.75rem] font-medium text-basis dark:bg-ink-900">
               <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-ink-900" />
               Gratis te starten
             </span>
           </Reveal>
 
           <Reveal delay={60}>
-            <h1 className="mb-5 text-[clamp(2.25rem,1.6rem+2.8vw,3.5rem)] font-bold leading-[1.06] text-ink-900 [letter-spacing:-0.025em] dark:text-ink-100">
-              <span className="text-ink-600 dark:text-ink-400">Eén rekening.</span>
+            <h1 className="mb-5 text-[clamp(2.25rem,1.6rem+2.8vw,3.5rem)] font-bold leading-[1.06] text-sterk [letter-spacing:-0.025em]">
+              <span className="text-zacht">Eén rekening.</span>
               <br />
               Meerdere potjes.
               <br />
-              <span className="text-ink-600 dark:text-ink-400">Volledige controle.</span>
+              <span className="text-zacht">Volledige controle.</span>
             </h1>
           </Reveal>
 
@@ -229,13 +229,13 @@ function Hero({ onSignup, onDemo }: { onSignup: () => void; onDemo: () => void }
             <div className="mb-5 flex flex-col gap-3 sm:flex-row">
               <button
                 onClick={onSignup}
-                className="rounded-xl bg-ink-950 px-7 py-3.5 text-base font-bold text-white shadow-md shadow-ink-900/10 transition hover:-translate-y-0.5 hover:bg-ink-950"
+                className="rounded-lg bg-ink-950 px-7 py-3.5 text-base font-bold text-white shadow-md shadow-ink-900/10 transition hover:-translate-y-0.5 hover:bg-ink-800"
               >
                 Gratis starten →
               </button>
               <button
                 onClick={onDemo}
-                className="rounded-xl border border-ink-300 bg-white px-7 py-3.5 text-center text-base font-semibold text-ink-800 transition hover:-translate-y-0.5 hover:border-ink-300 hover:bg-ink-100 hover:text-ink-700"
+                className="rounded-lg border border-ink-300 bg-white px-7 py-3.5 text-center text-base font-semibold text-ink-800 transition hover:-translate-y-0.5 hover:bg-ink-100 hover:text-ink-950"
               >
                 Bekijk de demo
               </button>
@@ -327,7 +327,7 @@ function HeroMockup() {
           {/* pots with progress */}
           <div className="mb-5 grid grid-cols-2 gap-3">
             {pots.slice(0, 2).map((p) => (
-              <div key={p.name} className="rounded-xl border border-ink-200 bg-white p-3.5">
+              <div key={p.name} className="rounded-lg border border-ink-200 bg-white p-3.5">
                 <div className="mb-2 flex items-center justify-between">
                   <span className="flex items-center gap-2 text-xs font-semibold text-ink-800">
                     <span className={`h-2.5 w-2.5 rounded-full ${p.color}`} />
@@ -538,7 +538,7 @@ function Features() {
                   { n: "Jeugdwerking", a: "€9.640", w: "61%", c: "bg-white/70" },
                   { n: "Accommodatie", a: "€5.275", w: "44%", c: "bg-white/45" },
                 ].map((p) => (
-                  <div key={p.n} className="rounded-xl bg-white/10 p-3 backdrop-blur">
+                  <div key={p.n} className="rounded-lg bg-white/10 p-3 backdrop-blur">
                     <div className="mb-1.5 flex items-center justify-between text-xs">
                       <span className="font-medium text-white">{p.n}</span>
                       <span className="font-num tabular-nums text-ink-300">{p.a}</span>
@@ -812,7 +812,7 @@ function Plan({
       )}
       <button
         onClick={onClick}
-        className={`w-full rounded-xl py-3 text-sm font-bold transition ${ctaClass}`}
+        className={`w-full rounded-lg py-3 text-sm font-bold transition ${ctaClass}`}
       >
         {cta}
       </button>
@@ -1005,7 +1005,7 @@ function FooterCol({ title, links }: { title: string; links: string[] }) {
       <ul className="space-y-2.5">
         {links.map((l) => (
           <li key={l}>
-            <a className="text-sm text-ink-300 transition hover:text-ink-300" href="#">
+            <a className="text-sm text-ink-300 transition hover:text-white" href="#">
               {l}
             </a>
           </li>

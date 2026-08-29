@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import type { MemberRole, Pot } from "../supabase";
 import type { InviteInput, InviteResult, OrgInvite } from "../data";
 
+import { Foutmelding } from "./Foutmelding";
 type Props = {
   orgId: string;
   pots: Pot[];
@@ -66,7 +67,7 @@ export function InviteMemberForm({
         <h2 className="text-lg font-bold text-ink-900 dark:text-white">
           Iemand uitnodigen
         </h2>
-        <p className="text-sm text-ink-700 dark:text-ink-500">
+        <p className="text-sm text-basis">
           Vul email + rol in. Je krijgt een persoonlijke uitnodigingslink om
           door te sturen, wie hem opent wordt meteen lid met de juiste toegang.
         </p>
@@ -111,7 +112,7 @@ export function InviteMemberForm({
               Welke potjes
             </span>
             {pots.length === 0 ? (
-              <p className="text-sm text-ink-600">
+              <p className="text-sm text-zacht">
                 Geen potjes beschikbaar. Maak eerst een potje aan.
               </p>
             ) : (
@@ -140,7 +141,7 @@ export function InviteMemberForm({
               </div>
             )}
             {potIds.length > 0 && (
-              <p className="mt-2 text-xs text-ink-600">
+              <p className="mt-2 text-xs text-zacht">
                 {potIds.length} potje{potIds.length === 1 ? "" : "s"} geselecteerd
               </p>
             )}
@@ -148,9 +149,9 @@ export function InviteMemberForm({
         )}
 
         {error && (
-          <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
+          <Foutmelding>
             {error}
-          </div>
+          </Foutmelding>
         )}
 
         {success && (
@@ -188,7 +189,7 @@ export function InviteMemberForm({
                     <div className="break-all font-medium text-ink-900 sm:truncate dark:text-white">
                       {inv.email}
                     </div>
-                    <div className="text-xs text-ink-600">
+                    <div className="text-xs text-zacht">
                       {roleLabel(inv.role)}
                       {accepted ? " · ✓ geaccepteerd" : " · wacht op login"}
                     </div>

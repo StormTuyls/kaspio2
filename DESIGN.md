@@ -62,10 +62,39 @@ wat gemeten is, is wat je ziet). De hex erachter is de weergave.
 --color-uit-300   oklch(0.8500 0.0850 62)    #f7c294
 --color-uit-100   oklch(0.9500 0.0330 70)    #fdebd7   badge-vulling
 
+--color-fout-700  oklch(0.4400 0.1750 25)    #a01d23   fout, hover
 --color-fout-600  oklch(0.5250 0.1900 25)    #c0242b   fout           5.84:1
 --color-fout-400  oklch(0.7000 0.1600 25)    #f2716a   fout, donker
 --color-fout-100  oklch(0.9450 0.0260 25)    #fee7e4
 ```
+
+### De semantische laag
+
+De trap hierboven is het palet. **Een component gebruikt hem niet rechtstreeks.**
+Er zijn vier tekstrollen, en die draaien zelf mee met het thema:
+
+```
+text-sterk    hoofdtekst      licht ink-900   donker ink-100
+text-basis    secundair       licht ink-700   donker ink-300
+text-zacht    tertiair        licht ink-600   donker ink-400
+text-zwak     placeholder     licht ink-500   donker ink-400
+```
+
+Schrijf `text-zacht`, niet `text-ink-600 dark:text-ink-500`. Dat laatste werkte,
+maar iedereen koos zijn eigen paar: er stonden veertien verschillende
+licht/donker-combinaties in de app voor vier rollen, en 228 daarvan zakten in
+donkere modus onder 4.5:1 terwijl `contrast.py` "allemaal goed" meldde. Het
+script mat het palet, niet het gebruik. Nu meet het allebei.
+
+Waarom dit werkt: Tailwind v4 zendt een utility uit als
+`color: var(--color-zacht)`, en `html.dark` herdefinieert die variabele. Eén
+klasse, twee thema's, één plek waar donker gedefinieerd staat.
+
+Uitzondering: vlakken die in **beide** thema's donker zijn (de bankkaart, de
+zijbalk, de voettekst van de landing). Daar staat licht op donker in lichte
+modus, dus daar horen de inkt-klassen wel rechtstreeks. `contrast.py` scant
+daarom alleen de `dark:`-kant statisch; die kant is eenduidig. Voor de lichte
+kant meet je op een echte pagina met `contrast-in-de-browser.js`.
 
 Donker keert de inkt-ramp om: `ink-950` wordt de pagina, `ink-900` het verhoogde
 vlak, `ink-100` de hoofdtekst. De geldkleuren schuiven naar de `-400`-trap.
@@ -74,6 +103,11 @@ vlak, `ink-100` de hoofdtekst. De geldkleuren schuiven naar de `-400`-trap.
 kiest zelf een kleur per potje, puur als herkenningsteken. Die kleur verschijnt
 als één bolletje van 8px naast de naam en nergens anders. Nooit als vlak, nooit
 als rand, nooit twee keer op hetzelfde element.
+
+Heeft een potje geen eigen kleur, dan geldt `POT_KLEUR_STANDAARD` uit
+`src/types.ts`. Eén constante, want die fallback stond op negen plaatsen en op
+drie ervan anders: hetzelfde potje was groen in de zijbalk, indigo op het
+dashboard en grijs in de transactielijst.
 
 ## Typography
 
@@ -171,15 +205,31 @@ Alles staat achter `@media (prefers-reduced-motion: reduce)`.
 
 ## Components
 
+CSS-klassen in `src/App.css`:
+
 | naam | rol |
 |---|---|
 | `.btn` + `.btn--primary/secondary/ghost/danger` | knoppen, 44px op touch, 36px vanaf `sm` |
-| `.field` | invoer, label en fout in één blok |
+| `.input` | invoer, 16px op touch zodat iOS niet inzoomt |
 | `.panel` | los blok met rand, alleen waar het echt losstaat |
 | `.rule` | haarlijn tussen secties |
-| `.tag` | statuslabel, gevuld met betekeniskleur |
-| `.amount` | bedrag: mono, tabular, teken altijd zichtbaar |
-| `.stack` / `.row` | verticaal en horizontaal ritme |
+| `.tag` + `.tag--in/uit/neutraal/fout` | statuslabel, gevuld met betekeniskleur |
+| `.amount` + `.amount--in/uit` | bedrag: mono, tabular, teken altijd zichtbaar |
+| `.titel` / `.sectiekop` / `.meta` / `.micro` | tekstrollen, h1 tot label |
+
+React-componenten die een patroon dragen:
+
+| naam | rol |
+|---|---|
+| `<Modal>` | dialoog: rol, naam, focusval, focus terug naar de opener |
+| `<Veld>` | label, hint en fout rond één invoer, correct gekoppeld |
+| `<Foutmelding>` | "dit ging mis", met `role="alert"` |
+
+`<Veld>` bestaat omdat de hint eerder binnen het `<label>` stond. Voor een
+schermlezer is dat de naam van het veld, dus "Potje" heette in werkelijkheid
+"Potje Weet je nog niet waarvoor het is? Kies 'Nog toe te wijzen', dan verdeel
+je het later." Bij elke focus opnieuw. De hint hangt er nu aan via
+`aria-describedby`, waar hij hoort.
 
 ## Anti-patterns die hier verboden zijn
 
@@ -190,3 +240,15 @@ Alles staat achter `@media (prefers-reduced-motion: reduce)`.
 - Een klein hoofdletterlabel met brede letterafstand boven elke sectie.
 - Een `<button>` om een hele kaart heen: de toegankelijke naam wordt dan de hele
   inhoud. De naam is de link, de rest van de kaart is tekst.
+- Een eigen licht/donker-paar kiezen waar `text-sterk/basis/zacht/zwak` bestaat.
+- Betekeniskleur voor iets dat geen geld is. Groen was ook de markering van het
+  actieve menu-item en van een broodkruimel-link; dan betekent groen niets meer.
+  Rood was ook de kleur van een uitgaand bedrag, terwijl rood alleen fout is.
+- Een hoverstaat die dezelfde waarde teruggeeft (`bg-in-600 hover:bg-in-600`).
+  Er stonden er negentien, waaronder de hoofdknop van de landing en de
+  inlogknop: die gaven bij aanwijzen geen enkel signaal.
+- Mono op iets dat geen getal is. Een groepsnaam of een sectiekop in
+  JetBrains Mono is hetzelfde kapstoklabel als een kleinkapitaal-kopje, alleen
+  met een ander lettertype.
+- Ruwe z-index-getallen. De schaal staat in `:root`; gebruik
+  `z-[var(--z-sticky)]` en verwanten.

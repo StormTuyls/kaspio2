@@ -15,6 +15,7 @@ import {
   rootGroups,
   subGroups,
 } from "../storage";
+import { POT_KLEUR_STANDAARD } from "../types";
 import type { Pot, PotGroup, Transaction, TransactionDirection } from "../types";
 import type { SubTier } from "../supabase";
 import { chartsEnabled } from "../data";
@@ -179,7 +180,7 @@ export function TransactionsView({
           <h1 className="text-2xl font-bold text-ink-900 dark:text-white">
             Transacties
           </h1>
-          <p className="mt-1 text-sm text-ink-700 dark:text-ink-500">
+          <p className="mt-1 text-sm text-basis">
             De volledige geschiedenis van {orgName}, over alle potjes heen.
           </p>
         </div>
@@ -227,7 +228,7 @@ export function TransactionsView({
       <div className="card space-y-3 p-4">
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
+            <span className="mb-1 block text-xs font-medium text-basis">
               Periode
             </span>
             <select
@@ -244,7 +245,7 @@ export function TransactionsView({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
+            <span className="mb-1 block text-xs font-medium text-basis">
               Groep
             </span>
             <select
@@ -284,7 +285,7 @@ export function TransactionsView({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
+            <span className="mb-1 block text-xs font-medium text-basis">
               Potje
             </span>
             <select
@@ -310,7 +311,7 @@ export function TransactionsView({
         {preset === "custom" && (
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">
-              <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
+              <span className="mb-1 block text-xs font-medium text-basis">
                 Van
               </span>
               <input
@@ -321,7 +322,7 @@ export function TransactionsView({
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
+              <span className="mb-1 block text-xs font-medium text-basis">
                 Tot en met
               </span>
               <input
@@ -336,7 +337,7 @@ export function TransactionsView({
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <div className="relative flex-1">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-500 dark:text-ink-700">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zwak">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="7" />
                 <path d="m21 21-4.35-4.35" />
@@ -350,7 +351,7 @@ export function TransactionsView({
               className="input pl-9"
             />
           </div>
-          <div className="grid grid-cols-3 gap-1 rounded-xl border border-ink-200 bg-white p-1 text-xs font-semibold sm:flex dark:border-ink-800 dark:bg-ink-900">
+          <div className="grid grid-cols-3 gap-1 rounded-lg border border-ink-200 bg-white p-1 text-xs font-semibold sm:flex dark:border-ink-800 dark:bg-ink-900">
             {(["all", "in", "out"] as const).map((d) => (
               <button
                 key={d}
@@ -358,7 +359,7 @@ export function TransactionsView({
                 className={`rounded-lg px-3 py-1.5 transition ${
                   direction === d
                     ? "bg-ink-950 text-white dark:bg-white dark:text-ink-900"
-                    : "text-ink-700 hover:text-ink-900 dark:text-ink-500 dark:hover:text-white"
+                    : "text-basis hover:text-ink-900 dark:hover:text-white"
                 }`}
               >
                 {d === "all" ? "Alle" : d === "in" ? "Inkomend" : "Uitgaand"}
@@ -376,7 +377,7 @@ export function TransactionsView({
       {/* ---- Totalen over de filter ---- */}
       <div className="card grid grid-cols-2 gap-3 p-4 sm:grid-cols-4">
         <div>
-          <p className="text-xs font-semibold text-ink-600 dark:text-ink-500">
+          <p className="text-xs font-semibold text-zacht">
             Transacties
           </p>
           <p className="text-xl font-bold tabular-nums text-ink-900 dark:text-white">
@@ -389,7 +390,7 @@ export function TransactionsView({
           </p>
         </div>
         <div>
-          <p className="text-xs font-semibold text-ink-600 dark:text-ink-500">
+          <p className="text-xs font-semibold text-zacht">
             Inkomend
           </p>
           <p className="text-xl font-bold tabular-nums text-in-700 dark:text-in-400">
@@ -397,7 +398,7 @@ export function TransactionsView({
           </p>
         </div>
         <div>
-          <p className="text-xs font-semibold text-ink-600 dark:text-ink-500">
+          <p className="text-xs font-semibold text-zacht">
             Uitgaand
           </p>
           <p className="text-xl font-bold tabular-nums text-uit-700 dark:text-uit-400">
@@ -405,7 +406,7 @@ export function TransactionsView({
           </p>
         </div>
         <div>
-          <p className="text-xs font-semibold text-ink-600 dark:text-ink-500">
+          <p className="text-xs font-semibold text-zacht">
             Resultaat
           </p>
           <p
@@ -424,10 +425,10 @@ export function TransactionsView({
       {/* ---- Lijst ---- */}
       {filtered.length === 0 ? (
         <div className="card border-dashed py-12 text-center">
-          <p className="mb-1 text-base font-semibold text-ink-900 dark:text-ink-100">
+          <p className="mb-1 text-base font-semibold text-sterk">
             {scoped.length === 0 ? "Nog geen transacties" : "Geen resultaten"}
           </p>
-          <p className="text-sm text-ink-700 dark:text-ink-500">
+          <p className="text-sm text-basis">
             {scoped.length === 0
               ? "Zodra er geld binnenkomt of vertrekt, zie je het hier."
               : "Geen transacties die overeenkomen met je filters."}
@@ -444,7 +445,7 @@ export function TransactionsView({
             {filtered.map((tx) => (
               <li key={tx.id} className="px-4 py-3.5">
                 <div className="mb-1 flex items-baseline justify-between gap-3">
-                  <span className="truncate font-semibold text-ink-900 dark:text-ink-100">
+                  <span className="truncate font-semibold text-sterk">
                     {tx.counterparty}
                   </span>
                   <span
@@ -458,7 +459,7 @@ export function TransactionsView({
                     {formatEuro(tx.amount)}
                   </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-700 dark:text-ink-500">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-basis">
                   <span>{formatDate(tx.occurredOn)}</span>
                   <span aria-hidden>·</span>
                   <PotChip
@@ -469,7 +470,7 @@ export function TransactionsView({
                   {tx.status === "pending" && <PendingChip />}
                 </div>
                 {tx.memo && (
-                  <p className="mt-1 text-sm text-ink-700 dark:text-ink-600">
+                  <p className="mt-1 text-sm text-basis">
                     {tx.memo}
                   </p>
                 )}
@@ -478,7 +479,7 @@ export function TransactionsView({
           </ul>
 
           <table className="hidden w-full text-sm sm:table">
-            <thead className="bg-ink-50 text-xs font-semibold text-ink-600 dark:bg-ink-900/50 dark:text-ink-500">
+            <thead className="bg-ink-50 text-xs font-semibold text-zacht dark:bg-ink-900/50">
               <tr>
                 <th className="px-4 py-3 text-left">Datum</th>
                 <th className="px-4 py-3 text-left">Potje</th>
@@ -493,7 +494,7 @@ export function TransactionsView({
                   key={tx.id}
                   className="transition hover:bg-ink-50 dark:hover:bg-ink-900/40"
                 >
-                  <td className="whitespace-nowrap px-4 py-3 text-ink-700 dark:text-ink-500">
+                  <td className="whitespace-nowrap px-4 py-3 text-basis">
                     {formatDate(tx.occurredOn)}
                   </td>
                   <td className="px-4 py-3">
@@ -505,13 +506,13 @@ export function TransactionsView({
                       }
                     />
                   </td>
-                  <td className="px-4 py-3 font-medium text-ink-900 dark:text-ink-100">
+                  <td className="px-4 py-3 font-medium text-sterk">
                     <span className="flex items-center gap-2">
                       {tx.counterparty}
                       {tx.status === "pending" && <PendingChip />}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-ink-700 dark:text-ink-600">
+                  <td className="px-4 py-3 text-basis">
                     {tx.memo ?? "—"}
                   </td>
                   <td
@@ -548,7 +549,7 @@ function PotChip({
       <span
         aria-hidden
         className="h-2 w-2 flex-shrink-0 rounded-full"
-        style={{ backgroundColor: pot?.color ?? "#94a3b8" }}
+        style={{ backgroundColor: pot?.color ?? POT_KLEUR_STANDAARD }}
       />
       <span className="truncate">{label}</span>
     </>

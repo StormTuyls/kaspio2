@@ -8,16 +8,18 @@ type Props = {
 export function AuditLogView({ entries, loading }: Props) {
   return (
     <div className="space-y-4">
-      <div className="rounded-md border border-ink-200 bg-white p-5 dark:border-ink-800 dark:bg-ink-950">
-        <h3 className="mb-4 text-sm font-bold text-ink-700 dark:text-ink-500">
-          Activiteit ({entries.length}
+      <h1 className="titel">Activiteit</h1>
+
+      <div className="panel p-5">
+        <h2 className="sectiekop mb-4">
+          Alles wat er gebeurd is ({entries.length}
           {entries.length === 100 ? "+" : ""})
-        </h3>
+        </h2>
 
         {loading ? (
-          <p className="text-sm text-ink-600">Laden...</p>
+          <p className="text-sm text-zacht">Laden...</p>
         ) : entries.length === 0 ? (
-          <p className="text-sm text-ink-600">
+          <p className="text-sm text-zacht">
             Nog geen activiteit. Zodra iemand een potje of transactie aanmaakt,
             zie je het hier.
           </p>
@@ -30,7 +32,7 @@ export function AuditLogView({ entries, loading }: Props) {
         )}
       </div>
 
-      <p className="text-center text-xs text-ink-600">
+      <p className="text-center text-xs text-zacht">
         Toont de laatste 100 acties. Audit-spoor wordt automatisch bijgehouden
         en kan niet worden gewijzigd.
       </p>
@@ -53,12 +55,12 @@ function AuditEntry({ entry }: { entry: AuditRow }) {
       <div className="min-w-0 flex-1">
         <div className="text-sm text-ink-900 dark:text-white">
           <span className="font-semibold">{entry.actor_name}</span>{" "}
-          <span className="text-ink-700 dark:text-ink-500">{label}</span>
+          <span className="text-basis">{label}</span>
         </div>
         {detail && (
-          <div className="mt-0.5 text-xs text-ink-600">{detail}</div>
+          <div className="mt-0.5 text-xs text-zacht">{detail}</div>
         )}
-        <div className="mt-0.5 text-[11px] text-ink-600">
+        <div className="mt-0.5 text-[11px] text-zacht">
           {formatDateTime(entry.created_at)}
         </div>
       </div>

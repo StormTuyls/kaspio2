@@ -3,6 +3,7 @@ import type { SubTier } from "../supabase";
 import { groupsEnabled } from "../data";
 import { SETUP_TEMPLATES, type SetupTemplate, type TemplatePot } from "../setupTemplates";
 
+import { Foutmelding } from "./Foutmelding";
 type Props = {
   tier: SubTier;
   /** Aantal potjes dat er nog bij mag (limiet minus bestaande). Kan Infinity. */
@@ -30,7 +31,7 @@ export function SetupWizard({ tier, availableSlots, onApply, onClose }: Props) {
   if (!template) {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-ink-700 dark:text-ink-500">
+        <p className="text-sm text-basis">
           Waarvoor gebruik je Kaspio? We zetten meteen een paar zinnige potjes
           voor je klaar. Aanpassen kan altijd.
         </p>
@@ -50,18 +51,18 @@ export function SetupWizard({ tier, availableSlots, onApply, onClose }: Props) {
               <span className="block font-semibold text-ink-900 dark:text-white">
                 {t.label}
               </span>
-              <span className="block text-sm text-ink-700 dark:text-ink-500">
+              <span className="block text-sm text-basis">
                 {t.description}
               </span>
             </span>
-            <span className="text-ink-500" aria-hidden>
+            <span className="text-zwak" aria-hidden>
               →
             </span>
           </button>
         ))}
         <button
           onClick={onClose}
-          className="w-full py-2 text-center text-sm font-medium text-ink-600 hover:text-ink-800 dark:hover:text-ink-200"
+          className="w-full py-2 text-center text-sm font-medium text-zacht hover:text-ink-800 dark:hover:text-ink-200"
         >
           Ik doe het liever zelf
         </button>
@@ -105,17 +106,17 @@ export function SetupWizard({ tier, availableSlots, onApply, onClose }: Props) {
       <div className="flex items-center gap-2 text-sm">
         <button
           onClick={() => setTemplate(null)}
-          className="font-medium text-ink-700 hover:text-ink-900 dark:text-ink-500 dark:hover:text-white"
+          className="font-medium text-basis hover:text-ink-900 dark:hover:text-white"
         >
           ← Ander type
         </button>
-        <span className="text-ink-500">·</span>
+        <span className="text-zwak">·</span>
         <span className="font-semibold text-ink-900 dark:text-white">
           {template.emoji} {template.label}
         </span>
       </div>
 
-      <p className="text-sm text-ink-700 dark:text-ink-500">
+      <p className="text-sm text-basis">
         Deze potjes maken we aan. Vink af wat je niet wil.
       </p>
 
@@ -126,7 +127,7 @@ export function SetupWizard({ tier, availableSlots, onApply, onClose }: Props) {
           return (
             <li key={p.name}>
               <label
-                className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 transition ${
+                className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 transition ${
                   on
                     ? "border-ink-200 bg-ink-50 dark:border-ink-800/60 dark:bg-ink-900/40"
                     : "border-dashed border-ink-200 opacity-50 dark:border-ink-800/60"
@@ -143,11 +144,11 @@ export function SetupWizard({ tier, availableSlots, onApply, onClose }: Props) {
                   style={{ backgroundColor: p.color }}
                   aria-hidden
                 />
-                <span className="min-w-0 flex-1 text-sm font-medium text-ink-900 dark:text-ink-100">
+                <span className="min-w-0 flex-1 text-sm font-medium text-sterk">
                   {p.name}
                 </span>
                 {useGroups && p.group && (
-                  <span className="rounded-full bg-ink-100 px-2 py-0.5 text-[11px] font-medium text-ink-700 dark:bg-ink-900 dark:text-ink-500">
+                  <span className="rounded-full bg-ink-100 px-2 py-0.5 text-[11px] font-medium text-basis dark:bg-ink-900">
                     {p.group}
                   </span>
                 )}
@@ -169,16 +170,16 @@ export function SetupWizard({ tier, availableSlots, onApply, onClose }: Props) {
         </div>
       )}
       {!useGroups && template.groups.length > 0 && (
-        <p className="text-xs text-ink-600 dark:text-ink-600">
+        <p className="text-xs text-zacht">
           Groepen (takken/afdelingen) zijn beschikbaar op Team. We maken de potjes
           nu zonder groep aan.
         </p>
       )}
 
       {error && (
-        <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
+        <Foutmelding>
           {error}
-        </div>
+        </Foutmelding>
       )}
 
       <div className="flex justify-end gap-2 pt-1">

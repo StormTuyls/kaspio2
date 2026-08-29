@@ -2,6 +2,7 @@ import { useState } from "react";
 import { formatEuro, formatEuroCompact } from "../storage";
 import type { Transaction } from "../types";
 
+import { Segment } from "./Segment";
 type Props = {
   /** Transacties binnen het bereik van de gebruiker (admin/reader: alle; pot-owner: eigen). */
   transactions: Transaction[];
@@ -138,33 +139,22 @@ export function CashflowChart({ transactions }: Props) {
     <div className="rounded-md border border-ink-300/80 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_6px_20px_-12px_rgba(15,23,42,0.1)] dark:border-ink-800/60 dark:bg-ink-950 dark:shadow-none">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-base font-bold tracking-tight text-ink-900 dark:text-ink-100">
-            Cashflow
-          </h3>
-          <p className="text-xs text-ink-600 dark:text-ink-500">{conf.sub}</p>
+          <h2 className="sectiekop">Cashflow</h2>
+          <p className="text-xs text-zacht">{conf.sub}</p>
         </div>
-        <div className="inline-flex rounded-xl bg-ink-100 p-1 dark:bg-ink-900">
-          {PERIODS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setPeriod(p.id)}
-              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
-                period === p.id
-                  ? "bg-white text-ink-700 shadow-sm dark:bg-ink-800 dark:text-white"
-                  : "text-ink-700 hover:text-ink-800 dark:text-ink-500"
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
+        <Segment
+          opties={PERIODS}
+          waarde={period}
+          onChange={setPeriod}
+          label="Periode voor de cashflow"
+        />
       </div>
 
       <div className="mb-1 flex items-center gap-3 text-xs">
-        <span className="flex items-center gap-1.5 text-ink-700 dark:text-ink-500">
+        <span className="flex items-center gap-1.5 text-basis">
           <span className="h-2.5 w-2.5 rounded-sm bg-in-600" /> Inkomend
         </span>
-        <span className="flex items-center gap-1.5 text-ink-700 dark:text-ink-500">
+        <span className="flex items-center gap-1.5 text-basis">
           <span className="h-2.5 w-2.5 rounded-sm bg-uit-600" /> Uitgaand
         </span>
       </div>
@@ -241,7 +231,7 @@ export function CashflowChart({ transactions }: Props) {
           })}
         </svg>
       ) : (
-        <div className="flex h-44 items-center justify-center text-center text-sm text-ink-600 dark:text-ink-500">
+        <div className="flex h-44 items-center justify-center text-center text-sm text-zacht">
           Geen transacties in deze periode.
         </div>
       )}

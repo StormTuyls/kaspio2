@@ -11,25 +11,25 @@ type Props = {
 /** Toont waar een Pro+ functie zou staan, met een upgrade-aanzet. */
 export function UpgradeHint({ title, description, onUpgrade, compact, badge = "Pro" }: Props) {
   return (
+    // Deze doos was groen: vulling, rand, kop, tekst en knop allemaal in de
+    // "geld erin"-kleur. Dat is de enige kleur die in Kaspio een betekenis
+    // heeft, en een betaalmuur is geen inkomst. Een gestippelde haarlijn zegt
+    // "hier zou iets staan" net zo goed, zonder de code te vervuilen.
     <div
-      className={`flex items-center justify-between gap-3 rounded-md border border-dashed border-in-300 bg-in-100/60 ${
+      className={`flex items-center justify-between gap-3 rounded-md border border-dashed ${
         compact ? "px-4 py-3" : "px-5 py-6"
-      } dark:border-in-600 dark:bg-in-700/20`}
+      }`}
+      style={{ borderColor: "var(--lijn-sterk)" }}
     >
       <div className="min-w-0">
-        <p className="flex items-center gap-1.5 text-sm font-semibold text-in-700 dark:text-in-300">
-          <span className="badge-amber">{badge}</span>
+        <p className="flex items-center gap-1.5 text-sm font-semibold text-sterk">
+          <span className="tag tag--uit">{badge}</span>
           {title}
         </p>
-        <p className="mt-0.5 text-xs text-in-700/80 dark:text-in-400/80">
-          {description}
-        </p>
+        <p className="mt-0.5 text-xs text-zacht">{description}</p>
       </div>
       {onUpgrade && (
-        <button
-          onClick={onUpgrade}
-          className="flex-shrink-0 rounded-lg bg-in-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-in-600"
-        >
+        <button onClick={onUpgrade} className="btn btn--secondary flex-shrink-0">
           Upgrade
         </button>
       )}

@@ -1,8 +1,10 @@
 import { useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 import { Mark } from "../components/Logo";
 import { signOut, updateUserPassword } from "../supabase";
 
+import { Veld as Field } from "../components/Veld";
+import { Foutmelding } from "../components/Foutmelding";
 type Props = {
   /** Wordt aangeroepen wanneer het wachtwoord succesvol is geüpdatet. */
   onDone: () => void;
@@ -61,7 +63,7 @@ export function PasswordResetView({ onDone }: Props) {
           <h1 className="mb-2 text-xl font-bold text-ink-900 dark:text-white">
             Wachtwoord aangepast
           </h1>
-          <p className="text-sm text-ink-700 dark:text-ink-500">
+          <p className="text-sm text-basis">
             Je wordt zo doorgestuurd naar de app.
           </p>
         </div>
@@ -83,7 +85,7 @@ export function PasswordResetView({ onDone }: Props) {
           <h1 className="mb-2 text-xl font-bold text-ink-900 dark:text-white">
             Stel een nieuw wachtwoord in
           </h1>
-          <p className="mb-6 text-sm text-ink-700 dark:text-ink-500">
+          <p className="mb-6 text-sm text-basis">
             Kies een sterk wachtwoord. Daarna ben je weer ingelogd.
           </p>
 
@@ -113,9 +115,9 @@ export function PasswordResetView({ onDone }: Props) {
             </Field>
 
             {error && (
-              <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
+              <Foutmelding>
                 {error}
-              </div>
+              </Foutmelding>
             )}
 
             <button
@@ -129,7 +131,7 @@ export function PasswordResetView({ onDone }: Props) {
             <button
               type="button"
               onClick={cancel}
-              className="block w-full text-center text-xs text-ink-600 hover:text-ink-800 dark:hover:text-ink-200"
+              className="block w-full text-center text-xs text-zacht hover:text-ink-800 dark:hover:text-ink-200"
             >
               Annuleren en uitloggen
             </button>
@@ -140,26 +142,3 @@ export function PasswordResetView({ onDone }: Props) {
   );
 }
 
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: ReactNode;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
-        {label}
-      </span>
-      {children}
-      {hint && (
-        <span className="mt-1 block text-xs text-ink-600 dark:text-ink-500">
-          {hint}
-        </span>
-      )}
-    </label>
-  );
-}

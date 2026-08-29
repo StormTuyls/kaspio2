@@ -3,6 +3,7 @@ import { formatDate, formatEuro } from "../storage";
 import type { Pot, Transaction } from "../types";
 import { useAlert, useConfirm } from "./ConfirmDialog";
 
+import { Foutmelding } from "./Foutmelding";
 type Props = {
   /** Alleen de onverdeelde transacties (potId === null). */
   transactions: Transaction[];
@@ -173,7 +174,7 @@ export function UnallocatedInbox({
 
   if (transactions.length === 0) {
     return (
-      <p className="py-6 text-center text-sm text-ink-700 dark:text-ink-500">
+      <p className="py-6 text-center text-sm text-basis">
         Alles is toegewezen. Nieuw geld zonder potje verschijnt hier.
       </p>
     );
@@ -181,15 +182,15 @@ export function UnallocatedInbox({
 
   return (
     <div className="space-y-2">
-      <p className="text-sm text-ink-700 dark:text-ink-500">
+      <p className="text-sm text-basis">
         Dit geld staat op de rekening maar heeft nog geen bestemming. Wijs het
         toe aan een potje, of hou het bewust in de hoofdpot. Pas daarna kan je
         het verdelen.
       </p>
       {(onBulkDelete || onBulkAssign) && (
-        <div className="space-y-2 rounded-xl border border-ink-200 bg-ink-50 px-3 py-2.5 dark:border-ink-800/60 dark:bg-ink-900/40">
+        <div className="space-y-2 rounded-lg border border-ink-200 bg-ink-50 px-3 py-2.5 dark:border-ink-800/60 dark:bg-ink-900/40">
           <div className="flex items-center justify-between gap-3">
-            <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-ink-700 dark:text-ink-500">
+            <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-basis">
               <input
                 type="checkbox"
                 checked={allSelected}
@@ -201,7 +202,7 @@ export function UnallocatedInbox({
             {selected.size > 0 && (
               <button
                 onClick={() => setSelected(new Set())}
-                className="text-xs font-medium text-ink-700 hover:underline dark:text-ink-500"
+                className="text-xs font-medium text-basis hover:underline"
               >
                 {selected.size} geselecteerd · wis
               </button>
@@ -287,10 +288,10 @@ export function UnallocatedInbox({
                   beneden in plaats van de tekst plat te drukken. */}
               <div className="min-w-[15rem] flex-1">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="truncate text-sm font-medium text-ink-900 dark:text-ink-100">
+                  <span className="truncate text-sm font-medium text-sterk">
                     {tx.counterparty || "Onbekend"}
                   </span>
-                  <span className="whitespace-nowrap text-sm font-bold tabular-nums text-ink-900 dark:text-ink-100">
+                  <span className="whitespace-nowrap text-sm font-bold tabular-nums text-sterk">
                     {tx.direction === "in" ? "+" : "−"}
                     {formatEuro(tx.amount)}
                   </span>
@@ -300,7 +301,7 @@ export function UnallocatedInbox({
                     zichtbaar. De mededeling krijgt daaronder de volle breedte,
                     want die is lang en juist daar staat de gestructureerde
                     referentie waaraan je de post herkent. */}
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ink-600 dark:text-ink-700">
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-zacht">
                   <span className="whitespace-nowrap">{formatDate(tx.occurredOn)}</span>
                   {toonRekening && tx.bankAccount && (
                     <>
@@ -314,7 +315,7 @@ export function UnallocatedInbox({
                     return n > 1 ? (
                       <>
                         <span aria-hidden>·</span>
-                        <span className="text-ink-700 dark:text-ink-500">
+                        <span className="text-basis">
                           nog {n - 1} van deze tegenpartij
                         </span>
                       </>
@@ -324,7 +325,7 @@ export function UnallocatedInbox({
 
                 {tx.memo && (
                   <p
-                    className="mt-0.5 line-clamp-2 break-all text-xs text-ink-600 dark:text-ink-700"
+                    className="mt-0.5 line-clamp-2 break-all text-xs text-zacht"
                     title={tx.memo}
                   >
                     {tx.memo}
@@ -363,7 +364,7 @@ export function UnallocatedInbox({
                     if (await confirm({ title: "Transactie verwijderen?", confirmLabel: "Verwijderen", danger: true }))
                       onDelete(tx.transactionId);
                   }}
-                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md text-ink-500 hover:bg-fout-100 hover:text-fout-600 sm:h-auto sm:w-auto sm:px-2 sm:py-1 dark:text-ink-700 dark:hover:bg-fout-600/30 dark:hover:text-fout-400"
+                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md text-zwak hover:bg-fout-100 hover:text-fout-600 sm:h-auto sm:w-auto sm:px-2 sm:py-1 dark:hover:bg-fout-600/30 dark:hover:text-fout-400"
                   aria-label="Verwijderen"
                 >
                   ✕
@@ -464,7 +465,7 @@ function AssignPanel({
   }
 
   return (
-    <div className="mt-3 space-y-2 rounded-xl border border-ink-200 bg-ink-50 p-3 dark:border-ink-800 dark:bg-ink-900/50">
+    <div className="mt-3 space-y-2 rounded-lg border border-ink-200 bg-ink-50 p-3 dark:border-ink-800 dark:bg-ink-900/50">
       {rows.map((row, i) => (
         <div key={i} className="flex items-center gap-2">
           <select
@@ -480,7 +481,7 @@ function AssignPanel({
             ))}
           </select>
           <div className="relative w-28">
-            <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-ink-600">
+            <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-zacht">
               €
             </span>
             <input
@@ -494,7 +495,7 @@ function AssignPanel({
           {rows.length > 1 && (
             <button
               onClick={() => removeRow(i)}
-              className="flex-shrink-0 rounded-md px-1.5 py-1 text-ink-500 hover:bg-fout-100 hover:text-fout-600 dark:hover:bg-fout-600/30"
+              className="flex-shrink-0 rounded-md px-1.5 py-1 text-zwak hover:bg-fout-100 hover:text-fout-600 dark:hover:bg-fout-600/30"
               aria-label="Deel verwijderen"
             >
               ✕
@@ -526,15 +527,15 @@ function AssignPanel({
       </div>
 
       {error && (
-        <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-xs text-fout-600">
+        <Foutmelding className="text-xs">
           {error}
-        </div>
+        </Foutmelding>
       )}
 
       <div className="flex justify-between pt-1">
         <button
           onClick={onDelete}
-          className="text-xs text-ink-600 hover:text-fout-600 dark:hover:text-fout-400"
+          className="text-xs text-zacht hover:text-fout-600 dark:hover:text-fout-400"
         >
           Verwijderen
         </button>

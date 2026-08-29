@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { Mark } from "../components/Logo";
+import { Veld as Field } from "../components/Veld";
+import { Foutmelding } from "../components/Foutmelding";
 import {
   SUPABASE_CONFIGURED,
   resetPasswordForEmail,
@@ -30,9 +32,9 @@ type Props = {
 
 // Gedeelde class-strings zodat de hele auth-flow dezelfde iris/emerald-look heeft.
 const inputCls =
-  "w-full rounded-xl border border-ink-300 bg-white px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition placeholder:text-ink-600 focus:border-ink-300 focus:outline-none focus:ring-4 focus:ring-ink-900 dark:border-ink-800 dark:bg-ink-900 dark:text-ink-100 dark:placeholder:text-ink-700 dark:focus:border-ink-300 dark:focus:ring-ink-900";
+  "w-full rounded-lg border border-ink-300 bg-white px-3.5 py-2.5 text-sm text-sterk shadow-sm transition placeholder:text-ink-600 focus:border-ink-300 focus:outline-none focus:ring-4 focus:ring-ink-900 dark:border-ink-800 dark:bg-ink-900 dark:placeholder:text-ink-700 dark:focus:border-ink-300 dark:focus:ring-ink-900";
 const btnPrimary =
-  "w-full rounded-xl bg-ink-950 px-4 py-3 text-sm font-bold text-white shadow-sm shadow-ink-900/10 transition hover:-translate-y-0.5 hover:bg-ink-950 disabled:translate-y-0 disabled:opacity-50";
+  "w-full rounded-lg bg-ink-950 px-4 py-3 text-sm font-bold text-white shadow-sm shadow-ink-900/10 transition hover:-translate-y-0.5 hover:bg-ink-800 disabled:translate-y-0 disabled:opacity-50";
 
 export function AuthView({
   initialMode,
@@ -52,7 +54,7 @@ export function AuthView({
         <div className="relative flex flex-col overflow-hidden px-6 py-8 lg:px-14">
           <button
             onClick={onBack}
-            className="relative mb-8 flex items-center gap-2 self-start text-sm font-medium text-ink-700 transition hover:text-ink-700 dark:text-ink-500 dark:hover:text-white"
+            className="relative mb-8 flex items-center gap-2 self-start text-sm font-medium text-basis transition hover:text-sterk"
           >
             ← Terug
           </button>
@@ -66,13 +68,13 @@ export function AuthView({
             </div>
 
             <div className="rounded-lg border border-ink-300/80 bg-white/90 p-7 shadow-[0_20px_60px_-24px_rgba(49,46,129,0.35)] backdrop-blur-xl dark:border-ink-800/60 dark:bg-ink-950/85">
-              <div className="mb-6 grid grid-cols-2 rounded-xl bg-ink-100 p-1 dark:bg-ink-900">
+              <div className="mb-6 grid grid-cols-2 rounded-lg bg-ink-100 p-1 dark:bg-ink-900">
                 <button
                   onClick={() => setMode("login")}
                   className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
                     mode === "login"
                       ? "bg-white text-ink-700 shadow-sm dark:bg-ink-800 dark:text-white"
-                      : "text-ink-700 hover:text-ink-800 dark:text-ink-500"
+                      : "text-basis hover:text-ink-800"
                   }`}
                 >
                   Inloggen
@@ -82,7 +84,7 @@ export function AuthView({
                   className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
                     mode === "signup"
                       ? "bg-white text-ink-700 shadow-sm dark:bg-ink-800 dark:text-white"
-                      : "text-ink-700 hover:text-ink-800 dark:text-ink-500"
+                      : "text-basis hover:text-ink-800"
                   }`}
                 >
                   Aanmelden
@@ -96,7 +98,7 @@ export function AuthView({
               )}
 
               {orgInviteName && (
-                <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-ink-300 bg-ink-100 px-3 py-3 text-sm text-ink-700 dark:border-ink-300 dark:bg-ink-100 dark:text-ink-700">
+                <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-ink-300 bg-ink-100 px-3 py-3 text-sm text-basis dark:border-ink-300 dark:bg-ink-100">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden>
                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />
@@ -121,7 +123,7 @@ export function AuthView({
               )}
             </div>
 
-            <p className="mt-6 text-center text-xs text-ink-600 dark:text-ink-600">
+            <p className="mt-6 text-center text-xs text-zacht">
               Bèta. We zijn voorzichtig met je gegevens.
             </p>
           </div>
@@ -152,7 +154,7 @@ function AuthErrorBanner({
         : error.description || "Probeer opnieuw of vraag een nieuwe link aan.";
 
   return (
-    <div className="mb-4 rounded-xl border border-uit-300 bg-uit-100 px-3 py-3 text-sm text-uit-700">
+    <div className="mb-4 rounded-lg border border-uit-300 bg-uit-100 px-3 py-3 text-sm text-uit-700">
       <div className="mb-1 flex items-start justify-between gap-2">
         <strong>{title}</strong>
         {onDismiss && (
@@ -173,7 +175,7 @@ function AuthErrorBanner({
 
 function ConfigWarning() {
   return (
-    <div className="mb-4 rounded-xl border border-uit-300 bg-uit-100 px-3 py-2 text-sm text-uit-700">
+    <div className="mb-4 rounded-lg border border-uit-300 bg-uit-100 px-3 py-2 text-sm text-uit-700">
       <strong>Supabase niet geconfigureerd.</strong> Voeg{" "}
       <code className="rounded bg-uit-100 px-1">VITE_SUPABASE_URL</code> en{" "}
       <code className="rounded bg-uit-100 px-1">
@@ -197,7 +199,7 @@ function SidePanel() {
         <span className="text-lg font-extrabold tracking-tight">Kaspio</span>
       </div>
       <div className="relative mt-auto">
-        <p className="mb-3 font-num text-[11px] font-semibold text-in-400">
+        <p className="mb-3 text-[0.8125rem] font-semibold text-in-400">
           Build in public
         </p>
         <h2 className="mb-6 text-3xl font-extrabold leading-tight tracking-tight">
@@ -207,7 +209,7 @@ function SidePanel() {
           <br />
           volledige transparantie.
         </h2>
-        <p className="max-w-sm text-sm text-ink-700">
+        <p className="max-w-sm text-sm text-basis">
           Voor scouts, sportclubs, VZW's, artiestenbureaus en iedereen die met
           gedeelde geldstromen werkt.
         </p>
@@ -257,7 +259,7 @@ function LoginForm({
 
   if (status === "reset-sent") {
     return (
-      <div className="rounded-xl border border-in-100 bg-in-100 px-4 py-5 text-sm text-in-600 dark:border-in-700 dark:bg-in-700 dark:text-in-400">
+      <div className="rounded-lg border border-in-100 bg-in-100 px-4 py-5 text-sm text-in-600 dark:border-in-700 dark:bg-in-700 dark:text-in-400">
         <div className="mb-1 font-semibold">Check je mailbox.</div>
         We stuurden een reset-link naar <strong>{email}</strong>. Klik die en
         je kunt een nieuw wachtwoord instellen.
@@ -271,7 +273,7 @@ function LoginForm({
         <h2 className="text-xl font-bold tracking-tight text-ink-900 dark:text-white">
           Wachtwoord vergeten
         </h2>
-        <p className="text-sm text-ink-700 dark:text-ink-500">
+        <p className="text-sm text-basis">
           Vul je e-mailadres in, we sturen je een reset-link.
         </p>
 
@@ -303,7 +305,7 @@ function LoginForm({
             setForgotMode(false);
             setError(null);
           }}
-          className="block w-full text-center text-xs text-ink-600 transition hover:text-ink-700 dark:hover:text-ink-200"
+          className="block w-full text-center text-xs text-zacht transition hover:text-ink-700 dark:hover:text-ink-200"
         >
           ← Terug naar inloggen
         </button>
@@ -356,7 +358,7 @@ function LoginForm({
           setError(null);
           setPassword("");
         }}
-        className="block w-full text-center text-xs text-ink-600 transition hover:text-ink-700 dark:hover:text-ink-200"
+        className="block w-full text-center text-xs text-zacht transition hover:text-ink-700 dark:hover:text-ink-200"
       >
         Wachtwoord vergeten?
       </button>
@@ -414,7 +416,7 @@ function SignupForm({
 
   if (status === "confirm-needed") {
     return (
-      <div className="rounded-xl border border-in-100 bg-in-100 px-4 py-5 text-sm text-in-600 dark:border-in-700 dark:bg-in-700 dark:text-in-400">
+      <div className="rounded-lg border border-in-100 bg-in-100 px-4 py-5 text-sm text-in-600 dark:border-in-700 dark:bg-in-700 dark:text-in-400">
         <div className="mb-1 font-semibold">Bevestig je e-mailadres.</div>
         We stuurden een bevestigingslink naar <strong>{email}</strong>. Klik
         die en je bent ingelogd.
@@ -466,7 +468,7 @@ function SignupForm({
       >
         {status === "busy" ? "Bezig…" : "Account aanmaken"}
       </button>
-      <p className="text-center text-xs text-ink-600 dark:text-ink-600">
+      <p className="text-center text-xs text-zacht">
         Door verder te gaan ga je akkoord met onze (denkbeeldige) voorwaarden.
       </p>
     </form>
@@ -477,35 +479,12 @@ function SignupForm({
 // HELPERS
 // =============================================================================
 
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: ReactNode;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
-        {label}
-      </span>
-      {children}
-      {hint && (
-        <span className="mt-1 block text-xs text-ink-600 dark:text-ink-500">
-          {hint}
-        </span>
-      )}
-    </label>
-  );
-}
 
 function ErrorBox({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
+    <Foutmelding>
       {children}
-    </div>
+    </Foutmelding>
   );
 }
 

@@ -7,6 +7,7 @@ import { SubscriptionCard } from "../components/SubscriptionCard";
 import { OwnerCompCodes } from "../components/OwnerCompCodes";
 import { UpgradeHint } from "../components/UpgradeHint";
 
+import { Foutmelding } from "../components/Foutmelding";
 type Account = {
   id: string;
   email: string;
@@ -66,11 +67,11 @@ export function SettingsView({
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-sm font-semibold text-ink-600 dark:text-ink-500">
+        <p className="text-sm font-semibold text-zacht">
           Account
         </p>
         <h1 className="text-2xl font-bold text-ink-900 dark:text-white">Instellingen</h1>
-        <p className="mt-1 text-sm text-ink-700 dark:text-ink-500">
+        <p className="mt-1 text-sm text-basis">
           Beheer je organisatie en hoe je op de hoogte gehouden wordt.
         </p>
       </div>
@@ -101,10 +102,10 @@ export function SettingsView({
       />
 
       <div className="card p-6">
-        <h2 className="mb-1 text-base font-semibold text-ink-900 dark:text-ink-100">
+        <h2 className="mb-1 text-base font-semibold text-sterk">
           Organisatie
         </h2>
-        <p className="mb-4 text-sm text-ink-700 dark:text-ink-500">
+        <p className="mb-4 text-sm text-basis">
           Profielgegevens van je account.
         </p>
         <dl className="grid gap-4 sm:grid-cols-2">
@@ -123,10 +124,10 @@ export function SettingsView({
       <div className="card p-6">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-ink-900 dark:text-ink-100">
+            <h2 className="text-base font-semibold text-sterk">
               E-mailmeldingen
             </h2>
-            <p className="text-sm text-ink-700 dark:text-ink-500">
+            <p className="text-sm text-basis">
               Krijg een mail wanneer er iets belangrijks gebeurt. Beschikbaar
               vanaf Pro.
             </p>
@@ -156,8 +157,8 @@ export function SettingsView({
         </div>
 
         <div className="mt-6 border-t border-ink-200 pt-5 dark:border-ink-800/60">
-          <p className="mb-2 text-sm font-semibold text-ink-900 dark:text-ink-100">Digest</p>
-          <p className="mb-3 text-xs text-ink-700 dark:text-ink-500">
+          <p className="mb-2 text-sm font-semibold text-sterk">Digest</p>
+          <p className="mb-3 text-xs text-basis">
             Ontvang periodiek een samenvatting in plaats van losse meldingen.
           </p>
           <div className="grid grid-cols-3 gap-2">
@@ -165,10 +166,10 @@ export function SettingsView({
               <button
                 key={f}
                 onClick={() => onChange({ digestFrequency: f })}
-                className={`rounded-xl border-2 px-3 py-2 text-sm font-semibold transition ${
+                className={`rounded-lg border-2 px-3 py-2 text-sm font-semibold transition ${
                   notifications.digestFrequency === f
                     ? "border-in-600 bg-in-100 text-in-700 dark:bg-in-700/30 dark:text-in-400"
-                    : "border-ink-200 text-ink-700 hover:border-ink-300 dark:border-ink-800 dark:text-ink-500 dark:hover:border-ink-600"
+                    : "border-ink-200 text-basis hover:border-ink-300 dark:border-ink-800 dark:hover:border-ink-600"
                 }`}
               >
                 {labelForDigest(f)}
@@ -229,10 +230,10 @@ function ApprovalSection({
 
   return (
     <div className="card p-6">
-      <h2 className="mb-1 text-base font-semibold text-ink-900 dark:text-ink-100">
+      <h2 className="mb-1 text-base font-semibold text-sterk">
         Goedkeuring van uitgaven
       </h2>
-      <p className="mb-4 text-sm text-ink-700 dark:text-ink-500">
+      <p className="mb-4 text-sm text-basis">
         Uitgaven van potbeheerders boven de drempel komen eerst in een
         goedkeuringswachtrij op het dashboard. Beheerders boeken meteen.
       </p>
@@ -254,14 +255,14 @@ function ApprovalSection({
           disabled={!enabled}
           className="input max-w-[160px] disabled:opacity-50"
         />
-        <span className="mt-1 block text-xs text-ink-600 dark:text-ink-500">
+        <span className="mt-1 block text-xs text-zacht">
           Uitgaven vanaf dit bedrag vereisen goedkeuring. 0 = alle uitgaven.
         </span>
       </label>
       {error && (
-        <div className="mt-3 rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
+        <Foutmelding className="mt-3">
           {error}
-        </div>
+        </Foutmelding>
       )}
       <button onClick={save} disabled={busy} className="btn-accent mt-4 text-sm">
         {busy ? "Bezig…" : saved ? "✓ Opgeslagen" : "Opslaan"}
@@ -300,7 +301,7 @@ function DangerZone({
       <h2 className="mb-1 text-base font-semibold text-fout-600 dark:text-fout-400">
         Gevarenzone
       </h2>
-      <p className="mb-4 text-sm text-ink-700 dark:text-ink-500">
+      <p className="mb-4 text-sm text-basis">
         Verwijder deze organisatie en <strong>alle</strong> bijhorende data:
         potjes, transacties, leden, uitnodigingen en abonnement. Dit kan niet
         ongedaan gemaakt worden.
@@ -318,9 +319,9 @@ function DangerZone({
         />
       </label>
       {error && (
-        <div className="mt-3 rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
+        <Foutmelding className="mt-3">
           {error}
-        </div>
+        </Foutmelding>
       )}
       <button
         onClick={handleDelete}
@@ -342,7 +343,7 @@ function labelForDigest(f: DigestFrequency): string {
 function Field({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
-      <dt className="mb-0.5 text-xs font-semibold text-ink-600 dark:text-ink-500">
+      <dt className="mb-0.5 text-xs font-semibold text-zacht">
         {label}
       </dt>
       <dd
@@ -373,9 +374,9 @@ function Toggle({
       className="flex w-full items-center justify-between gap-4 py-3 text-left"
     >
       <div>
-        <div className="text-sm font-medium text-ink-900 dark:text-ink-100">{label}</div>
+        <div className="text-sm font-medium text-sterk">{label}</div>
         {description && (
-          <div className="text-xs text-ink-700 dark:text-ink-500">{description}</div>
+          <div className="text-xs text-basis">{description}</div>
         )}
       </div>
       <span

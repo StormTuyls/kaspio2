@@ -3,6 +3,7 @@ import type { ChangeEvent } from "react";
 import type { AccentKey, Branding } from "../branding";
 import { ACCENT_LABELS, ACCENT_PALETTES } from "../branding";
 
+import { Foutmelding } from "./Foutmelding";
 const MAX_LOGO_BYTES = 200 * 1024;
 
 type Props = {
@@ -51,10 +52,10 @@ export function BrandingSection({ branding, defaultBrandName, onChange, onReset 
     <div className="card p-6">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-ink-900 dark:text-ink-100">
+          <h2 className="text-base font-semibold text-sterk">
             Whitelabel
           </h2>
-          <p className="text-sm text-ink-700 dark:text-ink-500">
+          <p className="text-sm text-basis">
             Maak deze workspace de jouwe met een eigen merknaam, kleur en logo.
           </p>
         </div>
@@ -76,7 +77,7 @@ export function BrandingSection({ branding, defaultBrandName, onChange, onReset 
             placeholder={defaultBrandName}
             className="input"
           />
-          <span className="mt-1 block text-xs text-ink-600 dark:text-ink-500">
+          <span className="mt-1 block text-xs text-zacht">
             Vervangt "Kaspio" in de zijbalk en topbar. Leeg = standaard.
           </span>
         </label>
@@ -94,7 +95,7 @@ export function BrandingSection({ branding, defaultBrandName, onChange, onReset 
                   key={k}
                   type="button"
                   onClick={() => onChange({ accent: k })}
-                  className={`group relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-2 transition ${
+                  className={`group relative flex flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition ${
                     active
                       ? "border-ink-900 dark:border-white"
                       : "border-ink-200 hover:border-ink-300 dark:border-ink-800 dark:hover:border-ink-600"
@@ -127,12 +128,12 @@ export function BrandingSection({ branding, defaultBrandName, onChange, onReset 
           </span>
           <div className="flex items-center gap-4">
             <div
-              className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-ink-200 bg-ink-50 dark:border-ink-800 dark:bg-ink-900"
+              className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-ink-200 bg-ink-50 dark:border-ink-800 dark:bg-ink-900"
             >
               {branding.logoDataUrl ? (
                 <img src={branding.logoDataUrl} alt="Logo" className="h-full w-full object-contain" />
               ) : (
-                <span className="text-xs text-ink-600 dark:text-ink-700">Geen logo</span>
+                <span className="text-xs text-zacht">Geen logo</span>
               )}
             </div>
             <div className="flex flex-col gap-2">
@@ -161,15 +162,15 @@ export function BrandingSection({ branding, defaultBrandName, onChange, onReset 
                   </button>
                 )}
               </div>
-              <span className="text-xs text-ink-600 dark:text-ink-500">
+              <span className="text-xs text-zacht">
                 PNG of SVG, max {Math.round(MAX_LOGO_BYTES / 1024)} KB.
               </span>
             </div>
           </div>
           {error && (
-            <div className="mt-2 rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600 dark:border-fout-100/40 dark:bg-fout-600/20 dark:text-fout-400">
+            <Foutmelding className="mt-2">
               {error}
-            </div>
+            </Foutmelding>
           )}
         </div>
       </div>

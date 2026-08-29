@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { POT_KLEUR_STANDAARD } from "../types";
 import type { Pot } from "../types";
 
+import { Foutmelding } from "./Foutmelding";
 type Props = {
   pots: Pot[];
   initialShares: { potId: string; percent: number }[];
@@ -60,13 +62,13 @@ export function DistributionPresetForm({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-ink-muted dark:text-ink-500">
+      <p className="text-sm text-ink-muted dark:text-ink-400">
         Kies per potje welk deel van het te verdelen geld het krijgt. Wat je niet
         toewijst blijft in de hoofdpot staan.
       </p>
 
       {pots.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-ink-300 bg-ink-50 px-4 py-6 text-center text-sm text-ink-muted dark:border-ink-800 dark:bg-ink-950/40 dark:text-ink-500">
+        <p className="rounded-lg border border-dashed border-ink-300 bg-ink-50 px-4 py-6 text-center text-sm text-ink-muted dark:border-ink-800 dark:bg-ink-950/40 dark:text-ink-400">
           Maak eerst een potje aan.
         </p>
       ) : (
@@ -76,7 +78,7 @@ export function DistributionPresetForm({
               <span
                 aria-hidden
                 className="h-3 w-3 flex-shrink-0 rounded-full"
-                style={{ backgroundColor: pot.color ?? "#1D9E75" }}
+                style={{ backgroundColor: pot.color ?? POT_KLEUR_STANDAARD }}
               />
               <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink-800 dark:text-ink-200">
                 {pot.name}
@@ -104,7 +106,7 @@ export function DistributionPresetForm({
         </ul>
       )}
 
-      <div className="flex items-center justify-between rounded-xl bg-ink-50 px-4 py-2.5 text-sm dark:bg-ink-950/40">
+      <div className="flex items-center justify-between rounded-lg bg-ink-50 px-4 py-2.5 text-sm dark:bg-ink-950/40">
         <span className="font-medium text-ink-800 dark:text-ink-300">
           Samen
         </span>
@@ -118,9 +120,9 @@ export function DistributionPresetForm({
       </div>
 
       {error && (
-        <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
+        <Foutmelding>
           {error}
-        </div>
+        </Foutmelding>
       )}
 
       <div className="flex justify-end gap-2 pt-1">

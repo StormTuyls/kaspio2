@@ -52,7 +52,7 @@ export function Wordmark({
       <span className="flex flex-col leading-none">
         <span
           className={`text-base font-extrabold tracking-tight ${
-            variant === "light" ? "text-white" : "text-ink-900 dark:text-ink-100"
+            variant === "light" ? "text-white" : "text-sterk"
           }`}
         >
           Kaspio
@@ -60,7 +60,7 @@ export function Wordmark({
         {subtitle && (
           <span
             className={`mt-0.5 text-[11px] ${
-              variant === "light" ? "text-ink-300" : "text-ink-600 dark:text-ink-500"
+              variant === "light" ? "text-ink-300" : "text-zacht"
             }`}
           >
             {subtitle}

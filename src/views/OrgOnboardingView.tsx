@@ -4,6 +4,7 @@ import { Mark } from "../components/Logo";
 import { CreateOrgForm } from "../components/CreateOrgForm";
 import { signOut } from "../supabase";
 
+import { Foutmelding } from "../components/Foutmelding";
 type Props = {
   fullName: string;
   onCreate: (name: string) => Promise<{ error: string | null }>;
@@ -29,13 +30,13 @@ export function OrgOnboardingView({ fullName, onCreate, onJoinWithCode }: Props)
         </div>
 
         <div className="card p-7">
-          <div className="mb-6 grid grid-cols-2 rounded-xl bg-ink-50 p-1 dark:bg-ink-900">
+          <div className="mb-6 grid grid-cols-2 rounded-lg bg-ink-50 p-1 dark:bg-ink-900">
             <button
               onClick={() => setMode("create")}
               className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
                 mode === "create"
                   ? "bg-white text-ink-900 shadow-sm dark:bg-ink-800 dark:text-white"
-                  : "text-ink-700 dark:text-ink-500"
+                  : "text-basis"
               }`}
             >
               Nieuwe organisatie
@@ -45,7 +46,7 @@ export function OrgOnboardingView({ fullName, onCreate, onJoinWithCode }: Props)
               className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
                 mode === "join"
                   ? "bg-white text-ink-900 shadow-sm dark:bg-ink-800 dark:text-white"
-                  : "text-ink-700 dark:text-ink-500"
+                  : "text-basis"
               }`}
             >
               Lid worden met code
@@ -65,7 +66,7 @@ export function OrgOnboardingView({ fullName, onCreate, onJoinWithCode }: Props)
           )}
         </div>
 
-        <p className="mt-6 text-center text-xs text-ink-600">
+        <p className="mt-6 text-center text-xs text-zacht">
           Liever uitloggen?{" "}
           <button
             onClick={() => signOut()}
@@ -107,7 +108,7 @@ function JoinOrgForm({
       <h2 className="text-xl font-bold text-ink-900 dark:text-white">
         Lid worden van een organisatie
       </h2>
-      <p className="text-sm text-ink-700 dark:text-ink-500">
+      <p className="text-sm text-basis">
         Een uitnodigingscode of -link gekregen van een beheerder? Plak 'm hier
         en je wordt meteen lid.
       </p>
@@ -128,9 +129,9 @@ function JoinOrgForm({
       </label>
 
       {error && (
-        <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
+        <Foutmelding>
           {error}
-        </div>
+        </Foutmelding>
       )}
 
       <button

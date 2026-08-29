@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 
+import { Foutmelding } from "./Foutmelding";
 type Props = {
   onSubmit: (values: {
     amount: number;
@@ -51,7 +52,7 @@ export function AddMoneyForm({ onSubmit, onCancel }: Props) {
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <p className="text-sm text-ink-700 dark:text-ink-500">
+      <p className="text-sm text-basis">
         Het bedrag komt in de <strong>hoofdpot</strong> te staan, bij "nog te
         verdelen". Van daaruit verdeel je het over je potjes. Begin je net met
         Kaspio? Zet hier wat er al op je rekening stond.
@@ -63,7 +64,7 @@ export function AddMoneyForm({ onSubmit, onCancel }: Props) {
             Bedrag
           </span>
           <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-600">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zacht">
               €
             </span>
             <input
@@ -93,7 +94,7 @@ export function AddMoneyForm({ onSubmit, onCancel }: Props) {
 
       <label className="block">
         <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
-          Omschrijving <span className="text-ink-600">(optioneel)</span>
+          Omschrijving <span className="text-zacht">(optioneel)</span>
         </span>
         <input
           type="text"
@@ -105,9 +106,9 @@ export function AddMoneyForm({ onSubmit, onCancel }: Props) {
       </label>
 
       {error && (
-        <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
+        <Foutmelding>
           {error}
-        </div>
+        </Foutmelding>
       )}
 
       <div className="flex justify-end gap-2 pt-1">

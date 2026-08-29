@@ -46,12 +46,12 @@ export function MembersListView({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 rounded-md border border-ink-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between dark:border-ink-800 dark:bg-ink-950">
+      <h1 className="titel">Leden</h1>
+
+      <div className="panel flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h3 className="font-bold text-ink-900 dark:text-white">
-            Iemand uitnodigen
-          </h3>
-          <p className="text-sm text-ink-700 dark:text-ink-500">
+          <h2 className="sectiekop">Iemand uitnodigen</h2>
+          <p className="text-sm text-basis">
             Admin, pot-owner of lezer. Krijg een KASP-code om door te sturen.
           </p>
         </div>
@@ -62,9 +62,9 @@ export function MembersListView({
 
       {pendingInvites.length > 0 && (
         <section className="rounded-md border border-uit-300 bg-uit-100 p-5 dark:border-uit-700/40 dark:bg-uit-700/20">
-          <h3 className="mb-3 text-sm font-bold text-uit-700 dark:text-uit-300">
+          <h2 className="sectiekop mb-3 text-uit-700 dark:text-uit-300">
             Openstaande uitnodigingen ({pendingInvites.length})
-          </h3>
+          </h2>
           <ul className="space-y-2">
             {pendingInvites.map((inv) => {
               const invitePots = (inv.pot_ids ?? [])
@@ -83,7 +83,7 @@ export function MembersListView({
                     <div className="break-all font-medium text-ink-900 sm:truncate dark:text-white">
                       {inv.email}
                     </div>
-                    <div className="text-xs text-ink-600">
+                    <div className="text-xs text-zacht">
                       {roleLabel(inv.role)}
                       {invitePots.length > 0 &&
                         ` · ${invitePots.join(", ")}`}
@@ -103,12 +103,12 @@ export function MembersListView({
         </section>
       )}
 
-      <section className="rounded-md border border-ink-200 bg-white p-5 dark:border-ink-800 dark:bg-ink-950">
-        <h3 className="mb-4 text-sm font-bold text-ink-700 dark:text-ink-500">
+      <section className="panel p-5">
+        <h2 className="sectiekop mb-4">
           Actieve leden ({grouped.length})
-        </h3>
+        </h2>
         {grouped.length === 0 ? (
-          <p className="text-sm text-ink-600">
+          <p className="text-sm text-zacht">
             Nog geen actieve leden. Nodig iemand uit met de knop hierboven.
           </p>
         ) : (
@@ -195,8 +195,8 @@ function MemberRow({
             </span>
           )}
         </div>
-        <div className="text-xs text-ink-600">{member.email}</div>
-        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-ink-700">
+        <div className="text-xs text-zacht">{member.email}</div>
+        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-basis">
           <span className="font-semibold">{roleLabel(member.effectiveRole)}</span>
           {member.effectiveRole === "group_owner" && groupNames.length > 0 && (
             <>

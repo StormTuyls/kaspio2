@@ -434,8 +434,8 @@ export function ImportTransactionsModal({
 
   const colSelect = (key: ColumnKey, label: string, required?: boolean) => (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
-        {label} {required && <span className="text-fout-400">*</span>}
+      <span className="mb-1 block text-xs font-medium text-basis">
+        {label} {required && <span className="text-fout-600">*</span>}
       </span>
       <select
         value={cols[key]}
@@ -454,13 +454,13 @@ export function ImportTransactionsModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-ink-950/40 backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-[var(--z-modal)] flex items-end justify-center bg-ink-950/40 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={onClose}
     >
       {/* Zelfde sheet-gedrag als <Modal>, maar breder: de importstappen tonen
           een tabel met kolomkeuzes. */}
       <div
-        className="flex max-h-[92dvh] w-full flex-col rounded-t-2xl bg-white shadow-2xl sm:max-h-[90dvh] sm:max-w-2xl sm:rounded-md dark:bg-ink-950 dark:ring-1 dark:ring-ink-700/60"
+        className="flex max-h-[92dvh] w-full flex-col rounded-t-lg bg-white shadow-2xl sm:max-h-[90dvh] sm:max-w-2xl sm:rounded-md dark:bg-ink-950 dark:ring-1 dark:ring-ink-700/60"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 border-b border-ink-200 px-5 py-4 dark:border-ink-800/60">
@@ -479,12 +479,12 @@ export function ImportTransactionsModal({
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {step === "upload" && (
             <div className="space-y-4">
-              <p className="text-sm text-ink-700 dark:text-ink-500">
+              <p className="text-sm text-basis">
                 Exporteer je rekeningafschrift als CSV vanuit je bank en laad het
                 hier in. We herkennen automatisch de scheidingstekens en
                 datum/bedrag-formaten.
               </p>
-              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-ink-300 py-10 text-sm text-ink-700 hover:border-in-600 hover:text-in-700 dark:border-ink-600 dark:text-ink-500 dark:hover:border-in-600">
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-ink-300 py-10 text-sm text-basis hover:border-in-600 hover:text-in-700 dark:border-ink-600 dark:hover:border-in-600">
                 <input
                   type="file"
                   accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
@@ -498,7 +498,7 @@ export function ImportTransactionsModal({
               {/* Veel boekhoudingen leven in Excel, niet in een bankexport. Een
                   xlsx inlezen kan Kaspio nog niet, dus zeg hier hoe je er in
                   twee klikken een CSV van maakt. */}
-              <div className="rounded-xl border border-ink-200 bg-ink-50 p-4 text-xs text-ink-700 dark:border-ink-800/60 dark:bg-ink-900/40 dark:text-ink-600">
+              <div className="rounded-lg border border-ink-200 bg-ink-50 p-4 text-xs text-basis dark:border-ink-800/60 dark:bg-ink-900/40">
                 <p className="mb-1 font-semibold text-ink-800 dark:text-ink-300">
                   Staat je overzicht in Excel?
                 </p>
@@ -510,9 +510,9 @@ export function ImportTransactionsModal({
               </div>
 
               {/* Hoe moet het eruit zien */}
-              <div className="rounded-xl border border-ink-200 bg-ink-50 p-4 dark:border-ink-800/60 dark:bg-ink-900/40">
+              <div className="rounded-lg border border-ink-200 bg-ink-50 p-4 dark:border-ink-800/60 dark:bg-ink-900/40">
                 <div className="mb-2 flex items-center justify-between gap-3">
-                  <span className="text-xs font-semibold text-ink-600 dark:text-ink-500">
+                  <span className="text-xs font-semibold text-zacht">
                     Voorbeeld
                   </span>
                   <button
@@ -522,12 +522,12 @@ export function ImportTransactionsModal({
                     ↓ Download voorbeeldbestand
                   </button>
                 </div>
-                <pre className="overflow-x-auto rounded-lg bg-white p-3 text-xs leading-relaxed text-ink-700 ring-1 ring-ink-100 dark:bg-ink-950 dark:text-ink-300 dark:ring-ink-700/60">
+                <pre className="overflow-x-auto rounded-lg bg-white p-3 text-xs leading-relaxed text-basis ring-1 ring-ink-100 dark:bg-ink-950 dark:ring-ink-700/60">
 {`Datum;Bedrag;Tegenpartij;Mededeling
 20/06/2026;-12,50;Colruyt;Boodschappen
 21/06/2026;100,00;Jan Janssens;Lidgeld 2026`}
                 </pre>
-                <ul className="mt-3 space-y-1 text-xs text-ink-700 dark:text-ink-600">
+                <ul className="mt-3 space-y-1 text-xs text-basis">
                   <li>
                     <strong className="text-ink-800 dark:text-ink-300">Datum</strong> en{" "}
                     <strong className="text-ink-800 dark:text-ink-300">Bedrag</strong> zijn
@@ -549,7 +549,7 @@ export function ImportTransactionsModal({
           {step === "map" && (
             <div className="space-y-5">
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="truncate text-ink-700 dark:text-ink-500">
+                <span className="truncate text-basis">
                   {fileName} · {rows.length} rijen
                 </span>
                 <button
@@ -571,7 +571,7 @@ export function ImportTransactionsModal({
               </div>
 
               {cols.pot >= 0 && unmatchedPotNames.length > 0 && (
-                <p className="rounded-xl border border-uit-300 bg-uit-100/70 px-3 py-2 text-xs text-uit-700 dark:border-uit-700/50 dark:bg-uit-700/20 dark:text-uit-300">
+                <p className="rounded-lg border border-uit-300 bg-uit-100/70 px-3 py-2 text-xs text-uit-700 dark:border-uit-700/50 dark:bg-uit-700/20 dark:text-uit-300">
                   {unmatchedPotNames.length === 1
                     ? "1 naam uit de potje-kolom hoort bij geen enkel potje"
                     : `${unmatchedPotNames.length} namen uit de potje-kolom horen bij geen enkel potje`}
@@ -585,7 +585,7 @@ export function ImportTransactionsModal({
               )}
 
               {internalCount > 0 && (
-                <p className="rounded-xl border border-ink-300 bg-ink-50 px-3 py-2 text-xs text-ink-700 dark:border-ink-800/60 dark:bg-ink-900/40 dark:text-ink-500">
+                <p className="rounded-lg border border-ink-300 bg-ink-50 px-3 py-2 text-xs text-basis dark:border-ink-800/60 dark:bg-ink-900/40">
                   {internalCount / 2 === 1
                     ? "1 overboeking tussen je eigen rekeningen gevonden"
                     : `${internalCount / 2} overboekingen tussen je eigen rekeningen gevonden`}{" "}
@@ -597,7 +597,7 @@ export function ImportTransactionsModal({
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
+                  <span className="mb-1 block text-xs font-medium text-basis">
                     In / uit bepalen
                   </span>
                   <select
@@ -611,7 +611,7 @@ export function ImportTransactionsModal({
                   </select>
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
+                  <span className="mb-1 block text-xs font-medium text-basis">
                     Potje voor alle rijen
                   </span>
                   <select
@@ -639,13 +639,13 @@ export function ImportTransactionsModal({
               </div>
 
               {/* Preview */}
-              <div className="rounded-xl border border-ink-200 dark:border-ink-800/60">
+              <div className="rounded-lg border border-ink-200 dark:border-ink-800/60">
                 <div className="flex items-center justify-between gap-2 border-b border-ink-200 px-3 py-2 dark:border-ink-800/60">
-                  <span className="text-xs font-semibold text-ink-600 dark:text-ink-500">
+                  <span className="text-xs font-semibold text-zacht">
                     Voorbeeld ({importCount} importeerbaar
                     {invalidCount > 0 ? `, ${invalidCount} onleesbaar` : ""})
                   </span>
-                  <span className="text-[11px] font-normal normal-case text-ink-600 dark:text-ink-700">
+                  <span className="text-[11px] font-normal normal-case text-zacht">
                     potje per rij aanpasbaar →
                   </span>
                 </div>
@@ -708,7 +708,7 @@ export function ImportTransactionsModal({
                               />
                             )}
                           </td>
-                          <td className="whitespace-nowrap px-3 py-1.5 text-ink-700 dark:text-ink-500">
+                          <td className="whitespace-nowrap px-3 py-1.5 text-basis">
                             {p.occurredOn ?? "—"}
                           </td>
                           <td className="px-3 py-1.5 text-ink-800 dark:text-ink-300">
@@ -718,7 +718,7 @@ export function ImportTransactionsModal({
                             {transferPartner[i] !== null && !dup && (
                               <span
                                 title="Tegenboeking met hetzelfde bedrag op een van je eigen rekeningen. Telt niet mee als inkomst of uitgave."
-                                className="mt-0.5 inline-block rounded bg-ink-100 px-1.5 py-0.5 text-[10px] font-semibold text-ink-700 dark:bg-ink-800/50 dark:text-ink-300"
+                                className="mt-0.5 inline-block rounded bg-ink-100 px-1.5 py-0.5 text-[10px] font-semibold text-basis dark:bg-ink-800/50"
                               >
                                 ↔ tussen eigen rekeningen
                               </span>
@@ -753,7 +753,20 @@ export function ImportTransactionsModal({
                                     : "staat er al"
                                   : `lijkt op ${dup.existing.occurredOn}`}
                                 <span aria-hidden className="ml-1 opacity-60">
-                                  {openDup === i ? "▴" : "▾"}
+                                  <svg
+                                    aria-hidden
+                                    width="12"
+                                    height="12"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className={openDup === i ? "rotate-180" : ""}
+                                  >
+                                    <path d="M6 9l6 6 6-6" />
+                                  </svg>
                                 </span>
                               </button>
                             )}
@@ -800,7 +813,7 @@ export function ImportTransactionsModal({
                                 )}
                               </div>
                             ) : (
-                              <span className="text-xs text-ink-500 dark:text-ink-700">—</span>
+                              <span className="text-xs text-zwak">—</span>
                             )}
                           </td>
                         </tr>
@@ -839,7 +852,7 @@ export function ImportTransactionsModal({
                   </table>
                 </div>
                 {preview.length > 50 && (
-                  <div className="border-t border-ink-200 px-3 py-2 text-[11px] text-ink-600 dark:border-ink-800/60 dark:text-ink-700">
+                  <div className="border-t border-ink-200 px-3 py-2 text-[11px] text-zacht dark:border-ink-800/60">
                     + {preview.length - 50} rijen meer , die volgen het potje voor
                     alle rijen.
                   </div>
@@ -857,14 +870,14 @@ export function ImportTransactionsModal({
           <div className="flex flex-col gap-2 border-t border-ink-200 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:pb-4 dark:border-ink-800/60">
             <button
               onClick={onClose}
-              className="min-h-11 rounded-lg px-4 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50 sm:min-h-0 dark:text-ink-500 dark:hover:bg-ink-900"
+              className="min-h-11 rounded-lg px-4 py-2 text-sm font-medium text-basis hover:bg-ink-50 sm:min-h-0 dark:hover:bg-ink-900"
             >
               Annuleren
             </button>
             <button
               onClick={() => runImport(importIndexes)}
               disabled={!canImport}
-              className="min-h-11 rounded-lg bg-in-600 px-4 py-2 text-sm font-semibold text-white hover:bg-in-600 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0"
+              className="min-h-11 rounded-lg bg-in-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-in-700 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0"
             >
               {busy
                 ? "Importeren…"
@@ -979,7 +992,7 @@ function DupVergelijking({
 
   return (
     <div className="rounded-lg border border-ink-200 bg-white text-[11px] dark:border-ink-800 dark:bg-ink-950">
-      <div className="grid grid-cols-[5.5rem_1fr_1fr] gap-x-3 border-b border-ink-200 px-3 py-1.5 font-semibold text-ink-600 dark:border-ink-800 dark:text-ink-700">
+      <div className="grid grid-cols-[5.5rem_1fr_1fr] gap-x-3 border-b border-ink-200 px-3 py-1.5 font-semibold text-zacht dark:border-ink-800">
         <span />
         <span>Al in Kaspio</span>
         <span>Dit bestand</span>
@@ -989,12 +1002,12 @@ function DupVergelijking({
           key={v.label}
           className="grid grid-cols-[5.5rem_1fr_1fr] gap-x-3 px-3 py-1"
         >
-          <span className="text-ink-600 dark:text-ink-700">{v.label}</span>
+          <span className="text-zacht">{v.label}</span>
           <span
             className={`truncate ${
               v.anders
                 ? "text-ink-800 dark:text-ink-300"
-                : "text-ink-600 dark:text-ink-700"
+                : "text-zacht"
             }`}
             title={v.a}
           >
@@ -1004,7 +1017,7 @@ function DupVergelijking({
             className={`truncate ${
               v.anders
                 ? "font-semibold text-uit-700 dark:text-uit-400"
-                : "text-ink-600 dark:text-ink-700"
+                : "text-zacht"
             }`}
             title={v.b}
           >

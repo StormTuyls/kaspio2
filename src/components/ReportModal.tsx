@@ -41,14 +41,14 @@ export function ReportModal({ open, orgName, pots, transactions, onClose }: Prop
   return (
     <Modal open={open} title="Financieel rapport" onClose={onClose}>
       <div className="space-y-4">
-        <p className="text-sm text-ink-700 dark:text-ink-500">
+        <p className="text-sm text-basis">
           Genereer een overzicht met de totalen en het resultaat per potje. Handig
           voor de penningmeester of de algemene vergadering. Opent als PDF (kies
           "Bewaar als PDF" in het printvenster).
         </p>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
+          <span className="mb-1 block text-xs font-medium text-basis">
             Periode
           </span>
           <select
@@ -67,7 +67,7 @@ export function ReportModal({ open, orgName, pots, transactions, onClose }: Prop
         {preset === "custom" && (
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
-              <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
+              <span className="mb-1 block text-xs font-medium text-basis">
                 Van
               </span>
               <input
@@ -78,7 +78,7 @@ export function ReportModal({ open, orgName, pots, transactions, onClose }: Prop
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
+              <span className="mb-1 block text-xs font-medium text-basis">
                 Tot en met
               </span>
               <input
@@ -111,7 +111,7 @@ export function ReportModal({ open, orgName, pots, transactions, onClose }: Prop
             />
             <span>
               Chronologisch transactieoverzicht (hele organisatie)
-              <span className="block text-xs text-ink-600 dark:text-ink-600">
+              <span className="block text-xs text-zacht">
                 Eén lijst op datum, over alle potjes heen, met het potje als kolom.
               </span>
             </span>

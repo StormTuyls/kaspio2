@@ -23,11 +23,11 @@ export function MembersView({ members, currentUserId, onAdd, onUpdate, onDelete 
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-ink-600 dark:text-ink-500">
+          <p className="text-sm font-semibold text-zacht">
             Organisatie
           </p>
           <h1 className="text-2xl font-bold text-ink-900 dark:text-white">Leden</h1>
-          <p className="mt-1 text-sm text-ink-700 dark:text-ink-500">
+          <p className="mt-1 text-sm text-basis">
             Admins en potjesbeheerders binnen je organisatie.
           </p>
         </div>
@@ -47,7 +47,7 @@ export function MembersView({ members, currentUserId, onAdd, onUpdate, onDelete 
                 <Avatar name={m.name} />
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="truncate font-semibold text-ink-900 dark:text-ink-100">
+                    <span className="truncate font-semibold text-sterk">
                       {m.name}
                     </span>
                     {m.id === currentUserId && (
@@ -56,7 +56,7 @@ export function MembersView({ members, currentUserId, onAdd, onUpdate, onDelete 
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-ink-600 dark:text-ink-500">
+                  <div className="text-xs text-zacht">
                     {m.role === "admin" ? "Admin" : "Potjesbeheerder"}
                   </div>
                 </div>

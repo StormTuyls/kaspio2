@@ -10,10 +10,12 @@ import {
   subGroups,
   ungroupedPots,
 } from "../storage";
+import { POT_KLEUR_STANDAARD } from "../types";
 import type { Pot, PotGroup, Transaction } from "../types";
 import { UpgradeHint } from "../components/UpgradeHint";
 import { useConfirm } from "../components/ConfirmDialog";
 
+import { Foutmelding } from "../components/Foutmelding";
 /** Waarde in de <select> die "geen hoofdgroep, dit is er zelf een" betekent. */
 const ROOT = "__root__";
 
@@ -147,7 +149,7 @@ export function GroupsView({
         />
       )}
 
-      <p className="text-sm text-ink-700 dark:text-ink-500">
+      <p className="text-sm text-basis">
         Groepen bundelen potjes per tak, ploeg of werkgroep. Een potje koppel je
         aan een groep bij het aanmaken of bewerken van het potje. Hoort er nog
         een laag tussen, bijvoorbeeld een comité met blokken eronder, dan hang je
@@ -199,13 +201,13 @@ export function GroupsView({
         </div>
       )}
       {error && (
-        <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
+        <Foutmelding>
           {error}
-        </div>
+        </Foutmelding>
       )}
 
       {groups.length === 0 ? (
-        <div className="card border-dashed py-12 text-center text-sm text-ink-700 dark:text-ink-500">
+        <div className="card border-dashed py-12 text-center text-sm text-basis">
           Nog geen groepen.{" "}
           {isAdmin ? "Maak er een aan om je potjes te bundelen." : ""}
         </div>
@@ -281,7 +283,7 @@ export function GroupsView({
 
       {ungrouped.length > 0 && (
         <div>
-          <h2 className="mb-2 text-sm font-bold text-ink-600">
+          <h2 className="mb-2 text-sm font-bold text-zacht">
             Niet in een groep
           </h2>
           <div className="card divide-y divide-ink-200 dark:divide-ink-800/60">
@@ -478,11 +480,11 @@ function GroupCard({
               >
                 {group.name}
               </h3>
-              <span className="rounded-full bg-ink-100 px-1.5 text-[11px] font-semibold text-ink-700 dark:bg-ink-900 dark:text-ink-500">
+              <span className="rounded-full bg-ink-100 px-1.5 text-[11px] font-semibold text-basis dark:bg-ink-900">
                 {pots.length}
               </span>
               {childCount > 0 && (
-                <span className="text-[11px] font-medium text-ink-600">
+                <span className="text-[11px] font-medium text-zacht">
                   + {childCount} subgroep{childCount > 1 ? "en" : ""}
                 </span>
               )}
@@ -492,14 +494,14 @@ function GroupCard({
             </button>
           )}
         </div>
-        <span className="flex-shrink-0 text-base font-bold tabular-nums text-ink-900 dark:text-ink-100">
+        <span className="flex-shrink-0 text-base font-bold tabular-nums text-sterk">
           {formatEuro(balance)}
         </span>
       </div>
 
       {open &&
         (pots.length === 0 ? (
-          <p className="text-sm text-ink-600 dark:text-ink-600">
+          <p className="text-sm text-zacht">
             {childCount > 0
               ? "Geen potjes rechtstreeks in deze groep; ze zitten in de subgroepen."
               : "Nog geen potjes in deze groep."}
@@ -541,7 +543,7 @@ function GroupCard({
           )}
           <button
             onClick={() => setEditing(true)}
-            className="text-xs font-medium text-ink-700 hover:text-ink-900 dark:text-ink-500 dark:hover:text-white"
+            className="text-xs font-medium text-basis hover:text-ink-900 dark:hover:text-white"
           >
             Hernoemen
           </button>
@@ -642,12 +644,12 @@ function PotRow({
       <span
         aria-hidden
         className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-        style={{ backgroundColor: pot.color ?? "#1D9E75" }}
+        style={{ backgroundColor: pot.color ?? POT_KLEUR_STANDAARD }}
       />
       <span className="min-w-0 flex-1 truncate text-ink-800 dark:text-ink-300">
         {pot.name}
       </span>
-      <span className="flex-shrink-0 tabular-nums font-medium text-ink-700 dark:text-ink-500">
+      <span className="flex-shrink-0 tabular-nums font-medium text-basis">
         {formatEuro(balance)}
       </span>
     </button>

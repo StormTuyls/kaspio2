@@ -105,7 +105,109 @@ CONTROLES = [
     ("donker , bedrag buiten",         "uit-400",  "ink-950", 4.5),
     ("donker , fout",                  "fout-400", "ink-950", 4.5),
     ("donker , knoptekst",             "ink-950",  "ink-100", 4.5),
+    # De semantische laag (--color-sterk/basis/zacht/zwak) die componenten
+    # horen te gebruiken. Licht is dezelfde waarde als de inkt-trap erboven,
+    # donker is de omgekeerde trap uit html.dark.
+    ("licht , sterk",                  "ink-900",  "paper",   4.5),
+    ("licht , basis",                  "ink-700",  "paper",   4.5),
+    ("licht , zacht",                  "ink-600",  "paper",   4.5),
+    ("licht , zwak",                   "ink-500",  "paper",   4.5),
+    ("donker , sterk",                 "ink-100",  "ink-950", 4.5),
+    ("donker , basis",                 "ink-300",  "ink-950", 4.5),
+    ("donker , zacht",                 "ink-400",  "ink-950", 4.5),
+    ("donker , zacht op verhoogd",     "ink-400",  "ink-900", 4.5),
 ]
+
+# =============================================================================
+# Scan over de broncode
+# =============================================================================
+# De tokenlijst hierboven bewees alleen dat het palet klopt. Dat is niet
+# hetzelfde als bewijzen dat de app het palet goed gebruikt: op het moment dat
+# deze scan er kwam stonden er 228 plaatsen in src/ waar een component zelf een
+# licht/donker-paar koos dat in donkere modus onder 4.5:1 zakte, terwijl dit
+# script "25 controles, allemaal goed" meldde.
+#
+# Vandaar deze tweede helft: elke `dark:text-<token>` in een className wordt
+# doorgerekend tegen de donkere pagina, en elke lichte tekstkleur tegen wit.
+# Vindt hij iets, dan is het antwoord bijna altijd "gebruik text-sterk/basis/
+# zacht/zwak" in plaats van een eigen paar.
+
+import os
+import re
+
+BRON = os.path.join(os.path.dirname(__file__), "..", "..", "src")
+
+# Alleen de donkere kant wordt statisch gescand, en met opzet. Een `dark:`-klasse
+# is eenduidig: in donkere modus is de pagina altijd ink-950 en een verhoogd vlak
+# altijd ink-900, dus de achtergrond staat vast zonder de DOM te kennen. Aan de
+# lichte kant is dat niet zo: de bankkaart, de zijbalk en de voettekst zijn ook
+# in lichte modus donker, en daar hoort `text-ink-300` juist wél. Die kant meet
+# je op een echte pagina met scripts/design/contrast-in-de-browser.js.
+#
+# Uitzondering: een element dat in donkere modus zelf een licht vlak krijgt
+# (een omgekeerde knop) wordt overgeslagen.
+LICHT_IN_DONKER = re.compile(r"dark:bg-(?:white|ink-(?:100|200|300))")
+
+# Tweede categorie, en in de praktijk de grootste: een klassenstring die een
+# lichte inkt-tekstkleur zet en helemaal geen `dark:`-tegenhanger heeft. Die
+# kleur blijft in donkere modus staan waar hij staat. `text-ink-700` haalde zo
+# 1.96:1 op elke ingelogde pagina, en geen enkele token-meting zag dat, want
+# het token zelf klopt. Dit vond alleen een meting op de echte pagina.
+LICHTE_INKT = re.compile(r"(?<![\w:-])text-(ink-(?:500|600|700|800|900))\b")
+# Vlakken die in beide thema's donker zijn (bankkaart, zijbalk, voettekst).
+# Daar hoort een lichte tekstkleur juist wel.
+OMGEKEERD_VLAK = re.compile(r"(?<!dark:)bg-(?:ink-(?:800|900|950)|white/|black)|text-white")
+# Bestanden die bewust alleen een lichte modus hebben.
+ALLEEN_LICHT = ("src/views/Landing.tsx", "src/views/landing")
+
+KLASSE = re.compile(r'"([^"\n]*)"|`([^`\n$]*)`')
+
+
+def scan_bron(hexen):
+    """Geeft een lijst (bestand, regel, klasse, ratio, achtergrond) terug."""
+    problemen = []
+    for wortel, _, bestanden in os.walk(BRON):
+        for naam in sorted(bestanden):
+            if not naam.endswith(".tsx"):
+                continue
+            pad = os.path.join(wortel, naam)
+            toon = os.path.relpath(pad, os.path.join(os.path.dirname(__file__), "..", ".."))
+            with open(pad, encoding="utf-8") as f:
+                for nr, regel in enumerate(f, 1):
+                    for m in KLASSE.finditer(regel):
+                        s = m.group(1) if m.group(1) is not None else m.group(2)
+                        if not s:
+                            continue
+                        if "dark:text-" in s and not LICHT_IN_DONKER.search(s):
+                            for tok in set(re.findall(r"dark:text-(ink-\d+)", s)):
+                                if tok not in hexen:
+                                    continue
+                                r = ratio(hexen[tok], hexen["ink-950"])
+                                if r < 4.5:
+                                    problemen.append((toon, nr, f"dark:text-{tok}", r, "donkere pagina"))
+                        elif (
+                            "dark:text-" not in s
+                            and not OMGEKEERD_VLAK.search(s)
+                            and not toon.startswith(ALLEEN_LICHT)
+                        ):
+                            for tok in set(LICHTE_INKT.findall(s)):
+                                if tok not in hexen:
+                                    continue
+                                r = ratio(hexen[tok], hexen["ink-950"])
+                                if r < 4.5:
+                                    problemen.append(
+                                        (toon, nr, f"text-{tok} (geen dark:)", r, "donkere pagina")
+                                    )
+    # ontdubbel
+    gezien, uniek = set(), []
+    for p in problemen:
+        sleutel = (p[0], p[1], p[2])
+        if sleutel in gezien:
+            continue
+        gezien.add(sleutel)
+        uniek.append(p)
+    return sorted(uniek)
+
 
 def main():
     hexen, buiten_gamut = {"wit": "#ffffff"}, []
@@ -133,9 +235,18 @@ def main():
     if gezakt:
         for omschrijving, r, minimum in gezakt:
             print(f"gezakt: {omschrijving} haalt {r:.2f}:1, minimum is {minimum}")
-    if buiten_gamut or gezakt:
+    problemen = scan_bron(hexen)
+    if problemen:
+        print("componenten die zelf een kleurpaar kiezen dat zakt:\n")
+        for pad, nr, klasse, r, waarop in problemen:
+            print(f"  {r:5.2f}:1  {pad}:{nr}  {klasse}  op {waarop}")
+        print("\n  vervang door text-sterk / text-basis / text-zacht / text-zwak")
+        print("  (die volgen het thema, zie de semantische laag in src/App.css)")
+
+    if buiten_gamut or gezakt or problemen:
         return 1
     print(f"{len(CONTROLES)} controles, allemaal goed, geen kleur buiten gamut")
+    print("broncode gescand, geen component kiest in donkere modus een paar dat zakt")
     return 0
 
 if __name__ == "__main__":

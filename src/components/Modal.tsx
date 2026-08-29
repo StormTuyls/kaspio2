@@ -118,7 +118,7 @@ export function Modal({ open, title, onClose, children, size = "md" }: Props) {
         <div className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-ink-200 px-5 py-3.5 dark:border-ink-800">
           <h2
             id={titelId}
-            className="min-w-0 truncate text-[1.0625rem] font-semibold text-ink-900 dark:text-ink-100"
+            className="min-w-0 truncate text-[1.0625rem] font-semibold text-sterk"
           >
             {title}
           </h2>

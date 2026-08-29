@@ -53,14 +53,14 @@ export function RecurringPlansPanel({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-ink-muted dark:text-ink-500">
+      <p className="text-sm text-ink-muted dark:text-ink-400">
         Terugkerende stortingen en domiciliëringen rond je potjes. Reserveringen
         zet Kaspio 's nachts zelf klaar, of jij bevestigt ze met één klik op het
         dashboard; de echte afhouding herkent Kaspio bij de bankimport.
       </p>
 
       {plans.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-ink-300 bg-ink-50 px-4 py-6 text-center text-sm text-ink-muted dark:border-ink-800 dark:bg-ink-950/40 dark:text-ink-500">
+        <p className="rounded-lg border border-dashed border-ink-300 bg-ink-50 px-4 py-6 text-center text-sm text-ink-muted dark:border-ink-800 dark:bg-ink-950/40 dark:text-ink-400">
           Nog geen terugkerende boekingen.
         </p>
       ) : (
@@ -111,7 +111,7 @@ function PlanRow({
 
   return (
     <li
-      className={`rounded-xl border border-ink-200 px-3.5 py-3 dark:border-ink-800/60 ${
+      className={`rounded-lg border border-ink-200 px-3.5 py-3 dark:border-ink-800/60 ${
         plan.active ? "" : "opacity-60"
       }`}
     >
@@ -123,7 +123,7 @@ function PlanRow({
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="truncate text-sm font-semibold text-ink-900 dark:text-ink-100">
+            <span className="truncate text-sm font-semibold text-sterk">
               {plan.counterparty || (isDom ? "Domiciliëring" : "Storting")}
             </span>
             <span
@@ -136,7 +136,7 @@ function PlanRow({
               {isDom ? "Domiciliëring" : "Storting"}
             </span>
           </div>
-          <p className="text-xs text-ink-muted dark:text-ink-500">
+          <p className="text-xs text-ink-muted dark:text-ink-400">
             {potName} · dag {plan.day_of_month}
           </p>
         </div>
@@ -148,16 +148,16 @@ function PlanRow({
       <div className="mt-2.5 flex items-center justify-end gap-2 text-xs">
         {confirming ? (
           <>
-            <span className="mr-auto text-ink-muted dark:text-ink-500">Verwijderen?</span>
+            <span className="mr-auto text-ink-muted dark:text-ink-400">Verwijderen?</span>
             <button
               onClick={() => setConfirming(false)}
-              className="rounded-lg border border-ink-300 px-2.5 py-1 font-semibold text-ink-700 dark:border-ink-600 dark:text-ink-300"
+              className="rounded-lg border border-ink-300 px-2.5 py-1 font-semibold text-basis dark:border-ink-600"
             >
               Nee
             </button>
             <button
               onClick={onRemove}
-              className="rounded-lg bg-fout-600 px-2.5 py-1 font-semibold text-white hover:bg-fout-600"
+              className="rounded-lg bg-fout-600 px-2.5 py-1 font-semibold text-white transition-colors hover:bg-fout-700"
             >
               Ja, verwijder
             </button>
@@ -166,13 +166,13 @@ function PlanRow({
           <>
             <button
               onClick={onToggle}
-              className="rounded-lg border border-ink-300 px-2.5 py-1 font-semibold text-ink-700 dark:border-ink-600 dark:text-ink-300"
+              className="rounded-lg border border-ink-300 px-2.5 py-1 font-semibold text-basis dark:border-ink-600"
             >
               {plan.active ? "Pauzeer" : "Activeer"}
             </button>
             <button
               onClick={onEdit}
-              className="rounded-lg border border-ink-300 px-2.5 py-1 font-semibold text-ink-700 dark:border-ink-600 dark:text-ink-300"
+              className="rounded-lg border border-ink-300 px-2.5 py-1 font-semibold text-basis dark:border-ink-600"
             >
               Bewerk
             </button>
