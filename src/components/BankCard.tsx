@@ -65,10 +65,10 @@ export function BankCard({
   return (
     <div className="flex h-full flex-col rounded-md bg-ink-950 p-5 text-white shadow-[0_1px_2px_rgba(15,23,42,0.06),0_4px_18px_-4px_rgba(15,23,42,0.18)] dark:bg-ink-800 dark:shadow-[0_1px_2px_rgba(0,0,0,0.4),0_4px_18px_-4px_rgba(0,0,0,0.5)]">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="font-num text-[11px] font-semibold text-ink-500 dark:text-ink-300">
+        <p className="font-num text-[11px] font-semibold text-ink-400 dark:text-ink-300">
           {label}
         </p>
-        <p className="text-xs text-ink-500 dark:text-ink-300">
+        <p className="text-xs text-ink-400 dark:text-ink-300">
           {potCount} {potCount === 1 ? "potje" : "potjes"} · {groupCount}{" "}
           {groupCount === 1 ? "groep" : "groepen"}
         </p>
@@ -87,7 +87,7 @@ export function BankCard({
       </div>
 
       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs">
-        <span className="text-ink-500 dark:text-ink-300">
+        <span className="text-ink-400 dark:text-ink-300">
           <span className="font-num font-semibold tabular-nums">
             {loading ? "\u2014" : formatEuro(inPots)}
           </span>{" "}

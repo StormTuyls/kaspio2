@@ -1147,6 +1147,14 @@ function AuthedApp({
         </div>
       )}
       <div className="flex min-h-screen">
+        {/* Zonder dit tabt een toetsenbordgebruiker eerst door de hele
+            zijbalk (zeven menu-items plus elk potje) voor hij bij de inhoud is. */}
+        <a
+          href="#inhoud"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-ink-950 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+        >
+          Naar de inhoud
+        </a>
         <Sidebar
           tab={tab}
           isAdmin={!!isAdmin}
@@ -1205,7 +1213,7 @@ function AuthedApp({
           {/* De onderbalk is fixed en ~58px hoog; op een toestel met home-indicator
               komt daar env(safe-area-inset-bottom) bovenop. pb-24 alleen liet
               daar nog 4px over, vandaar de expliciete berekening. */}
-          <main className="mx-auto max-w-6xl px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 sm:px-8 sm:pt-8 lg:pb-8">
+          <main id="inhoud" tabIndex={-1} className="mx-auto max-w-6xl px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 sm:px-8 sm:pt-8 lg:pb-8">
             {selectedPot ? (
               <PotDetail
                 pot={selectedPot}
@@ -1924,7 +1932,7 @@ function Sidebar({
                     naam springt naar de groep. Eén knop voor allebei zou
                     betekenen dat je niet meer kan inklappen zonder weg te
                     navigeren. */}
-                <div className="mb-1 flex items-center gap-0.5 text-[10px] font-bold text-ink-600">
+                <div className="mb-1 flex items-center gap-0.5 text-[10px] font-bold text-ink-400">
                   <button
                     type="button"
                     onClick={() => toggleGroup(key)}
@@ -1953,7 +1961,7 @@ function Sidebar({
                     title="Toon in dashboard"
                   >
                     <span className="truncate">{headerLabel}</span>
-                    <span className="font-normal normal-case text-ink-700">
+                    <span className="font-normal normal-case text-ink-400">
                       {section.count}
                     </span>
                   </button>
@@ -1976,7 +1984,7 @@ function Sidebar({
                         <button
                           type="button"
                           onClick={() => onSelectGroup(c.id)}
-                          className="mb-0.5 flex w-full items-center justify-between gap-2 rounded-md px-2 py-0.5 text-left text-[10px] font-semibold text-ink-700 transition hover:bg-white/5 hover:text-ink-500"
+                          className="mb-0.5 flex w-full items-center justify-between gap-2 rounded-md px-2 py-0.5 text-left text-[10px] font-semibold text-ink-400 transition hover:bg-white/5 hover:text-ink-400"
                           title="Toon in dashboard"
                         >
                           <span className="truncate">{c.label}</span>
@@ -2004,7 +2012,7 @@ function Sidebar({
 
       <button
         onClick={onViewSite}
-        className="mt-auto flex flex-shrink-0 items-center gap-2 rounded-lg px-2 py-2 pt-4 text-xs font-medium text-ink-600 transition hover:text-ink-200"
+        className="mt-auto flex flex-shrink-0 items-center gap-2 rounded-lg px-2 py-2 pt-4 text-xs font-medium text-ink-400 transition hover:text-ink-200"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="9" />
@@ -2056,7 +2064,7 @@ function SidebarPotList({
                 style={{ backgroundColor: p.color ?? "#1D9E75" }}
               />
               <span className="truncate">{p.name}</span>
-              <span className="ml-auto text-[11px] text-ink-600">
+              <span className="ml-auto text-[11px] text-ink-400">
                 €{Math.round(balanceFor(p.id))}
               </span>
             </button>

@@ -81,7 +81,7 @@ export function OrgSwitcher({
       >
         <span
           className={`min-w-0 flex-1 truncate text-xs ${
-            isDark ? "text-ink-500" : "text-ink-700"
+            isDark ? "text-ink-300" : "text-ink-700"
           }`}
         >
           {selected.name}
@@ -95,7 +95,7 @@ export function OrgSwitcher({
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={isDark ? "text-ink-600" : "text-ink-600"}
+          className={isDark ? "text-ink-400" : "text-ink-600"}
         >
           <polyline points="6 9 12 15 18 9" />
         </svg>
