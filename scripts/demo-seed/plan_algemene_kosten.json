@@ -1,0 +1,18 @@
+{
+  "comite": "Dagelijks bestuur",
+  "posten": [
+    {"post": "ALGEMENE ONKOSTEN SECRETARIAAT",
+     "pot": "ALGEMENE ONKOSTEN SECRETARIAAT",
+     "pot_id": "d89648dd-a86d-4e8e-a041-24a2ce84c3ea", "stand": -2388},
+    {"post": "INTERNET & TV & TELEFOON",
+     "pot": "INTERNET & TV & TELEFOON",
+     "pot_id": "fbe2910e-2c03-4f3f-99c1-1d5e40e45d8c", "stand": -1440},
+    {"post": "VTV NIET-LEDENAANSLUITINGEN",
+     "pot": "VTV NIET-LEDENAANSLUITINGEN",
+     "pot_id": "836a007b-cc8e-4c09-9447-749729d21a67", "stand": -957},
+    {"post": "KOSTEN BANK - MOLLIE (TENP VLAANDEREN)",
+     "pot": "KOSTEN Bank - Mollie (TenP Vlaanderen)",
+     "pot_id": "5eb6a2b8-e587-4722-83f9-00fff450d45c",
+     "cp_name": "Tennis en Padel Vlaanderen VZW", "stand": -957}
+  ]
+}
