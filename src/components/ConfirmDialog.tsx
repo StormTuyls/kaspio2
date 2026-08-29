@@ -84,7 +84,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
         >
           <div className="space-y-5">
             {opts?.message && (
-              <p className="text-sm text-ink-muted dark:text-navy-300">
+              <p className="text-sm text-ink-muted dark:text-ink-500">
                 {opts.message}
               </p>
             )}

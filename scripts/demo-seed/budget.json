@@ -1,0 +1,828 @@
+[
+ {
+  "comite": "Dagelijks bestuur",
+  "post": "ALGEMENE ONKOSTEN SECRETARIAAT",
+  "stand": -2387.83,
+  "budget": -2350,
+  "prog": -3218
+ },
+ {
+  "comite": "Dagelijks bestuur",
+  "post": "POST",
+  "stand": 0,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "Dagelijks bestuur",
+  "post": "INTERNET & TV & TELEFOON",
+  "stand": -1440.0300000000002,
+  "budget": -2200,
+  "prog": -2200
+ },
+ {
+  "comite": "Dagelijks bestuur",
+  "post": "VTV NIET-LEDENAANSLUITINGEN",
+  "stand": -956.969999999983,
+  "budget": -1500,
+  "prog": -1500
+ },
+ {
+  "comite": "Dagelijks bestuur",
+  "post": "GRATIS LIDGELDEN",
+  "stand": -120,
+  "budget": -150,
+  "prog": -150
+ },
+ {
+  "comite": "Dagelijks bestuur",
+  "post": "TOTAAL LOONKOST Gert Vanderlinden",
+  "stand": -83908.94,
+  "budget": -130810,
+  "prog": -130810
+ },
+ {
+  "comite": "Dagelijks bestuur",
+  "post": "TOTALE LOONKOST vast barpersoneel",
+  "stand": null,
+  "budget": null,
+  "prog": null
+ },
+ {
+  "comite": "Dagelijks bestuur",
+  "post": "NETTO Bank",
+  "stand": -600.37,
+  "budget": -750,
+  "prog": -750
+ },
+ {
+  "comite": "Dagelijks bestuur",
+  "post": "TOTAAL Verzekeringen",
+  "stand": -248.97,
+  "budget": -15450,
+  "prog": -15450
+ },
+ {
+  "comite": "Dagelijks bestuur",
+  "post": "VARIA",
+  "stand": -1358.6000000000001,
+  "budget": -1250,
+  "prog": -1350
+ },
+ {
+  "comite": "Zomertennis",
+  "post": "INVESTERINGEN",
+  "stand": 0,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "Zomertennis",
+  "post": "UITGAVEN VTV VERZEKERING",
+  "stand": -7935.43,
+  "budget": -10750,
+  "prog": -10750
+ },
+ {
+  "comite": "Zomertennis",
+  "post": "GRATIS LIDGELDEN",
+  "stand": 840,
+  "budget": 850,
+  "prog": 850
+ },
+ {
+  "comite": "Zomertennis",
+  "post": "NETTO ONTVANGEN LIDGELDEN",
+  "stand": 111281.50000000001,
+  "budget": 122500,
+  "prog": 122500
+ },
+ {
+  "comite": "Zomertennis",
+  "post": "VARIA",
+  "stand": 0,
+  "budget": 1200,
+  "prog": 1200
+ },
+ {
+  "comite": "Wintertennis",
+  "post": "VASTE VERHURINGEN PRIVE",
+  "stand": 45155,
+  "budget": 60000,
+  "prog": 60000
+ },
+ {
+  "comite": "Wintertennis",
+  "post": "VERHUUR TENNISSCHOOL + G-TENNIS",
+  "stand": 0,
+  "budget": 102500,
+  "prog": 102500
+ },
+ {
+  "comite": "Wintertennis",
+  "post": "WINTERLIDMAATSCHAP",
+  "stand": 3345,
+  "budget": 30000,
+  "prog": 30000
+ },
+ {
+  "comite": "Wintertennis",
+  "post": "LOSSE VERHUUR INCL. ZATERDAGAVONDEN",
+  "stand": 5522.5,
+  "budget": 12500,
+  "prog": 12500
+ },
+ {
+  "comite": "Wintertennis",
+  "post": "VARIA",
+  "stand": 1200,
+  "budget": 800,
+  "prog": 800
+ },
+ {
+  "comite": "Tennisschool",
+  "post": "BEHEERSSOFTWARE TS EN LEDEN",
+  "stand": -1210,
+  "budget": -1750,
+  "prog": -1750
+ },
+ {
+  "comite": "Tennisschool",
+  "post": "KOSTEN TERREINEN WINTER REDINGENHOF",
+  "stand": 0,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "Tennisschool",
+  "post": "KOSTEN TERREINEN WINTER TS",
+  "stand": 0,
+  "budget": -101500,
+  "prog": -101500
+ },
+ {
+  "comite": "Tennisschool",
+  "post": "KOSTEN BALLEN",
+  "stand": -4020.04,
+  "budget": -6500,
+  "prog": -6500
+ },
+ {
+  "comite": "Tennisschool",
+  "post": "KOSTEN DIDACTISCH MATERIAAL",
+  "stand": -489.1,
+  "budget": -1500,
+  "prog": -1500
+ },
+ {
+  "comite": "Tennisschool",
+  "post": "KOSTEN TRAINERS WINTER DEEL1",
+  "stand": 0,
+  "budget": -105000,
+  "prog": -105000
+ },
+ {
+  "comite": "Tennisschool",
+  "post": "KOSTEN TRAINERS ZOMER & STAGES",
+  "stand": -44708.75,
+  "budget": -56500,
+  "prog": -56500
+ },
+ {
+  "comite": "Tennisschool",
+  "post": "KOSTEN TRAINERS LENTE",
+  "stand": -76963.3,
+  "budget": -70000,
+  "prog": -70000
+ },
+ {
+  "comite": "Tennisschool",
+  "post": "KOSTEN TRAINERS WINTER DEEL2",
+  "stand": -81378.81,
+  "budget": -82500,
+  "prog": -82500
+ },
+ {
+  "comite": "Tennisschool",
+  "post": "STADSKAMPEN ZOMER & STAGES",
+  "stand": 44415,
+  "budget": 58500,
+  "prog": 58500
+ },
+ {
+  "comite": "Tennisschool",
+  "post": "LESGELDEN REDINGENHOF",
+  "stand": 0,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "Tennisschool",
+  "post": "LESGELDEN WINTER",
+  "stand": 65808,
+  "budget": 320000,
+  "prog": 320000
+ },
+ {
+  "comite": "Tennisschool",
+  "post": "LESGELDEN LENTE",
+  "stand": 93383.11,
+  "budget": 103500,
+  "prog": 103500
+ },
+ {
+  "comite": "Tennisschool",
+  "post": "INKOMSTEN LESGELDEN ACHTERSTALLEN",
+  "stand": 22749.75,
+  "budget": 11000,
+  "prog": 22960
+ },
+ {
+  "comite": "Tennisschool",
+  "post": "ADMINISTRATIE EN ORGANISATIE",
+  "stand": 0,
+  "budget": null,
+  "prog": null
+ },
+ {
+  "comite": "Tennisschool",
+  "post": "ABC CONCEPT",
+  "stand": 0,
+  "budget": -7500,
+  "prog": -7500
+ },
+ {
+  "comite": "Tennisschool",
+  "post": "VARIA",
+  "stand": -43.45,
+  "budget": -250,
+  "prog": -250
+ },
+ {
+  "comite": "Bar",
+  "post": "INTERNE REKENINGEN",
+  "stand": 1375.2,
+  "budget": 2500,
+  "prog": 2500
+ },
+ {
+  "comite": "Bar",
+  "post": "BARINKOMSTEN VIA KASSA",
+  "stand": 81016.73999999995,
+  "budget": 145000,
+  "prog": 145000
+ },
+ {
+  "comite": "Bar",
+  "post": "CARREFOUR EXPRESS",
+  "stand": -87.13,
+  "budget": -350,
+  "prog": -350
+ },
+ {
+  "comite": "Bar",
+  "post": "AANKOOP VOEDING",
+  "stand": -19988.75000000001,
+  "budget": -20000,
+  "prog": -20000
+ },
+ {
+  "comite": "Bar",
+  "post": "SPORTDRINKS - AA / BIER- EN WIJNHUIS / OLA",
+  "stand": -193.05,
+  "budget": -4750,
+  "prog": -4750
+ },
+ {
+  "comite": "Bar",
+  "post": "VOLUMEKORTINGEN / TERUGGAVEN",
+  "stand": 2127.4,
+  "budget": 9000,
+  "prog": 9000
+ },
+ {
+  "comite": "Bar",
+  "post": "INBEV & CO",
+  "stand": -11970.25,
+  "budget": -42000,
+  "prog": -42000
+ },
+ {
+  "comite": "Bar",
+  "post": "DULST",
+  "stand": -2813.8500000000004,
+  "budget": -5000,
+  "prog": -5000
+ },
+ {
+  "comite": "Bar",
+  "post": "ROM",
+  "stand": -1680.58,
+  "budget": -5500,
+  "prog": -5500
+ },
+ {
+  "comite": "Bar",
+  "post": "BARHULP",
+  "stand": -27839.18,
+  "budget": -50000,
+  "prog": -50000
+ },
+ {
+  "comite": "Bar",
+  "post": "ANDERE KOSTEN BAR",
+  "stand": -2655.25,
+  "budget": -3000,
+  "prog": -3000
+ },
+ {
+  "comite": "Bar",
+  "post": "VARIA",
+  "stand": 5,
+  "budget": -750,
+  "prog": -750
+ },
+ {
+  "comite": "Infrastructuur",
+  "post": "INVESTERINGEN",
+  "stand": -27550.560000000005,
+  "budget": -30000,
+  "prog": -30000
+ },
+ {
+  "comite": "Infrastructuur",
+  "post": "SUBSIDIES / KREDIETOPNAME",
+  "stand": 0,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "Infrastructuur",
+  "post": "VARIA",
+  "stand": -1404.81,
+  "budget": 0,
+  "prog": -1405
+ },
+ {
+  "comite": "Infrastructuur",
+  "post": "ONDERHOUD TERREINEN",
+  "stand": -16610.879999999997,
+  "budget": -27750,
+  "prog": -27750
+ },
+ {
+  "comite": "Infrastructuur",
+  "post": "OPBOUW & AFBRAAK BALLON",
+  "stand": -9357.34,
+  "budget": -21500,
+  "prog": -21500
+ },
+ {
+  "comite": "Infrastructuur",
+  "post": "KUISPLOEG",
+  "stand": -6730.0199999999995,
+  "budget": -10500,
+  "prog": -10500
+ },
+ {
+  "comite": "Infrastructuur",
+  "post": "TAPIJT INGANG BAR",
+  "stand": -947.87,
+  "budget": -1400,
+  "prog": -1400
+ },
+ {
+  "comite": "Infrastructuur",
+  "post": "ALGEMEEN (DE CONINCK + …)",
+  "stand": -6021.490000000002,
+  "budget": -20000,
+  "prog": -20000
+ },
+ {
+  "comite": "Infrastructuur",
+  "post": "TECHNISCHE INSTALLATIE",
+  "stand": -7090.399999999999,
+  "budget": -7500,
+  "prog": -7500
+ },
+ {
+  "comite": "Infrastructuur",
+  "post": "VARIA/ONVOORZIEN",
+  "stand": -2464.58,
+  "budget": -2500,
+  "prog": -2500
+ },
+ {
+  "comite": "Infrastructuur",
+  "post": "WATER - VMW",
+  "stand": -394.02,
+  "budget": -500,
+  "prog": -500
+ },
+ {
+  "comite": "Infrastructuur",
+  "post": "STOOKOLIE",
+  "stand": -19981.52,
+  "budget": -30000,
+  "prog": -30000
+ },
+ {
+  "comite": "Infrastructuur",
+  "post": "ELEKTRICITEIT",
+  "stand": -18869.62,
+  "budget": -27000,
+  "prog": -27000
+ },
+ {
+  "comite": "Infrastructuur",
+  "post": "HUUR TERREINEN",
+  "stand": -10618.82,
+  "budget": -2750,
+  "prog": -2750
+ },
+ {
+  "comite": "Competitie",
+  "post": "BALLEN",
+  "stand": -1500,
+  "budget": -1750,
+  "prog": -1750
+ },
+ {
+  "comite": "Competitie",
+  "post": "DRANK",
+  "stand": -383,
+  "budget": -750,
+  "prog": -750
+ },
+ {
+  "comite": "Competitie",
+  "post": "INTERCLUBLEIDERS",
+  "stand": -2030,
+  "budget": -1750,
+  "prog": -1750
+ },
+ {
+  "comite": "Competitie",
+  "post": "MAALTIJDEN",
+  "stand": -1132.65,
+  "budget": -1750,
+  "prog": -1750
+ },
+ {
+  "comite": "Competitie",
+  "post": "VERPLAATSINGEN",
+  "stand": 0,
+  "budget": -1000,
+  "prog": -1000
+ },
+ {
+  "comite": "Competitie",
+  "post": "BOETES/PRIJZEN",
+  "stand": -175,
+  "budget": 0,
+  "prog": -150
+ },
+ {
+  "comite": "Competitie",
+  "post": "KLEDIJ",
+  "stand": 0,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "Competitie",
+  "post": "HEREN 1e PLOEG",
+  "stand": -4800,
+  "budget": -7000,
+  "prog": -7300
+ },
+ {
+  "comite": "Competitie",
+  "post": "EXTRA KOSTEN 1e NATIONALE",
+  "stand": null,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "Competitie",
+  "post": "DAMES 1e PLOEG",
+  "stand": -1110,
+  "budget": -1500,
+  "prog": -1110
+ },
+ {
+  "comite": "Competitie",
+  "post": "GRATIS LIDGELDEN",
+  "stand": -480,
+  "budget": -500,
+  "prog": -500
+ },
+ {
+  "comite": "Competitie",
+  "post": "VARIA",
+  "stand": -21.75,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "Competitie",
+  "post": "KINDERTOER",
+  "stand": -104,
+  "budget": -50,
+  "prog": -50
+ },
+ {
+  "comite": "Competitie",
+  "post": "OPEN DUBBELTORNOOI WINTER",
+  "stand": 1386.96,
+  "budget": 1000,
+  "prog": 1000
+ },
+ {
+  "comite": "Competitie",
+  "post": "ETHIAS TOER REEKS 2&3 - U9 en U11 WiNTER",
+  "stand": -71,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "Competitie",
+  "post": "ETHIAS TOER REEKS 1 - JEUGDTORNOOI",
+  "stand": 565.0999999999999,
+  "budget": 500,
+  "prog": 500
+ },
+ {
+  "comite": "Competitie",
+  "post": "OPEN ENKELTORNOOI",
+  "stand": 5551,
+  "budget": -3500,
+  "prog": -3500
+ },
+ {
+  "comite": "Competitie",
+  "post": "OPEN DUBBELTORNOOI ZOMER",
+  "stand": 389.6,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "Competitie",
+  "post": "CLUBKAMPIOENSCHAP",
+  "stand": 0,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "Public Relations",
+  "post": "WEBSITE",
+  "stand": -1949.31,
+  "budget": -1925,
+  "prog": -1950
+ },
+ {
+  "comite": "Public Relations",
+  "post": "MAILCHIMP",
+  "stand": -520.29,
+  "budget": -575,
+  "prog": -575
+ },
+ {
+  "comite": "Public Relations",
+  "post": "MERCHANDISING",
+  "stand": -411.53,
+  "budget": 150,
+  "prog": 150
+ },
+ {
+  "comite": "Public Relations",
+  "post": "VARIA",
+  "stand": 78.21,
+  "budget": 0,
+  "prog": 75
+ },
+ {
+  "comite": "Sponsoring",
+  "post": "INKOMSTEN",
+  "stand": 12412.130000000001,
+  "budget": 32500,
+  "prog": 22500
+ },
+ {
+  "comite": "Sponsoring",
+  "post": "UITGAVEN",
+  "stand": 0,
+  "budget": -500,
+  "prog": -500
+ },
+ {
+  "comite": "Sponsoring",
+  "post": "GRATIS LIDGELDEN",
+  "stand": -220,
+  "budget": -250,
+  "prog": -250
+ },
+ {
+  "comite": "Sponsoring",
+  "post": "VARIA",
+  "stand": 31.36,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "Subsidies",
+  "post": "STAD LEUVEN",
+  "stand": 8403.26,
+  "budget": 6000,
+  "prog": 6000
+ },
+ {
+  "comite": "Subsidies",
+  "post": "VTV",
+  "stand": 2056.75,
+  "budget": 2055,
+  "prog": 2055
+ },
+ {
+  "comite": "Subsidies",
+  "post": "VARIA",
+  "stand": 0,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "Jeugd- en feestcomité",
+  "post": "ONKOSTEN VERGADERINGEN",
+  "stand": -225.45,
+  "budget": -300,
+  "prog": -300
+ },
+ {
+  "comite": "Jeugd- en feestcomité",
+  "post": "RECEPTIES & ETENTJES",
+  "stand": -215.35000000000002,
+  "budget": -750,
+  "prog": -750
+ },
+ {
+  "comite": "Jeugd- en feestcomité",
+  "post": "OPBRENGSTEN UIT VERKOPEN/AKTIES",
+  "stand": 0,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "Jeugd- en feestcomité",
+  "post": "UITGAVEN VOOR AANKOPEN BIJ ACTIVITEITEN",
+  "stand": 0,
+  "budget": -100,
+  "prog": -100
+ },
+ {
+  "comite": "Jeugd- en feestcomité",
+  "post": "UITGAVEN VOOR REDUCTIE BIJ ACTIVIEITEN",
+  "stand": 0,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "Rolstoeltennis",
+  "post": "TERREINEN ROLSTOELTRAININGEN",
+  "stand": 0,
+  "budget": -1000,
+  "prog": -1000
+ },
+ {
+  "comite": "VE-tennis",
+  "post": "BALLEN ROLSTOELTRAININGEN",
+  "stand": 0,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "VE-tennis",
+  "post": "TRAINERS ZOMERTRAININGEN ROLLERS",
+  "stand": -1260,
+  "budget": -2500,
+  "prog": -2500
+ },
+ {
+  "comite": "VE-tennis",
+  "post": "TRAINERS WINTERTRAININGEN ROLLERS",
+  "stand": -1237.5,
+  "budget": -3250,
+  "prog": -3250
+ },
+ {
+  "comite": "VE-tennis",
+  "post": "ZOMERTRAININGEN ROLLERS",
+  "stand": 0,
+  "budget": 1200,
+  "prog": 1200
+ },
+ {
+  "comite": "VE-tennis",
+  "post": "WINTERTRAININGEN ROLLERS",
+  "stand": 0,
+  "budget": 1500,
+  "prog": 1500
+ },
+ {
+  "comite": "VE-tennis",
+  "post": "CRITERIUMTORNOOIEN (R en VE tennis)",
+  "stand": 0,
+  "budget": 50,
+  "prog": 50
+ },
+ {
+  "comite": "VE-tennis",
+  "post": "FLANDERS 25",
+  "stand": 0,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "VE-tennis",
+  "post": "TERUGBETALINGEN ROLSTOELTENNIS VTV/VLG/STAD",
+  "stand": 1400,
+  "budget": 2000,
+  "prog": 2000
+ },
+ {
+  "comite": "VE-tennis",
+  "post": "VARIA",
+  "stand": 0,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "Financiën",
+  "post": "ONKOSTEN ADVIESEN/NASLAGWERKEN ETC.",
+  "stand": -5415.3099999999995,
+  "budget": -9000,
+  "prog": -9000
+ },
+ {
+  "comite": "Financiën",
+  "post": "AFLOSSINGEN KREDIETEN (kapitaal)",
+  "stand": -18860.49000000001,
+  "budget": -13009.679999999998,
+  "prog": -13009.679999999998
+ },
+ {
+  "comite": "Financiën",
+  "post": "AFLOSSINGEN KREDIETEN (interesten + kosten)",
+  "stand": -18875.49000000001,
+  "budget": -16363.080000000002,
+  "prog": -16363.080000000002
+ },
+ {
+  "comite": "Financiën",
+  "post": "BTW",
+  "stand": -8316.06,
+  "budget": -45000,
+  "prog": -45000
+ },
+ {
+  "comite": "Financiën",
+  "post": "TOTAAL KASTOESTAND",
+  "stand": -62127.37000000001,
+  "budget": 1272.239999999998,
+  "prog": 849.239999999998
+ },
+ {
+  "comite": "Financiën",
+  "post": "PROVISIES",
+  "stand": 0,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "Financiën",
+  "post": "UITGEVAAGDE PROVISIES",
+  "stand": 0,
+  "budget": 0,
+  "prog": 0
+ },
+ {
+  "comite": "Financiën",
+  "post": "BETAALDE INVESTERINGEN IN AFSCHRIJVINGEN",
+  "stand": 11076.939999999999,
+  "budget": 47000,
+  "prog": 47000
+ },
+ {
+  "comite": "Financiën",
+  "post": "AFSCHRIJVINGEN",
+  "stand": -57500.360813333325,
+  "budget": -59916.87819428571,
+  "prog": -59916.87819428571
+ },
+ {
+  "comite": "Financiën",
+  "post": "TOTAAL BALANS",
+  "stand": -89690.30081333332,
+  "budget": 1365.0418057142888,
+  "prog": 942.0418057142888
+ }
+]

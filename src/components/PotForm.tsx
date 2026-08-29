@@ -259,8 +259,8 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
               aria-pressed={targetKind === "saving"}
               className={`rounded-xl border-2 px-3 py-2 text-sm font-semibold transition ${
                 targetKind === "saving"
-                  ? "border-teal-500 bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300"
-                  : "border-navy-100 text-navy-500 hover:border-navy-200 dark:border-navy-700 dark:text-navy-300 dark:hover:border-navy-600"
+                  ? "border-in-600 bg-in-100 text-in-700 dark:bg-in-700/30 dark:text-in-400"
+                  : "border-ink-200 text-ink-700 hover:border-ink-300 dark:border-ink-800 dark:text-ink-500 dark:hover:border-ink-600"
               }`}
             >
               Spaardoel
@@ -271,15 +271,15 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
               aria-pressed={targetKind === "budget"}
               className={`rounded-xl border-2 px-3 py-2 text-sm font-semibold transition ${
                 targetKind === "budget"
-                  ? "border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                  : "border-navy-100 text-navy-500 hover:border-navy-200 dark:border-navy-700 dark:text-navy-300 dark:hover:border-navy-600"
+                  ? "border-uit-600 bg-uit-100 text-uit-700 dark:bg-uit-700/30 dark:text-uit-400"
+                  : "border-ink-200 text-ink-700 hover:border-ink-300 dark:border-ink-800 dark:text-ink-500 dark:hover:border-ink-600"
               }`}
             >
               Budget
             </button>
           </div>
           <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-navy-400">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-600">
               €
             </span>
             <input
@@ -303,7 +303,7 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
         }
       >
         <div className="relative">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-navy-400">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-600">
             €
           </span>
           <input
@@ -329,7 +329,7 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
       </Field>
 
       {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
           {error}
         </div>
       )}
@@ -364,13 +364,13 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+      <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
         {label}
-        {required && <span className="text-rose-500"> *</span>}
+        {required && <span className="text-fout-400"> *</span>}
       </span>
       {children}
       {hint && (
-        <span className="mt-1 block text-xs text-navy-400 dark:text-navy-300">
+        <span className="mt-1 block text-xs text-ink-600 dark:text-ink-500">
           {hint}
         </span>
       )}

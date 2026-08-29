@@ -434,13 +434,13 @@ export function ImportTransactionsModal({
 
   const colSelect = (key: ColumnKey, label: string, required?: boolean) => (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium text-navy-500 dark:text-navy-300">
-        {label} {required && <span className="text-rose-500">*</span>}
+      <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
+        {label} {required && <span className="text-fout-400">*</span>}
       </span>
       <select
         value={cols[key]}
         onChange={(e) => setCols({ ...cols, [key]: Number(e.target.value) })}
-        className="w-full rounded-lg border border-navy-200 bg-white px-2.5 py-1.5 text-sm dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50"
+        className="w-full rounded-lg border border-ink-300 bg-white px-2.5 py-1.5 text-sm dark:border-ink-800 dark:bg-ink-900 dark:text-ink-100"
       >
         <option value={-1}>— niet gebruiken —</option>
         {headers.map((h, i) => (
@@ -454,22 +454,22 @@ export function ImportTransactionsModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-navy-950/40 backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-ink-950/40 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={onClose}
     >
       {/* Zelfde sheet-gedrag als <Modal>, maar breder: de importstappen tonen
           een tabel met kolomkeuzes. */}
       <div
-        className="flex max-h-[92dvh] w-full flex-col rounded-t-2xl bg-white shadow-2xl sm:max-h-[90dvh] sm:max-w-2xl sm:rounded-2xl dark:bg-navy-900 dark:ring-1 dark:ring-navy-700/60"
+        className="flex max-h-[92dvh] w-full flex-col rounded-t-2xl bg-white shadow-2xl sm:max-h-[90dvh] sm:max-w-2xl sm:rounded-md dark:bg-ink-950 dark:ring-1 dark:ring-ink-700/60"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-navy-100 px-5 py-4 dark:border-navy-700/60">
-          <h2 className="min-w-0 truncate text-lg font-bold text-navy-900 dark:text-white">
+        <div className="flex items-center justify-between gap-3 border-b border-ink-200 px-5 py-4 dark:border-ink-800/60">
+          <h2 className="min-w-0 truncate text-lg font-bold text-ink-900 dark:text-white">
             Transacties importeren
           </h2>
           <button
             onClick={onClose}
-            className="-mr-1.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg text-navy-400 hover:bg-navy-50 hover:text-navy-700 sm:h-8 sm:w-8 dark:hover:bg-navy-800 dark:hover:text-white"
+            className="-mr-1.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg text-ink-600 hover:bg-ink-50 hover:text-ink-800 sm:h-8 sm:w-8 dark:hover:bg-ink-900 dark:hover:text-white"
             aria-label="Sluiten"
           >
             ✕
@@ -479,12 +479,12 @@ export function ImportTransactionsModal({
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {step === "upload" && (
             <div className="space-y-4">
-              <p className="text-sm text-navy-500 dark:text-navy-300">
+              <p className="text-sm text-ink-700 dark:text-ink-500">
                 Exporteer je rekeningafschrift als CSV vanuit je bank en laad het
                 hier in. We herkennen automatisch de scheidingstekens en
                 datum/bedrag-formaten.
               </p>
-              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-navy-200 py-10 text-sm text-navy-500 hover:border-teal-400 hover:text-teal-700 dark:border-navy-600 dark:text-navy-300 dark:hover:border-teal-500">
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-ink-300 py-10 text-sm text-ink-700 hover:border-in-600 hover:text-in-700 dark:border-ink-600 dark:text-ink-500 dark:hover:border-in-600">
                 <input
                   type="file"
                   accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
@@ -498,8 +498,8 @@ export function ImportTransactionsModal({
               {/* Veel boekhoudingen leven in Excel, niet in een bankexport. Een
                   xlsx inlezen kan Kaspio nog niet, dus zeg hier hoe je er in
                   twee klikken een CSV van maakt. */}
-              <div className="rounded-xl border border-navy-100 bg-canvas p-4 text-xs text-navy-500 dark:border-navy-700/60 dark:bg-navy-800/40 dark:text-navy-400">
-                <p className="mb-1 font-semibold text-navy-700 dark:text-navy-200">
+              <div className="rounded-xl border border-ink-200 bg-ink-50 p-4 text-xs text-ink-700 dark:border-ink-800/60 dark:bg-ink-900/40 dark:text-ink-600">
+                <p className="mb-1 font-semibold text-ink-800 dark:text-ink-300">
                   Staat je overzicht in Excel?
                 </p>
                 <p>
@@ -510,27 +510,27 @@ export function ImportTransactionsModal({
               </div>
 
               {/* Hoe moet het eruit zien */}
-              <div className="rounded-xl border border-navy-100 bg-canvas p-4 dark:border-navy-700/60 dark:bg-navy-800/40">
+              <div className="rounded-xl border border-ink-200 bg-ink-50 p-4 dark:border-ink-800/60 dark:bg-ink-900/40">
                 <div className="mb-2 flex items-center justify-between gap-3">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+                  <span className="text-xs font-semibold text-ink-600 dark:text-ink-500">
                     Voorbeeld
                   </span>
                   <button
                     onClick={downloadSample}
-                    className="text-xs font-medium text-teal-700 hover:underline dark:text-teal-300"
+                    className="text-xs font-medium text-in-700 hover:underline dark:text-in-400"
                   >
                     ↓ Download voorbeeldbestand
                   </button>
                 </div>
-                <pre className="overflow-x-auto rounded-lg bg-white p-3 text-xs leading-relaxed text-navy-600 ring-1 ring-navy-100 dark:bg-navy-900 dark:text-navy-200 dark:ring-navy-700/60">
+                <pre className="overflow-x-auto rounded-lg bg-white p-3 text-xs leading-relaxed text-ink-700 ring-1 ring-ink-100 dark:bg-ink-950 dark:text-ink-300 dark:ring-ink-700/60">
 {`Datum;Bedrag;Tegenpartij;Mededeling
 20/06/2026;-12,50;Colruyt;Boodschappen
 21/06/2026;100,00;Jan Janssens;Lidgeld 2026`}
                 </pre>
-                <ul className="mt-3 space-y-1 text-xs text-navy-500 dark:text-navy-400">
+                <ul className="mt-3 space-y-1 text-xs text-ink-700 dark:text-ink-600">
                   <li>
-                    <strong className="text-navy-700 dark:text-navy-200">Datum</strong> en{" "}
-                    <strong className="text-navy-700 dark:text-navy-200">Bedrag</strong> zijn
+                    <strong className="text-ink-800 dark:text-ink-300">Datum</strong> en{" "}
+                    <strong className="text-ink-800 dark:text-ink-300">Bedrag</strong> zijn
                     verplicht. Tegenpartij en mededeling zijn optioneel.
                   </li>
                   <li>
@@ -549,12 +549,12 @@ export function ImportTransactionsModal({
           {step === "map" && (
             <div className="space-y-5">
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="truncate text-navy-500 dark:text-navy-300">
+                <span className="truncate text-ink-700 dark:text-ink-500">
                   {fileName} · {rows.length} rijen
                 </span>
                 <button
                   onClick={() => setStep("upload")}
-                  className="shrink-0 text-teal-700 hover:underline dark:text-teal-300"
+                  className="shrink-0 text-in-700 hover:underline dark:text-in-400"
                 >
                   Ander bestand
                 </button>
@@ -571,7 +571,7 @@ export function ImportTransactionsModal({
               </div>
 
               {cols.pot >= 0 && unmatchedPotNames.length > 0 && (
-                <p className="rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+                <p className="rounded-xl border border-uit-300 bg-uit-100/70 px-3 py-2 text-xs text-uit-700 dark:border-uit-700/50 dark:bg-uit-700/20 dark:text-uit-300">
                   {unmatchedPotNames.length === 1
                     ? "1 naam uit de potje-kolom hoort bij geen enkel potje"
                     : `${unmatchedPotNames.length} namen uit de potje-kolom horen bij geen enkel potje`}
@@ -585,7 +585,7 @@ export function ImportTransactionsModal({
               )}
 
               {internalCount > 0 && (
-                <p className="rounded-xl border border-navy-200 bg-canvas px-3 py-2 text-xs text-navy-600 dark:border-navy-700/60 dark:bg-navy-800/40 dark:text-navy-300">
+                <p className="rounded-xl border border-ink-300 bg-ink-50 px-3 py-2 text-xs text-ink-700 dark:border-ink-800/60 dark:bg-ink-900/40 dark:text-ink-500">
                   {internalCount / 2 === 1
                     ? "1 overboeking tussen je eigen rekeningen gevonden"
                     : `${internalCount / 2} overboekingen tussen je eigen rekeningen gevonden`}{" "}
@@ -597,13 +597,13 @@ export function ImportTransactionsModal({
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-navy-500 dark:text-navy-300">
+                  <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
                     In / uit bepalen
                   </span>
                   <select
                     value={dirMode}
                     onChange={(e) => setDirMode(e.target.value as DirectionMode)}
-                    className="w-full rounded-lg border border-navy-200 bg-white px-2.5 py-1.5 text-sm dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50"
+                    className="w-full rounded-lg border border-ink-300 bg-white px-2.5 py-1.5 text-sm dark:border-ink-800 dark:bg-ink-900 dark:text-ink-100"
                   >
                     <option value="sign">Op teken (− = uit, + = in)</option>
                     <option value="all_out">Alles als uitgave</option>
@@ -611,13 +611,13 @@ export function ImportTransactionsModal({
                   </select>
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-navy-500 dark:text-navy-300">
+                  <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
                     Potje voor alle rijen
                   </span>
                   <select
                     value={targetPot}
                     onChange={(e) => setTargetPot(e.target.value)}
-                    className="w-full rounded-lg border border-navy-200 bg-white px-2.5 py-1.5 text-sm dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50"
+                    className="w-full rounded-lg border border-ink-300 bg-white px-2.5 py-1.5 text-sm dark:border-ink-800 dark:bg-ink-900 dark:text-ink-100"
                   >
                     {allowUnallocated && (
                       <>
@@ -639,18 +639,18 @@ export function ImportTransactionsModal({
               </div>
 
               {/* Preview */}
-              <div className="rounded-xl border border-navy-100 dark:border-navy-700/60">
-                <div className="flex items-center justify-between gap-2 border-b border-navy-100 px-3 py-2 dark:border-navy-700/60">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+              <div className="rounded-xl border border-ink-200 dark:border-ink-800/60">
+                <div className="flex items-center justify-between gap-2 border-b border-ink-200 px-3 py-2 dark:border-ink-800/60">
+                  <span className="text-xs font-semibold text-ink-600 dark:text-ink-500">
                     Voorbeeld ({importCount} importeerbaar
                     {invalidCount > 0 ? `, ${invalidCount} onleesbaar` : ""})
                   </span>
-                  <span className="text-[11px] font-normal normal-case text-navy-400 dark:text-navy-500">
+                  <span className="text-[11px] font-normal normal-case text-ink-600 dark:text-ink-700">
                     potje per rij aanpasbaar →
                   </span>
                 </div>
                 {duplicateCount > 0 && (
-                  <p className="border-b border-amber-200 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+                  <p className="border-b border-uit-300 bg-uit-100/70 px-3 py-2 text-xs text-uit-700 dark:border-uit-700/50 dark:bg-uit-700/20 dark:text-uit-300">
                     {duplicateCount === 1
                       ? "1 rij lijkt al in Kaspio te staan"
                       : `${duplicateCount} rijen lijken al in Kaspio te staan`}
@@ -664,7 +664,7 @@ export function ImportTransactionsModal({
                     worden; vanaf sm valt hij terug op de volle breedte. */}
                 <div className="max-h-56 overflow-auto">
                   <table className="w-full min-w-[34rem] text-sm sm:min-w-0">
-                    <tbody className="divide-y divide-navy-100 dark:divide-navy-700/60">
+                    <tbody className="divide-y divide-ink-200 dark:divide-ink-800/60">
                       {preview.slice(0, 50).map((p, i) => {
                         const cpNorm = p.counterparty
                           ? normalizeCounterparty(p.counterparty)
@@ -708,28 +708,28 @@ export function ImportTransactionsModal({
                               />
                             )}
                           </td>
-                          <td className="whitespace-nowrap px-3 py-1.5 text-navy-500 dark:text-navy-300">
+                          <td className="whitespace-nowrap px-3 py-1.5 text-ink-700 dark:text-ink-500">
                             {p.occurredOn ?? "—"}
                           </td>
-                          <td className="px-3 py-1.5 text-navy-700 dark:text-navy-200">
+                          <td className="px-3 py-1.5 text-ink-800 dark:text-ink-300">
                             <span className="block max-w-[14rem] truncate">
                               {p.counterparty || p.memo || "—"}
                             </span>
                             {transferPartner[i] !== null && !dup && (
                               <span
                                 title="Tegenboeking met hetzelfde bedrag op een van je eigen rekeningen. Telt niet mee als inkomst of uitgave."
-                                className="mt-0.5 inline-block rounded bg-navy-100 px-1.5 py-0.5 text-[10px] font-semibold text-navy-600 dark:bg-navy-700/50 dark:text-navy-200"
+                                className="mt-0.5 inline-block rounded bg-ink-100 px-1.5 py-0.5 text-[10px] font-semibold text-ink-700 dark:bg-ink-800/50 dark:text-ink-300"
                               >
                                 ↔ tussen eigen rekeningen
                               </span>
                             )}
                             {transferPartner[i] === null && potFromFile[i] && !dup && (
-                              <span className="mt-0.5 inline-block rounded bg-teal-50 px-1.5 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-900/30 dark:text-teal-300">
+                              <span className="mt-0.5 inline-block rounded bg-in-100 px-1.5 py-0.5 text-[10px] font-semibold text-in-700 dark:bg-in-700/30 dark:text-in-400">
                                 ✓ potje uit bestand
                               </span>
                             )}
                             {matches[i] && !potFromFile[i] && transferPartner[i] === null && !dup && (
-                              <span className="mt-0.5 inline-block rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                              <span className="mt-0.5 inline-block rounded bg-uit-100 px-1.5 py-0.5 text-[10px] font-semibold text-uit-700 dark:bg-uit-700/30 dark:text-uit-400">
                                 ✨ herkende domiciliëring
                               </span>
                             )}
@@ -743,8 +743,8 @@ export function ImportTransactionsModal({
                                 title="Vergelijk met wat er al in Kaspio staat"
                                 className={`mt-0.5 inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold transition hover:brightness-95 ${
                                   dup.kind === "exact"
-                                    ? "bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
-                                    : "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                                    ? "bg-fout-100 text-fout-600 dark:bg-fout-600/30 dark:text-fout-400"
+                                    : "bg-uit-100 text-uit-700 dark:bg-uit-700/30 dark:text-uit-400"
                                 }`}
                               >
                                 {dup.kind === "exact"
@@ -761,8 +761,8 @@ export function ImportTransactionsModal({
                           <td
                             className={`whitespace-nowrap px-3 py-1.5 text-right font-semibold tabular-nums ${
                               p.amount !== null && directionOf(p.amount) === "in"
-                                ? "text-teal-700 dark:text-teal-300"
-                                : "text-amber-700 dark:text-amber-400"
+                                ? "text-in-700 dark:text-in-400"
+                                : "text-uit-700 dark:text-uit-400"
                             }`}
                           >
                             {p.amount === null
@@ -779,7 +779,7 @@ export function ImportTransactionsModal({
                                     next[i] = e.target.value;
                                     setRowPot(next);
                                   }}
-                                  className="max-w-[9rem] rounded-md border border-navy-200 bg-white px-1.5 py-1 text-xs dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50"
+                                  className="max-w-[9rem] rounded-md border border-ink-300 bg-white px-1.5 py-1 text-xs dark:border-ink-800 dark:bg-ink-900 dark:text-ink-100"
                                 >
                                   {allowUnallocated && (
                                     <>
@@ -794,18 +794,18 @@ export function ImportTransactionsModal({
                                   ))}
                                 </select>
                                 {suggested && (
-                                  <span className="text-[10px] font-medium text-teal-600 dark:text-teal-400">
+                                  <span className="text-[10px] font-medium text-in-600 dark:text-in-400">
                                     ✨ voorstel
                                   </span>
                                 )}
                               </div>
                             ) : (
-                              <span className="text-xs text-navy-300 dark:text-navy-600">—</span>
+                              <span className="text-xs text-ink-500 dark:text-ink-700">—</span>
                             )}
                           </td>
                         </tr>
                         {dup && openDup === i && (
-                          <tr className="bg-canvas dark:bg-navy-800/50">
+                          <tr className="bg-ink-50 dark:bg-ink-900/50">
                             <td />
                             <td colSpan={4} className="px-3 pb-2.5 pt-0">
                               <DupVergelijking
@@ -839,7 +839,7 @@ export function ImportTransactionsModal({
                   </table>
                 </div>
                 {preview.length > 50 && (
-                  <div className="border-t border-navy-100 px-3 py-2 text-[11px] text-navy-400 dark:border-navy-700/60 dark:text-navy-500">
+                  <div className="border-t border-ink-200 px-3 py-2 text-[11px] text-ink-600 dark:border-ink-800/60 dark:text-ink-700">
                     + {preview.length - 50} rijen meer , die volgen het potje voor
                     alle rijen.
                   </div>
@@ -849,22 +849,22 @@ export function ImportTransactionsModal({
           )}
 
           {error && (
-            <p className="mt-3 text-sm text-rose-600 dark:text-rose-400">{error}</p>
+            <p className="mt-3 text-sm text-fout-600 dark:text-fout-400">{error}</p>
           )}
         </div>
 
         {step === "map" && !result && (
-          <div className="flex flex-col gap-2 border-t border-navy-100 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:pb-4 dark:border-navy-700/60">
+          <div className="flex flex-col gap-2 border-t border-ink-200 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:pb-4 dark:border-ink-800/60">
             <button
               onClick={onClose}
-              className="min-h-11 rounded-lg px-4 py-2 text-sm font-medium text-navy-500 hover:bg-navy-50 sm:min-h-0 dark:text-navy-300 dark:hover:bg-navy-800"
+              className="min-h-11 rounded-lg px-4 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50 sm:min-h-0 dark:text-ink-500 dark:hover:bg-ink-900"
             >
               Annuleren
             </button>
             <button
               onClick={() => runImport(importIndexes)}
               disabled={!canImport}
-              className="min-h-11 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0"
+              className="min-h-11 rounded-lg bg-in-600 px-4 py-2 text-sm font-semibold text-white hover:bg-in-600 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0"
             >
               {busy
                 ? "Importeren…"
@@ -878,8 +878,8 @@ export function ImportTransactionsModal({
         {/* Afloop: wat er binnen is, en de kans om overgeslagen rijen alsnog te
             halen. Zonder dit moet je het bestand opnieuw kiezen voor één rij. */}
         {result && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-navy-100 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4 dark:border-navy-700/60">
-            <p className="text-sm text-navy-700 dark:text-navy-200">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-200 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4 dark:border-ink-800/60">
+            <p className="text-sm text-ink-800 dark:text-ink-300">
               <span className="font-semibold">{result.imported}</span>{" "}
               {result.imported === 1 ? "transactie" : "transacties"} geïmporteerd
               {result.skipped.length > 0 && (
@@ -896,14 +896,14 @@ export function ImportTransactionsModal({
                 <button
                   onClick={() => runImport(result.skipped)}
                   disabled={busy}
-                  className="rounded-lg px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 disabled:opacity-50 dark:text-teal-300 dark:hover:bg-teal-900/30"
+                  className="rounded-lg px-4 py-2 text-sm font-semibold text-in-700 hover:bg-in-100 disabled:opacity-50 dark:text-in-400 dark:hover:bg-in-700/30"
                 >
                   {busy ? "Bezig…" : "Toch importeren"}
                 </button>
               )}
               <button
                 onClick={onClose}
-                className="rounded-lg bg-navy-900 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-800 dark:bg-white dark:text-navy-900 dark:hover:bg-navy-100"
+                className="rounded-lg bg-ink-950 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-900 dark:bg-white dark:text-ink-900 dark:hover:bg-ink-100"
               >
                 Sluiten
               </button>
@@ -978,8 +978,8 @@ function DupVergelijking({
   ];
 
   return (
-    <div className="rounded-lg border border-navy-100 bg-white text-[11px] dark:border-navy-700 dark:bg-navy-900">
-      <div className="grid grid-cols-[5.5rem_1fr_1fr] gap-x-3 border-b border-navy-100 px-3 py-1.5 font-semibold uppercase tracking-wider text-navy-400 dark:border-navy-700 dark:text-navy-500">
+    <div className="rounded-lg border border-ink-200 bg-white text-[11px] dark:border-ink-800 dark:bg-ink-950">
+      <div className="grid grid-cols-[5.5rem_1fr_1fr] gap-x-3 border-b border-ink-200 px-3 py-1.5 font-semibold text-ink-600 dark:border-ink-800 dark:text-ink-700">
         <span />
         <span>Al in Kaspio</span>
         <span>Dit bestand</span>
@@ -989,12 +989,12 @@ function DupVergelijking({
           key={v.label}
           className="grid grid-cols-[5.5rem_1fr_1fr] gap-x-3 px-3 py-1"
         >
-          <span className="text-navy-400 dark:text-navy-500">{v.label}</span>
+          <span className="text-ink-600 dark:text-ink-700">{v.label}</span>
           <span
             className={`truncate ${
               v.anders
-                ? "text-navy-700 dark:text-navy-200"
-                : "text-navy-400 dark:text-navy-500"
+                ? "text-ink-800 dark:text-ink-300"
+                : "text-ink-600 dark:text-ink-700"
             }`}
             title={v.a}
           >
@@ -1003,8 +1003,8 @@ function DupVergelijking({
           <span
             className={`truncate ${
               v.anders
-                ? "font-semibold text-amber-700 dark:text-amber-300"
-                : "text-navy-400 dark:text-navy-500"
+                ? "font-semibold text-uit-700 dark:text-uit-400"
+                : "text-ink-600 dark:text-ink-700"
             }`}
             title={v.b}
           >

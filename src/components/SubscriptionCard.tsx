@@ -60,10 +60,10 @@ export function SubscriptionCard({
     <div className="card p-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-base font-semibold text-navy-900 dark:text-navy-50">
+          <h2 className="text-base font-semibold text-ink-900 dark:text-ink-100">
             Abonnement
           </h2>
-          <p className="text-sm text-navy-500 dark:text-navy-300">
+          <p className="text-sm text-ink-700 dark:text-ink-500">
             Huidig plan:{" "}
             <span className="badge-teal">{TIER_LABELS[tier]}</span>
           </p>
@@ -78,7 +78,7 @@ export function SubscriptionCard({
           </button>
         )}
         {tier !== "free" && isAdmin && !hasStripeBilling && (
-          <span className="text-xs text-navy-400 dark:text-navy-500">
+          <span className="text-xs text-ink-600 dark:text-ink-700">
             Handmatig/test-plan , geen Stripe-abonnement
           </span>
         )}
@@ -92,12 +92,12 @@ export function SubscriptionCard({
 
       {tier === "free" ? (
         <>
-          <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-navy-500 dark:text-navy-300">
+          <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-ink-700 dark:text-ink-500">
             <span>Maandelijks</span>
             <button
               onClick={() => setYearly((v) => !v)}
               className={`relative h-6 w-11 rounded-full transition ${
-                yearly ? "bg-teal-500" : "bg-navy-200 dark:bg-navy-700"
+                yearly ? "bg-in-600" : "bg-ink-200 dark:bg-ink-800"
               }`}
               aria-pressed={yearly}
               aria-label="Wissel maandelijks/jaarlijks"
@@ -109,7 +109,7 @@ export function SubscriptionCard({
               />
             </button>
             <span>Jaarlijks</span>
-            <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-700">
+            <span className="rounded-full border border-uit-300 bg-uit-100 px-2 py-0.5 text-xs font-bold text-uit-700">
               Bespaar 20%
             </span>
           </div>
@@ -147,26 +147,26 @@ export function SubscriptionCard({
             />
           </div>
           {trialEligible && (
-            <p className="mt-3 text-xs text-navy-400 dark:text-navy-500">
+            <p className="mt-3 text-xs text-ink-600 dark:text-ink-700">
               Je geeft je kaartgegevens nu al op, maar de eerste maand wordt
               niets aangerekend. Opzeggen tijdens de proefmaand kan altijd, dan
               betaal je niks.
             </p>
           )}
           {!isAdmin && (
-            <p className="mt-3 text-xs text-navy-400">
+            <p className="mt-3 text-xs text-ink-600">
               Alleen een beheerder kan het abonnement wijzigen.
             </p>
           )}
         </>
       ) : (
-        <p className="text-sm text-navy-500 dark:text-navy-300">
+        <p className="text-sm text-ink-700 dark:text-ink-500">
           Je zit op het {TIER_LABELS[tier]}-plan. Bedankt voor je steun aan Kaspio.
         </p>
       )}
 
       {error && (
-        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <div className="mt-3 rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
           {error}
         </div>
       )}
@@ -180,17 +180,17 @@ function UsageBar({ label, used, max }: { label: string; used: number; max: numb
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between text-xs">
-        <span className="font-medium text-navy-600 dark:text-navy-300">{label}</span>
+        <span className="font-medium text-ink-700 dark:text-ink-500">{label}</span>
         <span
-          className={`tabular-nums ${full ? "font-semibold text-amber-700 dark:text-amber-400" : "text-navy-400"}`}
+          className={`tabular-nums ${full ? "font-semibold text-uit-700 dark:text-uit-400" : "text-ink-600"}`}
         >
           {used} / {fmtLimit(max)}
         </span>
       </div>
       {max !== Infinity && (
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-navy-100 dark:bg-navy-700">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
           <div
-            className={`h-full rounded-full transition-all ${full ? "bg-amber-500" : "bg-teal-500"}`}
+            className={`h-full rounded-full transition-all ${full ? "bg-uit-600" : "bg-in-600"}`}
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -224,22 +224,22 @@ function PlanOption({
   onClick: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-navy-100 p-4 dark:border-navy-700">
+    <div className="rounded-xl border border-ink-200 p-4 dark:border-ink-800">
       <div className="mb-1 flex items-baseline gap-1">
-        <span className="text-sm font-bold text-navy-900 dark:text-white">{name}</span>
-        <span className="text-lg font-extrabold text-navy-900 dark:text-white">{price}</span>
-        <span className="text-xs text-navy-400">{suffix}</span>
+        <span className="text-sm font-bold text-ink-900 dark:text-white">{name}</span>
+        <span className="text-lg font-extrabold text-ink-900 dark:text-white">{price}</span>
+        <span className="text-xs text-ink-600">{suffix}</span>
       </div>
       {trial && (
-        <p className="mb-2 text-xs font-semibold text-teal-600 dark:text-teal-400">
+        <p className="mb-2 text-xs font-semibold text-in-600 dark:text-in-400">
           Eerste maand gratis, daarna {price}
           {suffix}
         </p>
       )}
-      <ul className="mb-3 space-y-1 text-xs text-navy-500 dark:text-navy-300">
+      <ul className="mb-3 space-y-1 text-xs text-ink-700 dark:text-ink-500">
         {features.map((f) => (
           <li key={f} className="flex items-center gap-1.5">
-            <span className="text-teal-500">✓</span> {f}
+            <span className="text-in-600">✓</span> {f}
           </li>
         ))}
       </ul>
@@ -248,8 +248,8 @@ function PlanOption({
         disabled={disabled}
         className={`w-full rounded-lg py-2 text-sm font-semibold transition disabled:opacity-50 ${
           ctaStyle === "amber"
-            ? "bg-amber-500 text-ink hover:bg-amber-400"
-            : "bg-teal-500 text-white hover:bg-teal-600"
+            ? "bg-uit-600 text-ink hover:bg-uit-300"
+            : "bg-in-600 text-white hover:bg-in-600"
         }`}
       >
         {busy ? "Bezig…" : cta}

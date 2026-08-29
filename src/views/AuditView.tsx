@@ -24,11 +24,11 @@ export function AuditView({ entries, onClear }: Props) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+          <p className="text-sm font-semibold text-ink-600 dark:text-ink-500">
             Organisatie
           </p>
-          <h1 className="text-2xl font-bold text-navy-900 dark:text-white">Activiteit</h1>
-          <p className="mt-1 text-sm text-navy-500 dark:text-navy-300">
+          <h1 className="text-2xl font-bold text-ink-900 dark:text-white">Activiteit</h1>
+          <p className="mt-1 text-sm text-ink-700 dark:text-ink-500">
             Wie wijzigde wat, en wanneer. Laatste {entries.length} gebeurtenissen.
           </p>
         </div>
@@ -46,15 +46,15 @@ export function AuditView({ entries, onClear }: Props) {
       </div>
 
       <div className="card">
-        <div className="flex flex-wrap items-center gap-2 border-b border-navy-100 px-5 py-3 dark:border-navy-700/60">
+        <div className="flex flex-wrap items-center gap-2 border-b border-ink-200 px-5 py-3 dark:border-ink-800/60">
           {(["all", "pot", "transaction", "member", "settings"] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
                 filter === f
-                  ? "bg-navy-900 text-white dark:bg-white dark:text-navy-900"
-                  : "text-navy-500 hover:bg-navy-50 dark:text-navy-300 dark:hover:bg-navy-800"
+                  ? "bg-ink-950 text-white dark:bg-white dark:text-ink-900"
+                  : "text-ink-700 hover:bg-ink-50 dark:text-ink-500 dark:hover:bg-ink-900"
               }`}
             >
               {labelFor(f)}
@@ -64,38 +64,38 @@ export function AuditView({ entries, onClear }: Props) {
 
         {filtered.length === 0 ? (
           <div className="px-6 py-16 text-center">
-            <p className="mb-1 text-base font-semibold text-navy-900 dark:text-navy-50">
+            <p className="mb-1 text-base font-semibold text-ink-900 dark:text-ink-100">
               Niets te tonen
             </p>
-            <p className="text-sm text-navy-500 dark:text-navy-300">
+            <p className="text-sm text-ink-700 dark:text-ink-500">
               {entries.length === 0
                 ? "Zodra er iets gebeurt, verschijnt het hier."
                 : "Geen gebeurtenissen die overeenkomen met je filter."}
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-navy-100 dark:divide-navy-700/60">
+          <ul className="divide-y divide-ink-200 dark:divide-ink-800/60">
             {filtered.map((e) => (
               <li key={e.id} className="flex items-start gap-3 px-5 py-4">
                 <Avatar name={e.actorName} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <span className="font-semibold text-navy-900 dark:text-navy-50">
+                    <span className="font-semibold text-ink-900 dark:text-ink-100">
                       {e.actorName}
                     </span>
-                    <span className="text-sm text-navy-500 dark:text-navy-300">
+                    <span className="text-sm text-ink-700 dark:text-ink-500">
                       {actionVerb(e)} <EntityChip type={e.entityType} /> "
-                      <span className="font-medium text-navy-700 dark:text-navy-100">
+                      <span className="font-medium text-ink-800 dark:text-ink-200">
                         {e.entityName}
                       </span>
                       "
                     </span>
                   </div>
                   {e.details && (
-                    <p className="mt-0.5 text-sm text-navy-500 dark:text-navy-400">{e.details}</p>
+                    <p className="mt-0.5 text-sm text-ink-700 dark:text-ink-600">{e.details}</p>
                   )}
                 </div>
-                <span className="whitespace-nowrap text-xs text-navy-400 dark:text-navy-400">
+                <span className="whitespace-nowrap text-xs text-ink-600 dark:text-ink-600">
                   {formatDateTime(e.createdAt)}
                 </span>
               </li>
@@ -130,10 +130,10 @@ function actionVerb(e: AuditEntry): string {
 
 function EntityChip({ type }: { type: AuditEntityType }) {
   const styles: Record<AuditEntityType, string> = {
-    pot: "bg-mint-50 text-mint-700 dark:bg-mint-900/30 dark:text-mint-300",
-    transaction: "bg-azure-50 text-azure-700 dark:bg-azure-900/30 dark:text-azure-300",
-    member: "bg-navy-50 text-navy-700 dark:bg-navy-800 dark:text-navy-100",
-    settings: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+    pot: "bg-in-100 text-in-600 dark:bg-in-700/30 dark:text-in-400",
+    transaction: "bg-ink-100 text-ink-800 dark:bg-ink-800/30 dark:text-ink-600",
+    member: "bg-ink-50 text-ink-800 dark:bg-ink-900 dark:text-ink-200",
+    settings: "bg-uit-100 text-uit-700 dark:bg-uit-700/30 dark:text-uit-400",
   };
   const labels: Record<AuditEntityType, string> = {
     pot: "potje",

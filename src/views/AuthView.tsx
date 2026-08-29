@@ -30,9 +30,9 @@ type Props = {
 
 // Gedeelde class-strings zodat de hele auth-flow dezelfde iris/emerald-look heeft.
 const inputCls =
-  "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100 dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50 dark:placeholder:text-navy-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/25";
+  "w-full rounded-xl border border-ink-300 bg-white px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition placeholder:text-ink-600 focus:border-ink-300 focus:outline-none focus:ring-4 focus:ring-ink-900 dark:border-ink-800 dark:bg-ink-900 dark:text-ink-100 dark:placeholder:text-ink-700 dark:focus:border-ink-300 dark:focus:ring-ink-900";
 const btnPrimary =
-  "w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-sm shadow-indigo-600/25 transition hover:-translate-y-0.5 hover:bg-indigo-700 disabled:translate-y-0 disabled:opacity-50";
+  "w-full rounded-xl bg-ink-950 px-4 py-3 text-sm font-bold text-white shadow-sm shadow-ink-900/10 transition hover:-translate-y-0.5 hover:bg-ink-950 disabled:translate-y-0 disabled:opacity-50";
 
 export function AuthView({
   initialMode,
@@ -46,26 +46,13 @@ export function AuthView({
   const [mode, setMode] = useState<Mode>(initialMode);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-50 font-display dark:bg-navy-950">
+    <div className="relative min-h-screen overflow-hidden bg-ink-50 font-semibold dark:bg-ink-950">
       <div className="relative grid min-h-screen lg:grid-cols-2">
         <SidePanel />
-
-        {/* Form-kolom met subtiele, levende aurora-achtergrond. */}
         <div className="relative flex flex-col overflow-hidden px-6 py-8 lg:px-14">
-          <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div
-              className="aurora-a absolute -right-24 -top-24 h-72 w-72 rounded-full blur-3xl"
-              style={{ background: "radial-gradient(circle, rgba(99,102,241,0.18), transparent 70%)" }}
-            />
-            <div
-              className="aurora-c absolute -bottom-24 left-1/4 h-72 w-72 rounded-full blur-3xl"
-              style={{ background: "radial-gradient(circle, rgba(16,185,129,0.16), transparent 70%)" }}
-            />
-          </div>
-
           <button
             onClick={onBack}
-            className="relative mb-8 flex items-center gap-2 self-start text-sm font-medium text-slate-500 transition hover:text-indigo-600 dark:text-navy-300 dark:hover:text-white"
+            className="relative mb-8 flex items-center gap-2 self-start text-sm font-medium text-ink-700 transition hover:text-ink-700 dark:text-ink-500 dark:hover:text-white"
           >
             ← Terug
           </button>
@@ -73,19 +60,19 @@ export function AuthView({
           <div className="relative mx-auto w-full max-w-md flex-1">
             <div className="mb-6 flex items-center gap-2.5 lg:hidden">
               <Mark size={36} />
-              <span className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
+              <span className="text-lg font-extrabold tracking-tight text-ink-900 dark:text-white">
                 Kaspio
               </span>
             </div>
 
-            <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-7 shadow-[0_20px_60px_-24px_rgba(49,46,129,0.35)] backdrop-blur-xl dark:border-navy-700/60 dark:bg-navy-900/85">
-              <div className="mb-6 grid grid-cols-2 rounded-xl bg-slate-100 p-1 dark:bg-navy-800">
+            <div className="rounded-lg border border-ink-300/80 bg-white/90 p-7 shadow-[0_20px_60px_-24px_rgba(49,46,129,0.35)] backdrop-blur-xl dark:border-ink-800/60 dark:bg-ink-950/85">
+              <div className="mb-6 grid grid-cols-2 rounded-xl bg-ink-100 p-1 dark:bg-ink-900">
                 <button
                   onClick={() => setMode("login")}
                   className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
                     mode === "login"
-                      ? "bg-white text-indigo-700 shadow-sm dark:bg-navy-700 dark:text-white"
-                      : "text-slate-500 hover:text-slate-700 dark:text-navy-300"
+                      ? "bg-white text-ink-700 shadow-sm dark:bg-ink-800 dark:text-white"
+                      : "text-ink-700 hover:text-ink-800 dark:text-ink-500"
                   }`}
                 >
                   Inloggen
@@ -94,8 +81,8 @@ export function AuthView({
                   onClick={() => setMode("signup")}
                   className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
                     mode === "signup"
-                      ? "bg-white text-indigo-700 shadow-sm dark:bg-navy-700 dark:text-white"
-                      : "text-slate-500 hover:text-slate-700 dark:text-navy-300"
+                      ? "bg-white text-ink-700 shadow-sm dark:bg-ink-800 dark:text-white"
+                      : "text-ink-700 hover:text-ink-800 dark:text-ink-500"
                   }`}
                 >
                   Aanmelden
@@ -109,7 +96,7 @@ export function AuthView({
               )}
 
               {orgInviteName && (
-                <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-3 text-sm text-indigo-800 dark:border-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-200">
+                <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-ink-300 bg-ink-100 px-3 py-3 text-sm text-ink-700 dark:border-ink-300 dark:bg-ink-100 dark:text-ink-700">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden>
                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />
@@ -134,7 +121,7 @@ export function AuthView({
               )}
             </div>
 
-            <p className="mt-6 text-center text-xs text-slate-400 dark:text-navy-400">
+            <p className="mt-6 text-center text-xs text-ink-600 dark:text-ink-600">
               Bèta. We zijn voorzichtig met je gegevens.
             </p>
           </div>
@@ -165,14 +152,14 @@ function AuthErrorBanner({
         : error.description || "Probeer opnieuw of vraag een nieuwe link aan.";
 
   return (
-    <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-800">
+    <div className="mb-4 rounded-xl border border-uit-300 bg-uit-100 px-3 py-3 text-sm text-uit-700">
       <div className="mb-1 flex items-start justify-between gap-2">
         <strong>{title}</strong>
         {onDismiss && (
           <button
             type="button"
             onClick={onDismiss}
-            className="text-amber-600 hover:text-amber-800"
+            className="text-uit-600 hover:text-uit-700"
             aria-label="Sluit melding"
           >
             ×
@@ -186,13 +173,13 @@ function AuthErrorBanner({
 
 function ConfigWarning() {
   return (
-    <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+    <div className="mb-4 rounded-xl border border-uit-300 bg-uit-100 px-3 py-2 text-sm text-uit-700">
       <strong>Supabase niet geconfigureerd.</strong> Voeg{" "}
-      <code className="rounded bg-amber-100 px-1">VITE_SUPABASE_URL</code> en{" "}
-      <code className="rounded bg-amber-100 px-1">
+      <code className="rounded bg-uit-100 px-1">VITE_SUPABASE_URL</code> en{" "}
+      <code className="rounded bg-uit-100 px-1">
         VITE_SUPABASE_PUBLISHABLE_KEY
       </code>{" "}
-      toe aan <code className="rounded bg-amber-100 px-1">.env.local</code>.
+      toe aan <code className="rounded bg-uit-100 px-1">.env.local</code>.
     </div>
   );
 }
@@ -202,31 +189,15 @@ function SidePanel() {
     <div
       className="relative hidden overflow-hidden p-12 text-white lg:flex lg:flex-col"
       style={{
-        background: "linear-gradient(160deg, #312e81 0%, #1e1b4b 55%, #15132e 100%)",
+        background: "var(--color-ink-950)",
       }}
     >
-      {/* Levende aurora-blobs */}
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div
-          className="aurora-a absolute -left-16 top-8 h-80 w-80 rounded-full blur-3xl"
-          style={{ background: "radial-gradient(circle, rgba(99,102,241,0.55), transparent 70%)" }}
-        />
-        <div
-          className="aurora-b absolute -right-10 top-1/3 h-96 w-96 rounded-full blur-3xl"
-          style={{ background: "radial-gradient(circle, rgba(16,185,129,0.42), transparent 70%)" }}
-        />
-        <div
-          className="aurora-c absolute -bottom-20 left-1/4 h-80 w-80 rounded-full blur-3xl"
-          style={{ background: "radial-gradient(circle, rgba(139,92,246,0.45), transparent 70%)" }}
-        />
-      </div>
-
       <div className="relative flex items-center gap-2.5">
         <Mark size={36} variant="light" />
         <span className="text-lg font-extrabold tracking-tight">Kaspio</span>
       </div>
       <div className="relative mt-auto">
-        <p className="mb-3 font-num text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-300">
+        <p className="mb-3 font-num text-[11px] font-semibold text-in-400">
           Build in public
         </p>
         <h2 className="mb-6 text-3xl font-extrabold leading-tight tracking-tight">
@@ -236,7 +207,7 @@ function SidePanel() {
           <br />
           volledige transparantie.
         </h2>
-        <p className="max-w-sm text-sm text-indigo-200">
+        <p className="max-w-sm text-sm text-ink-700">
           Voor scouts, sportclubs, VZW's, artiestenbureaus en iedereen die met
           gedeelde geldstromen werkt.
         </p>
@@ -286,7 +257,7 @@ function LoginForm({
 
   if (status === "reset-sent") {
     return (
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-5 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-200">
+      <div className="rounded-xl border border-in-100 bg-in-100 px-4 py-5 text-sm text-in-600 dark:border-in-700 dark:bg-in-700 dark:text-in-400">
         <div className="mb-1 font-semibold">Check je mailbox.</div>
         We stuurden een reset-link naar <strong>{email}</strong>. Klik die en
         je kunt een nieuw wachtwoord instellen.
@@ -297,10 +268,10 @@ function LoginForm({
   if (forgotMode) {
     return (
       <form onSubmit={submit} className="space-y-4">
-        <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+        <h2 className="text-xl font-bold tracking-tight text-ink-900 dark:text-white">
           Wachtwoord vergeten
         </h2>
-        <p className="text-sm text-slate-500 dark:text-navy-300">
+        <p className="text-sm text-ink-700 dark:text-ink-500">
           Vul je e-mailadres in, we sturen je een reset-link.
         </p>
 
@@ -332,7 +303,7 @@ function LoginForm({
             setForgotMode(false);
             setError(null);
           }}
-          className="block w-full text-center text-xs text-slate-400 transition hover:text-indigo-600 dark:hover:text-navy-100"
+          className="block w-full text-center text-xs text-ink-600 transition hover:text-ink-700 dark:hover:text-ink-200"
         >
           ← Terug naar inloggen
         </button>
@@ -342,7 +313,7 @@ function LoginForm({
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+      <h2 className="text-xl font-bold tracking-tight text-ink-900 dark:text-white">
         Welkom terug
       </h2>
 
@@ -385,7 +356,7 @@ function LoginForm({
           setError(null);
           setPassword("");
         }}
-        className="block w-full text-center text-xs text-slate-400 transition hover:text-indigo-600 dark:hover:text-navy-100"
+        className="block w-full text-center text-xs text-ink-600 transition hover:text-ink-700 dark:hover:text-ink-200"
       >
         Wachtwoord vergeten?
       </button>
@@ -443,7 +414,7 @@ function SignupForm({
 
   if (status === "confirm-needed") {
     return (
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-5 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-200">
+      <div className="rounded-xl border border-in-100 bg-in-100 px-4 py-5 text-sm text-in-600 dark:border-in-700 dark:bg-in-700 dark:text-in-400">
         <div className="mb-1 font-semibold">Bevestig je e-mailadres.</div>
         We stuurden een bevestigingslink naar <strong>{email}</strong>. Klik
         die en je bent ingelogd.
@@ -453,7 +424,7 @@ function SignupForm({
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+      <h2 className="text-xl font-bold tracking-tight text-ink-900 dark:text-white">
         Maak je account aan
       </h2>
       <Field label="Jouw naam">
@@ -495,7 +466,7 @@ function SignupForm({
       >
         {status === "busy" ? "Bezig…" : "Account aanmaken"}
       </button>
-      <p className="text-center text-xs text-slate-400 dark:text-navy-400">
+      <p className="text-center text-xs text-ink-600 dark:text-ink-600">
         Door verder te gaan ga je akkoord met onze (denkbeeldige) voorwaarden.
       </p>
     </form>
@@ -517,12 +488,12 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-navy-200">
+      <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
         {label}
       </span>
       {children}
       {hint && (
-        <span className="mt-1 block text-xs text-slate-400 dark:text-navy-300">
+        <span className="mt-1 block text-xs text-ink-600 dark:text-ink-500">
           {hint}
         </span>
       )}
@@ -532,7 +503,7 @@ function Field({
 
 function ErrorBox({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+    <div className="rounded-xl border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
       {children}
     </div>
   );

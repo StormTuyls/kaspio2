@@ -50,14 +50,14 @@ export function CreateOrgForm({
   return (
     <form onSubmit={submit} className="space-y-4">
       <div>
-        <h2 className="mb-1 text-lg font-bold text-navy-900 dark:text-white">
+        <h2 className="mb-1 text-lg font-bold text-ink-900 dark:text-white">
           {title}
         </h2>
-        <p className="text-sm text-navy-500 dark:text-navy-300">{description}</p>
+        <p className="text-sm text-ink-700 dark:text-ink-500">{description}</p>
       </div>
 
       <label className="block">
-        <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+        <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
           Naam
         </span>
         <input
@@ -73,7 +73,7 @@ export function CreateOrgForm({
       </label>
 
       {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
           {error}
         </div>
       )}

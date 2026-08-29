@@ -173,7 +173,7 @@ export function UnallocatedInbox({
 
   if (transactions.length === 0) {
     return (
-      <p className="py-6 text-center text-sm text-navy-500 dark:text-navy-300">
+      <p className="py-6 text-center text-sm text-ink-700 dark:text-ink-500">
         Alles is toegewezen. Nieuw geld zonder potje verschijnt hier.
       </p>
     );
@@ -181,15 +181,15 @@ export function UnallocatedInbox({
 
   return (
     <div className="space-y-2">
-      <p className="text-sm text-navy-500 dark:text-navy-300">
+      <p className="text-sm text-ink-700 dark:text-ink-500">
         Dit geld staat op de rekening maar heeft nog geen bestemming. Wijs het
         toe aan een potje, of hou het bewust in de hoofdpot. Pas daarna kan je
         het verdelen.
       </p>
       {(onBulkDelete || onBulkAssign) && (
-        <div className="space-y-2 rounded-xl border border-navy-100 bg-canvas px-3 py-2.5 dark:border-navy-700/60 dark:bg-navy-800/40">
+        <div className="space-y-2 rounded-xl border border-ink-200 bg-ink-50 px-3 py-2.5 dark:border-ink-800/60 dark:bg-ink-900/40">
           <div className="flex items-center justify-between gap-3">
-            <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-navy-500 dark:text-navy-300">
+            <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-ink-700 dark:text-ink-500">
               <input
                 type="checkbox"
                 checked={allSelected}
@@ -201,7 +201,7 @@ export function UnallocatedInbox({
             {selected.size > 0 && (
               <button
                 onClick={() => setSelected(new Set())}
-                className="text-xs font-medium text-navy-500 hover:underline dark:text-navy-300"
+                className="text-xs font-medium text-ink-700 hover:underline dark:text-ink-500"
               >
                 {selected.size} geselecteerd · wis
               </button>
@@ -258,7 +258,7 @@ export function UnallocatedInbox({
           )}
         </div>
       )}
-      <ul className="divide-y divide-navy-100 dark:divide-navy-700/60">
+      <ul className="divide-y divide-ink-200 dark:divide-ink-800/60">
         {transactions.map((tx) => (
           <li key={tx.id} className="py-3">
             {/* Op mobiel zakken de acties naar een eigen regel: naast de knoppen
@@ -277,8 +277,8 @@ export function UnallocatedInbox({
               <div
                 className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
                   tx.direction === "in"
-                    ? "bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400"
-                    : "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                    ? "bg-in-100 text-in-600 dark:bg-in-700/30 dark:text-in-400"
+                    : "bg-uit-100 text-uit-700 dark:bg-uit-700/30 dark:text-uit-400"
                 }`}
               >
                 {tx.direction === "in" ? "↓" : "↑"}
@@ -287,10 +287,10 @@ export function UnallocatedInbox({
                   beneden in plaats van de tekst plat te drukken. */}
               <div className="min-w-[15rem] flex-1">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="truncate text-sm font-medium text-navy-900 dark:text-navy-50">
+                  <span className="truncate text-sm font-medium text-ink-900 dark:text-ink-100">
                     {tx.counterparty || "Onbekend"}
                   </span>
-                  <span className="whitespace-nowrap text-sm font-bold tabular-nums text-navy-900 dark:text-navy-50">
+                  <span className="whitespace-nowrap text-sm font-bold tabular-nums text-ink-900 dark:text-ink-100">
                     {tx.direction === "in" ? "+" : "−"}
                     {formatEuro(tx.amount)}
                   </span>
@@ -300,7 +300,7 @@ export function UnallocatedInbox({
                     zichtbaar. De mededeling krijgt daaronder de volle breedte,
                     want die is lang en juist daar staat de gestructureerde
                     referentie waaraan je de post herkent. */}
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-navy-400 dark:text-navy-500">
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ink-600 dark:text-ink-700">
                   <span className="whitespace-nowrap">{formatDate(tx.occurredOn)}</span>
                   {toonRekening && tx.bankAccount && (
                     <>
@@ -314,7 +314,7 @@ export function UnallocatedInbox({
                     return n > 1 ? (
                       <>
                         <span aria-hidden>·</span>
-                        <span className="text-navy-500 dark:text-navy-300">
+                        <span className="text-ink-700 dark:text-ink-500">
                           nog {n - 1} van deze tegenpartij
                         </span>
                       </>
@@ -324,7 +324,7 @@ export function UnallocatedInbox({
 
                 {tx.memo && (
                   <p
-                    className="mt-0.5 line-clamp-2 break-all text-xs text-navy-400 dark:text-navy-500"
+                    className="mt-0.5 line-clamp-2 break-all text-xs text-ink-600 dark:text-ink-700"
                     title={tx.memo}
                   >
                     {tx.memo}
@@ -363,7 +363,7 @@ export function UnallocatedInbox({
                     if (await confirm({ title: "Transactie verwijderen?", confirmLabel: "Verwijderen", danger: true }))
                       onDelete(tx.transactionId);
                   }}
-                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md text-navy-300 hover:bg-rose-50 hover:text-rose-600 sm:h-auto sm:w-auto sm:px-2 sm:py-1 dark:text-navy-500 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
+                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md text-ink-500 hover:bg-fout-100 hover:text-fout-600 sm:h-auto sm:w-auto sm:px-2 sm:py-1 dark:text-ink-700 dark:hover:bg-fout-600/30 dark:hover:text-fout-400"
                   aria-label="Verwijderen"
                 >
                   ✕
@@ -464,7 +464,7 @@ function AssignPanel({
   }
 
   return (
-    <div className="mt-3 space-y-2 rounded-xl border border-navy-100 bg-canvas p-3 dark:border-navy-700 dark:bg-navy-800/50">
+    <div className="mt-3 space-y-2 rounded-xl border border-ink-200 bg-ink-50 p-3 dark:border-ink-800 dark:bg-ink-900/50">
       {rows.map((row, i) => (
         <div key={i} className="flex items-center gap-2">
           <select
@@ -480,7 +480,7 @@ function AssignPanel({
             ))}
           </select>
           <div className="relative w-28">
-            <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-navy-400">
+            <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-ink-600">
               €
             </span>
             <input
@@ -494,7 +494,7 @@ function AssignPanel({
           {rows.length > 1 && (
             <button
               onClick={() => removeRow(i)}
-              className="flex-shrink-0 rounded-md px-1.5 py-1 text-navy-300 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/30"
+              className="flex-shrink-0 rounded-md px-1.5 py-1 text-ink-500 hover:bg-fout-100 hover:text-fout-600 dark:hover:bg-fout-600/30"
               aria-label="Deel verwijderen"
             >
               ✕
@@ -506,7 +506,7 @@ function AssignPanel({
       <div className="flex items-center justify-between text-xs">
         <button
           onClick={addRow}
-          className="font-semibold text-teal-700 hover:underline dark:text-teal-300"
+          className="font-semibold text-in-700 hover:underline dark:text-in-400"
         >
           + Verdeel over meerdere potjes
         </button>
@@ -514,8 +514,8 @@ function AssignPanel({
           <span
             className={
               remainder > 0
-                ? "text-amber-700 dark:text-amber-400"
-                : "text-rose-600 dark:text-rose-400"
+                ? "text-uit-700 dark:text-uit-400"
+                : "text-fout-600 dark:text-fout-400"
             }
           >
             {remainder > 0
@@ -526,7 +526,7 @@ function AssignPanel({
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+        <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-xs text-fout-600">
           {error}
         </div>
       )}
@@ -534,7 +534,7 @@ function AssignPanel({
       <div className="flex justify-between pt-1">
         <button
           onClick={onDelete}
-          className="text-xs text-navy-400 hover:text-rose-600 dark:hover:text-rose-400"
+          className="text-xs text-ink-600 hover:text-fout-600 dark:hover:text-fout-400"
         >
           Verwijderen
         </button>

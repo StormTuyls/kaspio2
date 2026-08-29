@@ -85,7 +85,7 @@ export function BalanceChart({ transactions }: Props) {
   const negative = last.balance < 0;
   // In "saldo" kleurt de lijn mee met het saldo; in "samen" tekenen we de lijn
   // in inkt zodat ze losstaat van de teal/amber staven.
-  const accent = negative ? "text-amber-600" : "text-teal-500";
+  const accent = negative ? "text-uit-600" : "text-in-600";
 
   const yTicks = [maxY, ...(minY < 0 ? [0, minY] : minY === 0 && maxY > 0 ? [0] : [])];
   const hd = hover != null ? days[hover] : null;
@@ -120,13 +120,13 @@ export function BalanceChart({ transactions }: Props) {
     <div className="card p-4 sm:p-5">
       <div className="mb-3 flex items-baseline justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-navy-900 dark:text-navy-50">
+          <h3 className="text-sm font-semibold text-ink-900 dark:text-ink-100">
             Saldo over tijd
           </h3>
-          <p className="text-xs text-navy-400 dark:text-navy-300">
+          <p className="text-xs text-ink-600 dark:text-ink-500">
             Tik of beweeg over de grafiek voor details
           </p>
-          <div className="mt-2 inline-flex rounded-lg bg-canvas p-0.5 text-xs dark:bg-navy-800">
+          <div className="mt-2 inline-flex rounded-lg bg-ink-50 p-0.5 text-xs dark:bg-ink-900">
             {(
               [
                 ["saldo", "Saldo"],
@@ -142,8 +142,8 @@ export function BalanceChart({ transactions }: Props) {
                 }}
                 className={`whitespace-nowrap rounded-md px-2.5 py-1 font-medium transition ${
                   mode === m
-                    ? "bg-white text-navy-900 shadow-sm dark:bg-navy-700 dark:text-white"
-                    : "text-navy-500 hover:text-navy-900 dark:text-navy-300 dark:hover:text-white"
+                    ? "bg-white text-ink-900 shadow-sm dark:bg-ink-800 dark:text-white"
+                    : "text-ink-700 hover:text-ink-900 dark:text-ink-500 dark:hover:text-white"
                 }`}
               >
                 {label}
@@ -151,16 +151,16 @@ export function BalanceChart({ transactions }: Props) {
             ))}
           </div>
           {showBars && (
-            <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-navy-500 dark:text-navy-300">
+            <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-ink-700 dark:text-ink-500">
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-sm bg-teal-500" /> Inkomend
+                <span className="h-2 w-2 rounded-sm bg-in-600" /> Inkomend
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-sm bg-amber-500" /> Uitgaand
+                <span className="h-2 w-2 rounded-sm bg-uit-600" /> Uitgaand
               </span>
               {mode === "samen" && (
                 <span className="flex items-center gap-1.5">
-                  <span className="h-0.5 w-3.5 rounded bg-navy-800 dark:bg-white" /> Saldo
+                  <span className="h-0.5 w-3.5 rounded bg-ink-900 dark:bg-white" /> Saldo
                 </span>
               )}
             </div>
@@ -168,7 +168,7 @@ export function BalanceChart({ transactions }: Props) {
         </div>
         <span
           className={`text-base font-bold tabular-nums ${
-            negative ? "text-amber-700 dark:text-amber-400" : "text-navy-900 dark:text-navy-50"
+            negative ? "text-uit-700 dark:text-uit-400" : "text-ink-900 dark:text-ink-100"
           }`}
         >
           {formatEuro(last.balance)}
@@ -252,7 +252,7 @@ export function BalanceChart({ transactions }: Props) {
             strokeWidth="2.5"
             strokeLinejoin="round"
             strokeLinecap="round"
-            className={mode === "samen" ? "text-navy-800 dark:text-white" : undefined}
+            className={mode === "samen" ? "text-ink-800 dark:text-white" : undefined}
           />
         )}
         {showLine &&
