@@ -166,13 +166,16 @@ export function Rekenblad() {
           </Kolom>
         </div>
 
-        <p className="mt-8 text-center text-base text-ink-700">
-          Verschil:{" "}
-          <span className="font-num font-semibold text-ink-900">
-            {euro(verschil)} euro
-          </span>{" "}
-          die een jaar lang nergens stond.
-        </p>
+        <div className="mt-10 border-t border-ink-200 pt-8 sm:mt-12">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-5">
+            <p className="font-num text-[clamp(2.25rem,1.6rem+2.6vw,3.5rem)] font-semibold leading-none text-ink-900 [letter-spacing:-0.03em]">
+              {euro(verschil)}
+            </p>
+            <p className="max-w-sm text-base leading-snug text-ink-700">
+              euro die een jaar lang nergens stond, in één comité van de veertien.
+            </p>
+          </div>
+        </div>
       </div>
     </section>
   );
