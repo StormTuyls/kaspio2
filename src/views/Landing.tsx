@@ -262,10 +262,10 @@ function Hero({ onSignup, onDemo }: { onSignup: () => void; onDemo: () => void }
 
 function HeroMockup() {
   const pots = [
-    { name: "Bar", amount: "€17.296", pct: 78, color: "bg-ink-300" },
-    { name: "Tennisschool", amount: "€12.412", pct: 61, color: "bg-ink-400" },
-    { name: "Onderhoud", amount: "€6.730", pct: 44, color: "bg-ink-500" },
-    { name: "Jeugd & feest", amount: "€1.980", pct: 22, color: "bg-ink-600" },
+    { name: "Kantine", amount: "€14.820", pct: 78, color: "bg-ink-300" },
+    { name: "Jeugdwerking", amount: "€9.640", pct: 61, color: "bg-ink-400" },
+    { name: "Accommodatie", amount: "€5.275", pct: 44, color: "bg-ink-500" },
+    { name: "Wedstrijden", amount: "€2.410", pct: 22, color: "bg-ink-600" },
   ];
 
   return (
@@ -354,7 +354,7 @@ function HeroMockup() {
             initials="S"
             tone="in"
             title="Salarisbetaling Tom"
-            from="Van: Gemeente Leuven"
+            from="Van: gemeentesubsidie"
             tag="Subsidies"
             amount="+€2.400"
             positive
@@ -364,16 +364,16 @@ function HeroMockup() {
             tone="uit"
             title="Lidgelden mei"
             from="Van: 34 leden"
-            tag="Tennisschool"
+            tag="Jeugdwerking"
             amount="+€500"
             positive
           />
           <Txn
             initials="M"
             tone="neutraal"
-            title="Aankoop voeding"
-            from="Uit: Bar"
-            tag="Bar"
+            title="Aankoop dranken"
+            from="Uit: Kantine"
+            tag="Kantine"
             amount="−€320"
             last
           />
@@ -534,9 +534,9 @@ function Features() {
               {/* mini stacked pots */}
               <div className="mt-7 space-y-2.5">
                 {[
-                  { n: "Bar", a: "€17.296", w: "78%", c: "bg-white" },
-                  { n: "Tennisschool", a: "€12.412", w: "61%", c: "bg-white/70" },
-                  { n: "Onderhoud", a: "€6.730", w: "44%", c: "bg-white/45" },
+                  { n: "Kantine", a: "€14.820", w: "78%", c: "bg-white" },
+                  { n: "Jeugdwerking", a: "€9.640", w: "61%", c: "bg-white/70" },
+                  { n: "Accommodatie", a: "€5.275", w: "44%", c: "bg-white/45" },
                 ].map((p) => (
                   <div key={p.n} className="rounded-xl bg-white/10 p-3 backdrop-blur">
                     <div className="mb-1.5 flex items-center justify-between text-xs">

@@ -9,7 +9,7 @@ import type { ReactNode } from "react";
  * Kaspio, en het verschil eronder in euro's.
  *
  * De data is verzonnen, de fout is echt. Het patroon komt uit een clubbestand
- * waar een comitétotaal als `=E42+E47+E51+E67+E98+E61` was opgebouwd en er
+ * waar een comitétotaal met de hand uit zes celverwijzingen was opgebouwd en er
  * ooit één celverwijzing vergeten is. Die post viel daardoor een jaar lang
  * buiten het totaal zonder dat iemand het zag.
  *
@@ -25,12 +25,16 @@ type Post = {
   vergeten?: boolean;
 };
 
+// Verzonnen posten en verzonnen bedragen. Alleen de fóut is echt: een
+// subtotaal dat met de hand uit celverwijzingen is opgebouwd en waar er ooit
+// één van vergeten is. Bewust posten die elke vereniging heeft, zodat het
+// voorbeeld nergens naar één club te herleiden is.
 const POSTEN: Post[] = [
-  { naam: "Onderhoud terreinen", bedrag: -16610.88 },
-  { naam: "Opbouw & afbraak ballon", bedrag: -9357.34 },
-  { naam: "Kuisploeg", bedrag: -6730.02 },
-  { naam: "Technische installatie", bedrag: -7090.4 },
-  { naam: "Varia / onvoorzien", bedrag: -2464.58, vergeten: true },
+  { naam: "Zaalhuur", bedrag: -12480.0 },
+  { naam: "Poetsdienst", bedrag: -8145.6 },
+  { naam: "Nutsvoorzieningen", bedrag: -5230.75 },
+  { naam: "Klein materiaal", bedrag: -3918.4 },
+  { naam: "Varia / onvoorzien", bedrag: -1876.25, vergeten: true },
 ];
 
 const euro = (n: number) =>
@@ -65,7 +69,7 @@ export function Rekenblad() {
           >
             <table className="w-full border-collapse text-[0.8125rem]">
               <caption className="sr-only">
-                Comité Infrastructuur in een rekenblad, met een subtotaal dat
+                Een comité in een rekenblad, met een subtotaal dat
                 één regel overslaat
               </caption>
               <thead>
@@ -172,7 +176,7 @@ export function Rekenblad() {
               {euro(verschil)}
             </p>
             <p className="max-w-sm text-base leading-snug text-ink-700">
-              euro die een jaar lang nergens stond, in één comité van de veertien.
+              euro die een jaar lang nergens stond, in één comité.
             </p>
           </div>
         </div>
