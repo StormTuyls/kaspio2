@@ -120,22 +120,6 @@ function Icon({
   );
 }
 
-function Eyebrow({
-  children,
-  className = "",
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <p
-      className={`font-num text-[11px] font-semibold ${className}`}
-    >
-      {children}
-    </p>
-  );
-}
-
 function Logo({ light = false }: { light?: boolean }) {
   return (
     <span className="flex items-center gap-2.5">
@@ -278,10 +262,10 @@ function Hero({ onSignup, onDemo }: { onSignup: () => void; onDemo: () => void }
 
 function HeroMockup() {
   const pots = [
-    { name: "Salarissen", amount: "€3.200", pct: 78, color: "bg-ink-100" },
-    { name: "Marketing", amount: "€1.800", pct: 44, color: "bg-in-600" },
-    { name: "Events", amount: "€920", pct: 31, color: "bg-uit-600" },
-    { name: "Reserve", amount: "€1.980", pct: 66, color: "bg-violet-500" },
+    { name: "Kantine", amount: "€14.820", pct: 78, color: "bg-ink-300" },
+    { name: "Jeugdwerking", amount: "€9.640", pct: 61, color: "bg-ink-400" },
+    { name: "Accommodatie", amount: "€5.275", pct: 44, color: "bg-ink-500" },
+    { name: "Wedstrijden", amount: "€2.410", pct: 22, color: "bg-ink-600" },
   ];
 
   return (
@@ -370,26 +354,26 @@ function HeroMockup() {
             initials="S"
             tone="in"
             title="Salarisbetaling Tom"
-            from="Van: Werkgever NV"
-            tag="Salarissen"
+            from="Van: gemeentesubsidie"
+            tag="Subsidies"
             amount="+€2.400"
             positive
           />
           <Txn
             initials="E"
             tone="uit"
-            title="Zomerfeest budget"
-            from="Van: HQ Finance"
-            tag="Events"
+            title="Lidgelden mei"
+            from="Van: 34 leden"
+            tag="Jeugdwerking"
             amount="+€500"
             positive
           />
           <Txn
             initials="M"
             tone="neutraal"
-            title="Google Ads mei"
-            from="Uit: Marketing"
-            tag="Marketing"
+            title="Aankoop dranken"
+            from="Uit: Kantine"
+            tag="Kantine"
             amount="−€320"
             last
           />
@@ -518,11 +502,10 @@ function Features() {
   ];
 
   return (
-    <section id="functies" className="scroll-mt-20 bg-ink-50/70 px-6 py-24">
+    <section id="functies" className="scroll-mt-20 bg-ink-50 px-6 py-20 sm:py-24">
       <div className="mx-auto max-w-6xl">
         <Reveal>
           <div className="max-w-2xl">
-            <Eyebrow className="mb-3 text-ink-700">Functies</Eyebrow>
             <h2 className="text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
               Alles wat je nodig hebt,
               <br className="hidden sm:block" /> niets wat je niet nodig hebt
@@ -551,9 +534,9 @@ function Features() {
               {/* mini stacked pots */}
               <div className="mt-7 space-y-2.5">
                 {[
-                  { n: "Salarissen", a: "€3.200", w: "78%", c: "bg-white" },
-                  { n: "Marketing", a: "€1.800", w: "44%", c: "bg-in-300" },
-                  { n: "Events", a: "€920", w: "31%", c: "bg-uit-300" },
+                  { n: "Kantine", a: "€14.820", w: "78%", c: "bg-white" },
+                  { n: "Jeugdwerking", a: "€9.640", w: "61%", c: "bg-white/70" },
+                  { n: "Accommodatie", a: "€5.275", w: "44%", c: "bg-white/45" },
                 ].map((p) => (
                   <div key={p.n} className="rounded-xl bg-white/10 p-3 backdrop-blur">
                     <div className="mb-1.5 flex items-center justify-between text-xs">
@@ -594,11 +577,10 @@ function Pricing({ onSignup }: { onSignup: () => void }) {
   const [yearly, setYearly] = useState(false);
 
   return (
-    <section id="prijzen" className="scroll-mt-20 bg-ink-50/70 px-6 py-24">
+    <section id="prijzen" className="scroll-mt-20 border-t border-ink-200 bg-white px-6 py-20 sm:py-24">
       <div className="mx-auto max-w-6xl">
         <Reveal>
           <div className="max-w-2xl">
-            <Eyebrow className="mb-3 text-ink-700">Prijzen</Eyebrow>
             <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
               Simpel. Eerlijk. Transparant.
             </h2>
@@ -744,56 +726,79 @@ function Plan({
   onClick: () => void;
   featured?: boolean;
 }) {
-  const ctaClass = {
-    outline:
-      "border border-ink-300 bg-white text-ink-900 hover:border-ink-300 hover:bg-ink-100 hover:text-ink-700",
-    fill: "bg-ink-950 text-white hover:bg-ink-800",
-    // Zelfde knop als fill. De variantnaam blijft bestaan omdat de plannen er
-    // nog naar verwijzen, maar er is geen tweede knopkleur meer.
-    amber: "bg-ink-950 text-white hover:bg-ink-800",
-  }[ctaStyle];
+  // De omgekeerde kaart krijgt altijd de witte knop, ongeacht wat de aanroeper
+  // meegeeft: zwart op zwart is geen keuze. Buiten die kaart bepaalt ctaStyle
+  // of het een gevulde knop of een omlijning is.
+  const ctaClass = featured
+    ? "bg-white text-ink-950 hover:bg-ink-100"
+    : ctaStyle === "outline"
+      ? "border border-ink-300 bg-white text-ink-900 hover:bg-ink-100"
+      : "bg-ink-950 text-white hover:bg-ink-800";
 
   return (
     <div
-      className={`relative flex h-full flex-col rounded-lg bg-white p-6 sm:p-8 ${
+      className={`relative flex h-full flex-col rounded-md p-6 sm:p-8 ${
         featured
-          ? "border-2 border-ink-300 ring-1 ring-ink-900"
-          : "border border-ink-300"
+          ? "bg-ink-950 text-white md:-my-4 md:py-12"
+          : "border border-ink-200 bg-white"
       }`}
     >
       {featured && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-ink-950 px-3.5 py-1 text-xs font-bold text-white">
+        <div className="mb-4 inline-flex self-start rounded-full bg-white/15 px-2.5 py-0.5 text-[0.75rem] font-medium text-white">
           Meest gekozen
         </div>
       )}
-      <div className="mb-2 font-num text-xs font-semibold text-ink-700">
+      <div
+        className={`mb-2 text-[0.8125rem] font-medium ${featured ? "text-ink-300" : "text-ink-700"}`}
+      >
         {name}
       </div>
-      <div className="mb-1 font-num text-4xl font-extrabold tracking-tight text-ink-900">
-        {price}
-        {priceSuffix && (
-          <span className="ml-1 font-semibold text-base font-medium text-ink-700">
-            {priceSuffix}
-          </span>
-        )}
+      {/* Vaste hoogte op het prijsblok, zodat de kenmerkenlijsten van de drie
+          kaarten op dezelfde hoogte beginnen. Zonder dat schuiven ze uit elkaar
+          zodra één omschrijving een regel langer is. */}
+      <div className="min-h-[6.5rem]">
+        <div
+          className={`mb-1 font-num text-[2.25rem] font-semibold leading-none [letter-spacing:-0.03em] ${
+            featured ? "text-white" : "text-ink-900"
+          }`}
+        >
+          {price}
+          {priceSuffix && (
+            <span
+              className={`ml-1.5 text-base font-medium ${featured ? "text-ink-300" : "text-ink-700"}`}
+            >
+              {priceSuffix}
+            </span>
+          )}
+        </div>
+        <p
+          className={`mt-2 text-sm leading-snug ${featured ? "text-ink-300" : "text-ink-700"}`}
+        >
+          {desc}
+        </p>
       </div>
-      <p className="mb-5 text-sm leading-snug text-ink-700">{desc}</p>
-      <hr className="mb-5 border-t border-ink-200" />
+      <hr className={`mb-5 border-t ${featured ? "border-white/15" : "border-ink-200"}`} />
       <ul className="mb-6 flex-1 space-y-3">
         {features.map((f) => (
           <li
             key={f.text}
             className={`flex items-start gap-2.5 text-sm ${
-              f.no ? "text-ink-600" : "text-ink-800"
+              featured
+                ? f.no
+                  ? "text-ink-400"
+                  : "text-ink-100"
+                : f.no
+                  ? "text-ink-600"
+                  : "text-ink-800"
             }`}
           >
             <span className="mt-0.5 flex-shrink-0">
               {f.no ? (
-                <Icon className="h-4 w-4 text-ink-500">
+                <Icon className={`h-4 w-4 ${featured ? "text-ink-400" : "text-ink-500"}`}>
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </Icon>
               ) : (
-                <Icon className="h-4 w-4 text-in-600">
+                <Icon className={`h-4 w-4 ${featured ? "text-in-400" : "text-in-600"}`}>
                   <path d="M20 6 9 17l-5-5" />
                 </Icon>
               )}
@@ -857,7 +862,7 @@ function Faq() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="scroll-mt-20 bg-ink-50/70 px-6 py-24">
+    <section id="faq" className="scroll-mt-20 bg-ink-50 px-6 py-16 sm:py-20">
       <div className="mx-auto max-w-6xl">
         <Reveal>
           <div className="max-w-2xl">
@@ -916,74 +921,52 @@ function Faq() {
 /* ------------------------------------------------------------------ */
 
 function FinalCta({ onSignup }: { onSignup: () => void }) {
+  /**
+   * Het slot van de pagina, niet een banner ergens in het midden.
+   *
+   * Wat hier weg is en waarom: dit was een zwarte doos met een radius van 32px
+   * en een groen kleurverloop erin, zwevend op een lichte pagina. Zo'n los
+   * donker blok leest als een plakfout, en het groen was decoratie in een
+   * systeem waar groen "geld erin" betekent.
+   *
+   * Nu loopt het van rand tot rand door in de footer, zodat er precies één
+   * donker gebied op de pagina is: de onderkant. Dat is geen willekeurige
+   * sectie meer maar het einde van het document.
+   *
+   * Links de vraag, rechts de knop. Gecentreerde koppen met een knop eronder
+   * zijn de standaardvorm van elke afsluitende sectie; deze verdeling geeft de
+   * pagina één laatste asymmetrie mee.
+   */
   return (
-    <section className="px-6 py-24">
-      <div className="mx-auto max-w-5xl">
-        <Reveal>
-          <div
-            className="relative overflow-hidden rounded-[2rem] px-6 py-16 text-center sm:px-12"
-            style={{
-              background:
-                "var(--color-ink-950)",
-            }}
+    <section className="bg-ink-950 px-6 pb-16 pt-20 sm:pt-24">
+      <div className="mx-auto grid max-w-6xl items-end gap-8 md:grid-cols-[1fr_auto]">
+        <div>
+          <h2 className="max-w-xl text-[clamp(1.75rem,1.4rem+1.6vw,2.5rem)] font-bold leading-[1.1] text-white [letter-spacing:-0.02em]">
+            Begin bij het comité waar je het minst zeker van bent
+          </h2>
+          <p className="mt-4 max-w-md text-base leading-relaxed text-ink-300">
+            Eén tak invoeren kost een half uur. Daarna weet je of het klopt.
+          </p>
+        </div>
+        <div className="flex flex-col items-start gap-3 md:items-end">
+          <button
+            onClick={onSignup}
+            className="rounded-md bg-white px-6 py-3 text-base font-semibold text-ink-950 transition-colors hover:bg-ink-100"
           >
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 opacity-30"
-              style={{
-                backgroundImage:
-                  "radial-gradient(circle at 20% 20%, rgba(16,185,129,0.35), transparent 45%), radial-gradient(circle at 85% 80%, rgba(255,255,255,0.18), transparent 50%)",
-              }}
-            />
-            <div className="relative mx-auto max-w-2xl">
-              <h2 className="mb-4 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-                Klaar om orde te scheppen in jouw geldstromen?
-              </h2>
-              <p className="mx-auto mb-8 max-w-xl text-lg text-ink-300">
-                Maak gratis een account aan en zet je eerste potjes op in een
-                paar minuten.
-              </p>
-              <button
-                onClick={onSignup}
-                className="rounded-md bg-white px-6 py-3 text-base font-semibold text-ink-950 transition-colors hover:bg-ink-100"
-              >
-                Gratis starten →
-              </button>
-              <p className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-ink-700">
-                <span className="flex items-center gap-1">
-                  <Icon className="h-3.5 w-3.5">
-                    <path d="M20 6 9 17l-5-5" />
-                  </Icon>
-                  Geen kaart nodig
-                </span>
-                <span className="flex items-center gap-1">
-                  <Icon className="h-3.5 w-3.5">
-                    <path d="M20 6 9 17l-5-5" />
-                  </Icon>
-                  Klaar in minuten
-                </span>
-                <span className="flex items-center gap-1">
-                  <Icon className="h-3.5 w-3.5">
-                    <path d="M20 6 9 17l-5-5" />
-                  </Icon>
-                  Elk moment opzegbaar
-                </span>
-              </p>
-            </div>
-          </div>
-        </Reveal>
+            Gratis starten
+          </button>
+          <p className="text-[0.8125rem] text-ink-400">
+            Geen kaart nodig. Export vanaf dag één.
+          </p>
+        </div>
       </div>
     </section>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Footer                                                              */
-/* ------------------------------------------------------------------ */
-
 function Footer() {
   return (
-    <footer className="px-6 pb-8 pt-14 text-sm text-ink-300" style={{ backgroundColor: "var(--color-ink-950)" }}>
+    <footer className="border-t border-white/10 px-6 pb-8 pt-12 text-sm text-ink-300" style={{ backgroundColor: "var(--color-ink-950)" }}>
       <div className="mx-auto max-w-6xl">
         <div className="grid gap-10 pb-12 sm:grid-cols-2 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
           <div>
