@@ -65,19 +65,19 @@ export function FeedbackModal({ open, onClose, orgId, tier }: Props) {
     <Modal open={open} title="Feedback" onClose={close}>
       {status === "done" ? (
         <div className="py-4 text-center">
-          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-teal-50 text-teal-600 dark:bg-teal-500/15 dark:text-teal-300">
+          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-in-100 text-in-600 dark:bg-in-600/15 dark:text-in-400">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 6 9 17l-5-5" />
             </svg>
           </div>
-          <p className="text-sm font-semibold text-navy-900 dark:text-white">Bedankt voor je feedback.</p>
-          <p className="mt-1 text-sm text-navy-500 dark:text-navy-300">We lezen alles. Soms volgt er een antwoord.</p>
+          <p className="text-sm font-semibold text-ink-900 dark:text-white">Bedankt voor je feedback.</p>
+          <p className="mt-1 text-sm text-ink-700 dark:text-ink-500">We lezen alles. Soms volgt er een antwoord.</p>
           <button onClick={close} className="btn-primary mt-5 w-full">Sluiten</button>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
           <div>
-            <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+            <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
               Type
             </span>
             <div className="grid grid-cols-3 gap-2">
@@ -91,8 +91,8 @@ export function FeedbackModal({ open, onClose, orgId, tier }: Props) {
                     onClick={() => setKind(k.value)}
                     className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
                       active
-                        ? "border-teal-500 bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-500/15 dark:text-teal-200"
-                        : "border-navy-200 text-navy-600 hover:bg-navy-50 dark:border-navy-700 dark:text-navy-300 dark:hover:bg-navy-800"
+                        ? "border-in-600 bg-in-100 text-in-700 dark:border-in-600 dark:bg-in-600/15 dark:text-in-300"
+                        : "border-ink-300 text-ink-700 hover:bg-ink-50 dark:border-ink-800 dark:text-ink-500 dark:hover:bg-ink-900"
                     }`}
                   >
                     {k.label}
@@ -103,7 +103,7 @@ export function FeedbackModal({ open, onClose, orgId, tier }: Props) {
           </div>
 
           <div>
-            <label htmlFor="feedback-message" className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+            <label htmlFor="feedback-message" className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
               Je bericht
             </label>
             <textarea
@@ -118,7 +118,7 @@ export function FeedbackModal({ open, onClose, orgId, tier }: Props) {
           </div>
 
           {status === "error" && (
-            <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>
+            <p className="text-sm text-fout-600 dark:text-fout-400">{error}</p>
           )}
 
           <button

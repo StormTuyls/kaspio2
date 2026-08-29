@@ -8,21 +8,21 @@ type Props = {
 export function AuditLogView({ entries, loading }: Props) {
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-navy-100 bg-white p-5 dark:border-navy-700 dark:bg-navy-900">
-        <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-navy-500 dark:text-navy-300">
+      <div className="rounded-md border border-ink-200 bg-white p-5 dark:border-ink-800 dark:bg-ink-950">
+        <h3 className="mb-4 text-sm font-bold text-ink-700 dark:text-ink-500">
           Activiteit ({entries.length}
           {entries.length === 100 ? "+" : ""})
         </h3>
 
         {loading ? (
-          <p className="text-sm text-navy-400">Laden...</p>
+          <p className="text-sm text-ink-600">Laden...</p>
         ) : entries.length === 0 ? (
-          <p className="text-sm text-navy-400">
+          <p className="text-sm text-ink-600">
             Nog geen activiteit. Zodra iemand een potje of transactie aanmaakt,
             zie je het hier.
           </p>
         ) : (
-          <ul className="divide-y divide-navy-100 dark:divide-navy-700">
+          <ul className="divide-y divide-ink-200 dark:divide-ink-800">
             {entries.map((e) => (
               <AuditEntry key={e.id} entry={e} />
             ))}
@@ -30,7 +30,7 @@ export function AuditLogView({ entries, loading }: Props) {
         )}
       </div>
 
-      <p className="text-center text-xs text-navy-400">
+      <p className="text-center text-xs text-ink-600">
         Toont de laatste 100 acties. Audit-spoor wordt automatisch bijgehouden
         en kan niet worden gewijzigd.
       </p>
@@ -51,14 +51,14 @@ function AuditEntry({ entry }: { entry: AuditRow }) {
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-sm text-navy-900 dark:text-white">
+        <div className="text-sm text-ink-900 dark:text-white">
           <span className="font-semibold">{entry.actor_name}</span>{" "}
-          <span className="text-navy-500 dark:text-navy-300">{label}</span>
+          <span className="text-ink-700 dark:text-ink-500">{label}</span>
         </div>
         {detail && (
-          <div className="mt-0.5 text-xs text-navy-400">{detail}</div>
+          <div className="mt-0.5 text-xs text-ink-600">{detail}</div>
         )}
-        <div className="mt-0.5 text-[11px] text-navy-400">
+        <div className="mt-0.5 text-[11px] text-ink-600">
           {formatDateTime(entry.created_at)}
         </div>
       </div>
@@ -76,20 +76,20 @@ function describeAction(entry: AuditRow): {
     insert: {
       verb: "aangemaakt",
       icon: "+",
-      color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300",
+      color: "bg-in-100 text-in-700 dark:bg-in-700/40 dark:text-in-400",
     },
     update: {
       verb: "bewerkt",
       icon: "✎",
-      color: "bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+      color: "bg-uit-100 text-uit-700 dark:bg-uit-700/40 dark:text-uit-400",
     },
     delete: {
       verb: "verwijderd",
       icon: "×",
-      color: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
+      color: "bg-fout-100 text-fout-600 dark:bg-fout-600/40 dark:text-fout-400",
     },
   };
-  const opInfo = ops[op] ?? { verb: op, icon: "·", color: "bg-navy-100" };
+  const opInfo = ops[op] ?? { verb: op, icon: "·", color: "bg-ink-100" };
   const entityLabels: Record<string, string> = {
     pots: "een potje",
     transactions: "een transactie",

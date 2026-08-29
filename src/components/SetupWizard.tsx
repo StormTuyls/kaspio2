@@ -30,7 +30,7 @@ export function SetupWizard({ tier, availableSlots, onApply, onClose }: Props) {
   if (!template) {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-navy-500 dark:text-navy-300">
+        <p className="text-sm text-ink-700 dark:text-ink-500">
           Waarvoor gebruik je Kaspio? We zetten meteen een paar zinnige potjes
           voor je klaar. Aanpassen kan altijd.
         </p>
@@ -41,27 +41,27 @@ export function SetupWizard({ tier, availableSlots, onApply, onClose }: Props) {
               setTemplate(t);
               setExcluded(new Set());
             }}
-            className="card flex w-full items-center gap-3 p-4 text-left transition hover:-translate-y-0.5 hover:border-teal-300 dark:hover:border-teal-800"
+            className="card flex w-full items-center gap-3 p-4 text-left transition hover:-translate-y-0.5 hover:border-in-300 dark:hover:border-in-600"
           >
             <span className="text-2xl" aria-hidden>
               {t.emoji}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block font-semibold text-navy-900 dark:text-white">
+              <span className="block font-semibold text-ink-900 dark:text-white">
                 {t.label}
               </span>
-              <span className="block text-sm text-navy-500 dark:text-navy-300">
+              <span className="block text-sm text-ink-700 dark:text-ink-500">
                 {t.description}
               </span>
             </span>
-            <span className="text-navy-300" aria-hidden>
+            <span className="text-ink-500" aria-hidden>
               →
             </span>
           </button>
         ))}
         <button
           onClick={onClose}
-          className="w-full py-2 text-center text-sm font-medium text-navy-400 hover:text-navy-700 dark:hover:text-navy-100"
+          className="w-full py-2 text-center text-sm font-medium text-ink-600 hover:text-ink-800 dark:hover:text-ink-200"
         >
           Ik doe het liever zelf
         </button>
@@ -105,17 +105,17 @@ export function SetupWizard({ tier, availableSlots, onApply, onClose }: Props) {
       <div className="flex items-center gap-2 text-sm">
         <button
           onClick={() => setTemplate(null)}
-          className="font-medium text-navy-500 hover:text-navy-900 dark:text-navy-300 dark:hover:text-white"
+          className="font-medium text-ink-700 hover:text-ink-900 dark:text-ink-500 dark:hover:text-white"
         >
           ← Ander type
         </button>
-        <span className="text-navy-300">·</span>
-        <span className="font-semibold text-navy-900 dark:text-white">
+        <span className="text-ink-500">·</span>
+        <span className="font-semibold text-ink-900 dark:text-white">
           {template.emoji} {template.label}
         </span>
       </div>
 
-      <p className="text-sm text-navy-500 dark:text-navy-300">
+      <p className="text-sm text-ink-700 dark:text-ink-500">
         Deze potjes maken we aan. Vink af wat je niet wil.
       </p>
 
@@ -128,8 +128,8 @@ export function SetupWizard({ tier, availableSlots, onApply, onClose }: Props) {
               <label
                 className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 transition ${
                   on
-                    ? "border-navy-100 bg-canvas dark:border-navy-700/60 dark:bg-navy-800/40"
-                    : "border-dashed border-navy-100 opacity-50 dark:border-navy-700/60"
+                    ? "border-ink-200 bg-ink-50 dark:border-ink-800/60 dark:bg-ink-900/40"
+                    : "border-dashed border-ink-200 opacity-50 dark:border-ink-800/60"
                 }`}
               >
                 <input
@@ -143,16 +143,16 @@ export function SetupWizard({ tier, availableSlots, onApply, onClose }: Props) {
                   style={{ backgroundColor: p.color }}
                   aria-hidden
                 />
-                <span className="min-w-0 flex-1 text-sm font-medium text-navy-900 dark:text-navy-50">
+                <span className="min-w-0 flex-1 text-sm font-medium text-ink-900 dark:text-ink-100">
                   {p.name}
                 </span>
                 {useGroups && p.group && (
-                  <span className="rounded-full bg-navy-100 px-2 py-0.5 text-[11px] font-medium text-navy-500 dark:bg-navy-800 dark:text-navy-300">
+                  <span className="rounded-full bg-ink-100 px-2 py-0.5 text-[11px] font-medium text-ink-700 dark:bg-ink-900 dark:text-ink-500">
                     {p.group}
                   </span>
                 )}
                 {overLimit && (
-                  <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                  <span className="text-[11px] font-medium text-uit-700 dark:text-uit-400">
                     boven limiet
                   </span>
                 )}
@@ -163,20 +163,20 @@ export function SetupWizard({ tier, availableSlots, onApply, onClose }: Props) {
       </ul>
 
       {droppedByLimit > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+        <div className="rounded-lg border border-uit-300 bg-uit-100 px-3 py-2 text-xs text-uit-700 dark:border-uit-700/50 dark:bg-uit-700/20 dark:text-uit-300">
           Je plan laat nog {availableSlots} {availableSlots === 1 ? "potje" : "potjes"} toe.
           We maken de eerste {capped.length}; de rest kan na een upgrade.
         </div>
       )}
       {!useGroups && template.groups.length > 0 && (
-        <p className="text-xs text-navy-400 dark:text-navy-400">
+        <p className="text-xs text-ink-600 dark:text-ink-600">
           Groepen (takken/afdelingen) zijn beschikbaar op Team. We maken de potjes
           nu zonder groep aan.
         </p>
       )}
 
       {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
           {error}
         </div>
       )}

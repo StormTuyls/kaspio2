@@ -123,7 +123,7 @@ export function GroupsView({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-navy-900 dark:text-white">Groepen</h1>
+        <h1 className="text-2xl font-bold text-ink-900 dark:text-white">Groepen</h1>
         <div className="flex items-center gap-2">
           {roots.length > 1 && (
             <button onClick={toggleAll} className="btn-secondary text-sm">
@@ -147,7 +147,7 @@ export function GroupsView({
         />
       )}
 
-      <p className="text-sm text-navy-500 dark:text-navy-300">
+      <p className="text-sm text-ink-700 dark:text-ink-500">
         Groepen bundelen potjes per tak, ploeg of werkgroep. Een potje koppel je
         aan een groep bij het aanmaken of bewerken van het potje. Hoort er nog
         een laag tussen, bijvoorbeeld een comité met blokken eronder, dan hang je
@@ -199,13 +199,13 @@ export function GroupsView({
         </div>
       )}
       {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
           {error}
         </div>
       )}
 
       {groups.length === 0 ? (
-        <div className="card border-dashed py-12 text-center text-sm text-navy-500 dark:text-navy-300">
+        <div className="card border-dashed py-12 text-center text-sm text-ink-700 dark:text-ink-500">
           Nog geen groepen.{" "}
           {isAdmin ? "Maak er een aan om je potjes te bundelen." : ""}
         </div>
@@ -246,7 +246,7 @@ export function GroupsView({
                   onCreateSub={(naam) => onCreateGroup(naam, g.id)}
                 />
                 {open && children.length > 0 && (
-                  <div className="ml-4 mt-3 space-y-3 border-l-2 border-navy-100 pl-4 dark:border-navy-700/60">
+                  <div className="ml-4 mt-3 space-y-3 border-l-2 border-ink-200 pl-4 dark:border-ink-800/60">
                     {children.map((c) => (
                       <GroupCard
                         key={c.id}
@@ -281,10 +281,10 @@ export function GroupsView({
 
       {ungrouped.length > 0 && (
         <div>
-          <h2 className="mb-2 text-sm font-bold uppercase tracking-wider text-navy-400">
+          <h2 className="mb-2 text-sm font-bold text-ink-600">
             Niet in een groep
           </h2>
-          <div className="card divide-y divide-navy-100 dark:divide-navy-700/60">
+          <div className="card divide-y divide-ink-200 dark:divide-ink-800/60">
             {ungrouped.map((p) => (
               <PotRow
                 key={p.id}
@@ -431,7 +431,7 @@ function GroupCard({
             onClick={onToggle}
             aria-expanded={open}
             aria-label={`${group.name} ${open ? "inklappen" : "uitklappen"}`}
-            className="mt-0.5 flex-shrink-0 rounded p-1 text-navy-400 transition hover:bg-navy-50 hover:text-navy-700 dark:hover:bg-navy-800 dark:hover:text-white"
+            className="mt-0.5 flex-shrink-0 rounded p-1 text-ink-600 transition hover:bg-ink-50 hover:text-ink-800 dark:hover:bg-ink-900 dark:hover:text-white"
           >
             <svg
               width="12"
@@ -469,43 +469,43 @@ function GroupCard({
               type="button"
               onClick={onOpen}
               disabled={!onOpen}
-              className="flex min-w-0 items-baseline gap-2 text-left enabled:hover:text-teal-700 dark:enabled:hover:text-teal-300"
+              className="flex min-w-0 items-baseline gap-2 text-left enabled:hover:text-in-700 dark:enabled:hover:text-in-400"
             >
               <h3
-                className={`truncate font-bold text-navy-900 dark:text-white ${
+                className={`truncate font-bold text-ink-900 dark:text-white ${
                   isSub ? "text-sm" : "text-base"
                 }`}
               >
                 {group.name}
               </h3>
-              <span className="rounded-full bg-navy-100 px-1.5 text-[11px] font-semibold text-navy-500 dark:bg-navy-800 dark:text-navy-300">
+              <span className="rounded-full bg-ink-100 px-1.5 text-[11px] font-semibold text-ink-700 dark:bg-ink-900 dark:text-ink-500">
                 {pots.length}
               </span>
               {childCount > 0 && (
-                <span className="text-[11px] font-medium text-navy-400">
+                <span className="text-[11px] font-medium text-ink-600">
                   + {childCount} subgroep{childCount > 1 ? "en" : ""}
                 </span>
               )}
               {onOpen && (
-                <span className="text-xs font-medium text-teal-600 dark:text-teal-400">→</span>
+                <span className="text-xs font-medium text-in-600 dark:text-in-400">→</span>
               )}
             </button>
           )}
         </div>
-        <span className="flex-shrink-0 text-base font-bold tabular-nums text-navy-900 dark:text-navy-50">
+        <span className="flex-shrink-0 text-base font-bold tabular-nums text-ink-900 dark:text-ink-100">
           {formatEuro(balance)}
         </span>
       </div>
 
       {open &&
         (pots.length === 0 ? (
-          <p className="text-sm text-navy-400 dark:text-navy-400">
+          <p className="text-sm text-ink-600 dark:text-ink-600">
             {childCount > 0
               ? "Geen potjes rechtstreeks in deze groep; ze zitten in de subgroepen."
               : "Nog geen potjes in deze groep."}
           </p>
         ) : (
-          <ul className="-mx-1.5 divide-y divide-navy-100 dark:divide-navy-700/60">
+          <ul className="-mx-1.5 divide-y divide-ink-200 dark:divide-ink-800/60">
             {pots.map((p) => (
               <PotRow
                 key={p.id}
@@ -518,11 +518,11 @@ function GroupCard({
         ))}
 
       {open && isAdmin && !editing && (
-        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-navy-100 pt-3 dark:border-navy-700/60">
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-ink-200 pt-3 dark:border-ink-800/60">
           {onAddPot && (
             <button
               onClick={canAddPot ? onAddPot : onUpgrade}
-              className="text-xs font-semibold text-teal-700 hover:underline dark:text-teal-300"
+              className="text-xs font-semibold text-in-700 hover:underline dark:text-in-400"
             >
               {canAddPot ? "+ Potje" : "Upgrade voor meer potjes"}
             </button>
@@ -534,20 +534,20 @@ function GroupCard({
                 setSubName("");
                 setSubError(null);
               }}
-              className="text-xs font-semibold text-teal-700 hover:underline dark:text-teal-300"
+              className="text-xs font-semibold text-in-700 hover:underline dark:text-in-400"
             >
               + Subgroep
             </button>
           )}
           <button
             onClick={() => setEditing(true)}
-            className="text-xs font-medium text-navy-500 hover:text-navy-900 dark:text-navy-300 dark:hover:text-white"
+            className="text-xs font-medium text-ink-700 hover:text-ink-900 dark:text-ink-500 dark:hover:text-white"
           >
             Hernoemen
           </button>
           <button
             onClick={remove}
-            className="text-xs font-medium text-rose-600 hover:underline dark:text-rose-400"
+            className="text-xs font-medium text-fout-600 hover:underline dark:text-fout-400"
           >
             Verwijderen
           </button>
@@ -575,11 +575,11 @@ function GroupCard({
         </div>
       )}
       {moveError && (
-        <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">{moveError}</p>
+        <p className="mt-2 text-xs text-fout-600 dark:text-fout-400">{moveError}</p>
       )}
 
       {subName !== null && (
-        <div className="mt-3 border-t border-navy-100 pt-3 dark:border-navy-700/60">
+        <div className="mt-3 border-t border-ink-200 pt-3 dark:border-ink-800/60">
           <div className="flex gap-2">
             <input
               autoFocus
@@ -617,7 +617,7 @@ function GroupCard({
             </button>
           </div>
           {subError && (
-            <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">{subError}</p>
+            <p className="mt-2 text-xs text-fout-600 dark:text-fout-400">{subError}</p>
           )}
         </div>
       )}
@@ -637,17 +637,17 @@ function PotRow({
   return (
     <button
       onClick={onSelect}
-      className="flex w-full items-center gap-2 px-1.5 py-2 text-left text-sm transition hover:bg-canvas dark:hover:bg-navy-800"
+      className="flex w-full items-center gap-2 px-1.5 py-2 text-left text-sm transition hover:bg-ink-50 dark:hover:bg-ink-900"
     >
       <span
         aria-hidden
         className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
         style={{ backgroundColor: pot.color ?? "#1D9E75" }}
       />
-      <span className="min-w-0 flex-1 truncate text-navy-700 dark:text-navy-200">
+      <span className="min-w-0 flex-1 truncate text-ink-800 dark:text-ink-300">
         {pot.name}
       </span>
-      <span className="flex-shrink-0 tabular-nums font-medium text-navy-600 dark:text-navy-300">
+      <span className="flex-shrink-0 tabular-nums font-medium text-ink-700 dark:text-ink-500">
         {formatEuro(balance)}
       </span>
     </button>

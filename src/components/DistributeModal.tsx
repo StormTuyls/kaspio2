@@ -100,7 +100,7 @@ export function DistributeModal({
   if (pots.length === 0) {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-ink-muted dark:text-navy-300">
+        <p className="text-sm text-ink-muted dark:text-ink-500">
           Maak eerst een potje aan om geld naartoe te verdelen.
         </p>
         <div className="flex justify-end">
@@ -119,8 +119,8 @@ export function DistributeModal({
           wat er gaat gebeuren, want de verdeling gaat over bedragen terwijl de
           inbox over losse transacties gaat. */}
       {incomingCount > 0 && (
-        <div className="rounded-xl border border-navy-100 bg-canvas p-3 dark:border-navy-700/60 dark:bg-navy-800/40">
-          <p className="text-sm text-navy-700 dark:text-navy-100">
+        <div className="rounded-xl border border-ink-200 bg-ink-50 p-3 dark:border-ink-800/60 dark:bg-ink-900/40">
+          <p className="text-sm text-ink-800 dark:text-ink-200">
             {incomingCount === 1
               ? "De inkomst die nog toe te wijzen staat, wordt hiermee zelf over de gekozen potjes verdeeld en verdwijnt dus uit je inbox."
               : `De ${incomingCount} inkomsten die nog toe te wijzen staan, worden hiermee zelf over de gekozen potjes verdeeld, oudste eerst. Ze verdwijnen dus uit je inbox.`}{" "}
@@ -130,7 +130,7 @@ export function DistributeModal({
           {onOpenInbox && (
             <button
               onClick={onOpenInbox}
-              className="mt-2 text-xs font-semibold text-teal-700 underline underline-offset-2 hover:no-underline dark:text-teal-300"
+              className="mt-2 text-xs font-semibold text-in-700 underline underline-offset-2 hover:no-underline dark:text-in-400"
             >
               Liever zelf per transactie
             </button>
@@ -139,16 +139,16 @@ export function DistributeModal({
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-ink-muted dark:text-navy-300">
+        <p className="text-sm text-ink-muted dark:text-ink-500">
           In de hoofdpot:{" "}
-          <span className="font-num font-semibold tabular-nums text-navy-900 dark:text-white">
+          <span className="font-num font-semibold tabular-nums text-ink-900 dark:text-white">
             {formatEuro(available)}
           </span>
         </p>
         {hasPreset && (
           <button
             onClick={() => setAmounts(fillFromShares(available, visibleShares))}
-            className="rounded-lg bg-canvas px-3 py-1.5 text-xs font-semibold text-navy-700 transition hover:bg-navy-100 dark:bg-navy-800 dark:text-navy-100 dark:hover:bg-navy-700"
+            className="rounded-lg bg-ink-50 px-3 py-1.5 text-xs font-semibold text-ink-800 transition hover:bg-ink-100 dark:bg-ink-900 dark:text-ink-200 dark:hover:bg-ink-800"
           >
             Vul volgens %
           </button>
@@ -165,7 +165,7 @@ export function DistributeModal({
                 className="h-3 w-3 flex-shrink-0 rounded-full"
                 style={{ backgroundColor: pot.color ?? "#1D9E75" }}
               />
-              <span className="min-w-0 flex-1 truncate text-sm text-navy-800 dark:text-navy-100">
+              <span className="min-w-0 flex-1 truncate text-sm text-ink-800 dark:text-ink-200">
                 {pot.name}
                 {percent !== undefined && (
                   <span className="ml-1.5 font-num text-xs text-ink-light">
@@ -177,7 +177,7 @@ export function DistributeModal({
                 type="button"
                 onClick={() => fillRest(pot.id)}
                 title="Zet het restant in dit potje"
-                className="rounded-md px-1.5 py-1 text-xs font-semibold text-teal-700 transition hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-900/30"
+                className="rounded-md px-1.5 py-1 text-xs font-semibold text-in-700 transition hover:bg-in-100 dark:text-in-400 dark:hover:bg-in-700/30"
               >
                 rest
               </button>
@@ -200,15 +200,15 @@ export function DistributeModal({
         })}
       </ul>
 
-      <div className="flex items-center justify-between rounded-xl bg-canvas px-4 py-2.5 text-sm dark:bg-navy-800">
-        <span className="text-ink-muted dark:text-navy-300">
+      <div className="flex items-center justify-between rounded-xl bg-ink-50 px-4 py-2.5 text-sm dark:bg-ink-900">
+        <span className="text-ink-muted dark:text-ink-500">
           {overAvailable ? "Tekort in de hoofdpot" : "Blijft in de hoofdpot"}
         </span>
         <span
           className={`font-num font-semibold tabular-nums ${
             overAvailable
-              ? "text-amber-700 dark:text-amber-300"
-              : "text-navy-900 dark:text-white"
+              ? "text-uit-700 dark:text-uit-400"
+              : "text-ink-900 dark:text-white"
           }`}
         >
           {formatEuro(remaining)}
@@ -216,14 +216,14 @@ export function DistributeModal({
       </div>
 
       {overAvailable && (
-        <p className="text-xs text-amber-700 dark:text-amber-300">
+        <p className="text-xs text-uit-700 dark:text-uit-400">
           Je verdeelt meer dan er in de hoofdpot zit. Die komt dan onder nul te
           staan; je banksaldo verandert niet.
         </p>
       )}
 
       {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
           {error}
         </div>
       )}
@@ -231,7 +231,7 @@ export function DistributeModal({
       <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
         <button
           onClick={onManagePreset}
-          className="text-sm font-medium text-teal-600 hover:underline dark:text-teal-400"
+          className="text-sm font-medium text-in-600 hover:underline dark:text-in-400"
         >
           {hasPreset ? "Percentages aanpassen" : "Percentages instellen"}
         </button>

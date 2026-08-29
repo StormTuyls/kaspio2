@@ -209,17 +209,14 @@ export function PotDetail({
     <div className="space-y-6">
       <button
         onClick={onBack}
-        className="flex items-center gap-1 text-sm font-medium text-navy-500 hover:text-navy-900 dark:text-navy-300 dark:hover:text-white"
+        className="flex items-center gap-1 text-sm font-medium text-ink-700 hover:text-ink-900 dark:text-ink-500 dark:hover:text-white"
       >
         ← Terug naar overzicht
       </button>
 
-      <div className="card relative overflow-hidden p-6">
-        <span
-          aria-hidden
-          className="absolute left-0 top-0 h-full w-1.5"
-          style={{ backgroundColor: pot.color ?? "#1D9E75" }}
-        />
+      {/* Geen gekleurde zijstreep meer: het bolletje naast de naam codeert de
+          potjeskleur al, en dezelfde informatie twee keer is geen ontwerp. */}
+      <div className="card p-6">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="mb-1 flex items-center gap-2.5">
@@ -228,11 +225,11 @@ export function PotDetail({
                 className="h-3 w-3 flex-shrink-0 rounded-full"
                 style={{ backgroundColor: pot.color ?? "#1D9E75" }}
               />
-              <h1 className="text-2xl font-bold text-navy-900 dark:text-white">
+              <h1 className="titel">
                 {pot.name}
               </h1>
             </div>
-            <div className="flex items-center gap-2 text-sm text-navy-500 dark:text-navy-300">
+            <div className="flex items-center gap-2 text-sm text-ink-700 dark:text-ink-500">
               <Avatar name={owner?.name ?? "—"} size="sm" />
               <span>{owner?.name ?? "Geen verantwoordelijke"}</span>
             </div>
@@ -283,37 +280,37 @@ export function PotDetail({
 
         <div className="grid gap-3 sm:grid-cols-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+            <p className="text-xs font-semibold text-ink-600 dark:text-ink-500">
               Saldo
             </p>
-            <p className="text-3xl font-extrabold text-navy-900 dark:text-white">
+            <p className="text-3xl font-extrabold text-ink-900 dark:text-white">
               {formatEuro(balance)}
             </p>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+            <p className="text-xs font-semibold text-ink-600 dark:text-ink-500">
               Inkomend
             </p>
-            <p className="text-xl font-bold tabular-nums text-teal-700 dark:text-teal-300">
+            <p className="text-xl font-bold tabular-nums text-in-700 dark:text-in-400">
               {formatEuro(totalIn)}
             </p>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+            <p className="text-xs font-semibold text-ink-600 dark:text-ink-500">
               Uitgaand
             </p>
-            <p className="text-xl font-bold tabular-nums text-amber-700 dark:text-amber-400">
+            <p className="text-xl font-bold tabular-nums text-uit-700 dark:text-uit-400">
               {formatEuro(totalOut)}
             </p>
           </div>
         </div>
 
         {reservedTotal > 0 && (
-          <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-2.5 text-sm dark:border-amber-900/50 dark:bg-amber-900/15">
-            <span className="font-num font-bold tabular-nums text-amber-800 dark:text-amber-200">
+          <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-uit-300 bg-uit-100/70 px-3.5 py-2.5 text-sm dark:border-uit-700/50 dark:bg-uit-700/15">
+            <span className="font-num font-bold tabular-nums text-uit-700 dark:text-uit-300">
               {formatEuro(reservedTotal)}
             </span>
-            <span className="text-amber-700 dark:text-amber-300">
+            <span className="text-uit-700 dark:text-uit-400">
               gereserveerd voor{" "}
               {domicilieringen.length === 1
                 ? domicilieringen[0].counterparty || "een domiciliëring"
@@ -328,13 +325,13 @@ export function PotDetail({
 
         {progress !== null && (
           <div className="mt-5">
-            <div className="mb-1.5 flex justify-between text-xs text-navy-500 dark:text-navy-300">
+            <div className="mb-1.5 flex justify-between text-xs text-ink-700 dark:text-ink-500">
               <span>{progress.label}</span>
               <span
                 className={`font-semibold ${
                   progress.over
-                    ? "text-rose-600 dark:text-rose-400"
-                    : "text-teal-600 dark:text-teal-400"
+                    ? "text-fout-600 dark:text-fout-400"
+                    : "text-in-600 dark:text-in-400"
                 }`}
               >
                 {progress.pct.toFixed(0)}%
@@ -344,31 +341,31 @@ export function PotDetail({
             {/* De prognosemarkering staat in de balk zelf, want ze hoort op
                 dezelfde schaal als het budget. Los eronder zou je twee
                 bedragen zien zonder te zien hoe ver ze uit elkaar liggen. */}
-            <div className="relative h-2 w-full overflow-hidden rounded-full bg-navy-100 dark:bg-navy-700">
+            <div className="relative h-2 w-full overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
               <div
                 className={`h-full rounded-full transition-all ${
                   progress.over
-                    ? "bg-gradient-to-r from-rose-400 to-rose-600"
-                    : "bg-gradient-to-r from-teal-400 to-teal-600"
+                    ? "bg-gradient-to-r from-fout-400 to-fout-600"
+                    : "bg-gradient-to-r from-in-500 to-in-600"
                 }`}
                 style={{ width: `${progress.barPct}%` }}
               />
               {progress.forecast && (
                 <div
-                  className="absolute inset-y-0 w-0.5 bg-navy-500 dark:bg-navy-200"
+                  className="absolute inset-y-0 w-0.5 bg-ink-500 dark:bg-ink-200"
                   style={{ left: `${progress.forecast.markerPct}%` }}
                   aria-hidden="true"
                 />
               )}
             </div>
             {progress.forecast && (
-              <p className="mt-1.5 text-xs text-navy-500 dark:text-navy-300">
+              <p className="mt-1.5 text-xs text-ink-700 dark:text-ink-500">
                 {progress.forecast.label}{" "}
                 <span
                   className={
                     progress.forecast.delta > 0
-                      ? "font-semibold text-amber-600 dark:text-amber-400"
-                      : "font-semibold text-teal-600 dark:text-teal-400"
+                      ? "font-semibold text-uit-600 dark:text-uit-400"
+                      : "font-semibold text-in-600 dark:text-in-400"
                   }
                 >
                   ({progress.forecast.delta > 0 ? "+" : "−"}
@@ -394,7 +391,7 @@ export function PotDetail({
 
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-navy-900 dark:text-navy-50">Transacties</h2>
+          <h2 className="text-lg font-semibold text-ink-900 dark:text-ink-100">Transacties</h2>
           {canAddTransaction && (
             <button onClick={onAddTransaction} className="btn-accent text-sm">
               + Transactie
@@ -404,10 +401,10 @@ export function PotDetail({
 
         {potTx.length === 0 ? (
           <div className="card border-dashed py-12 text-center">
-            <p className="mb-1 text-base font-semibold text-navy-900 dark:text-navy-50">
+            <p className="mb-1 text-base font-semibold text-ink-900 dark:text-ink-100">
               Nog geen transacties
             </p>
-            <p className="text-sm text-navy-500 dark:text-navy-300">
+            <p className="text-sm text-ink-700 dark:text-ink-500">
               {canAddTransaction
                 ? "Voeg de eerste in- of uitgaande transactie toe."
                 : "Er zijn nog geen transacties voor dit potje."}
@@ -416,8 +413,8 @@ export function PotDetail({
         ) : (
           <div className="card overflow-hidden">
             {isAdmin && selected.size > 0 && (
-              <div className="flex items-center justify-between gap-3 border-b border-navy-100 bg-canvas px-4 py-2.5 dark:border-navy-700/60 dark:bg-navy-800/40">
-                <span className="text-sm font-medium text-navy-700 dark:text-navy-100">
+              <div className="flex items-center justify-between gap-3 border-b border-ink-200 bg-ink-50 px-4 py-2.5 dark:border-ink-800/60 dark:bg-ink-900/40">
+                <span className="text-sm font-medium text-ink-800 dark:text-ink-200">
                   {selected.size} geselecteerd
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
@@ -450,9 +447,9 @@ export function PotDetail({
                 </div>
               </div>
             )}
-            <div className="flex flex-col gap-2 border-b border-navy-100 px-4 py-3 sm:flex-row sm:items-center sm:gap-3 dark:border-navy-700/60">
+            <div className="flex flex-col gap-2 border-b border-ink-200 px-4 py-3 sm:flex-row sm:items-center sm:gap-3 dark:border-ink-800/60">
               <div className="relative flex-1">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-navy-300 dark:text-navy-500">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-500 dark:text-ink-700">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="11" cy="11" r="7" />
                     <path d="m21 21-4.35-4.35" />
@@ -475,7 +472,7 @@ export function PotDetail({
                   value={account}
                   onChange={(e) => setAccount(e.target.value)}
                   aria-label="Filter op rekening"
-                  className="rounded-xl border border-navy-100 bg-white px-3 py-1.5 text-xs font-semibold text-navy-700 dark:border-navy-700 dark:bg-navy-800 dark:text-navy-100"
+                  className="rounded-xl border border-ink-200 bg-white px-3 py-1.5 text-xs font-semibold text-ink-800 dark:border-ink-800 dark:bg-ink-900 dark:text-ink-200"
                 >
                   <option value="all">Alle rekeningen</option>
                   {accounts.map((a) => (
@@ -485,15 +482,15 @@ export function PotDetail({
                   ))}
                 </select>
               )}
-              <div className="grid grid-cols-3 gap-1 rounded-xl border border-navy-100 bg-white p-1 text-xs font-semibold sm:flex dark:border-navy-700 dark:bg-navy-800">
+              <div className="grid grid-cols-3 gap-1 rounded-xl border border-ink-200 bg-white p-1 text-xs font-semibold sm:flex dark:border-ink-800 dark:bg-ink-900">
                 {(["all", "in", "out"] as const).map((d) => (
                   <button
                     key={d}
                     onClick={() => setDirection(d)}
                     className={`rounded-lg px-3 py-1.5 transition ${
                       direction === d
-                        ? "bg-navy-900 text-white dark:bg-white dark:text-navy-900"
-                        : "text-navy-500 hover:text-navy-900 dark:text-navy-300 dark:hover:text-white"
+                        ? "bg-ink-950 text-white dark:bg-white dark:text-ink-900"
+                        : "text-ink-700 hover:text-ink-900 dark:text-ink-500 dark:hover:text-white"
                     }`}
                   >
                     {d === "all" ? "Alle" : d === "in" ? "Inkomend" : "Uitgaand"}
@@ -503,12 +500,12 @@ export function PotDetail({
             </div>
 
             {filtered.length === 0 ? (
-              <div className="px-4 py-10 text-center text-sm text-navy-400 dark:text-navy-300">
+              <div className="px-4 py-10 text-center text-sm text-ink-600 dark:text-ink-500">
                 Geen transacties die overeenkomen met je filter.
               </div>
             ) : (
               <>
-                <ul className="divide-y divide-navy-100 sm:hidden dark:divide-navy-700/60">
+                <ul className="divide-y divide-ink-200 sm:hidden dark:divide-ink-800/60">
                   {filtered.map((tx) => (
                     <li key={tx.id} className="flex gap-3 px-4 py-3.5">
                       {isAdmin && (
@@ -522,25 +519,25 @@ export function PotDetail({
                       )}
                       <div className="min-w-0 flex-1">
                       <div className="mb-1 flex items-baseline justify-between gap-3">
-                        <span className="truncate font-semibold text-navy-900 dark:text-navy-50">
+                        <span className="truncate font-semibold text-ink-900 dark:text-ink-100">
                           {tx.counterparty}
                         </span>
                         <span
                           className={`whitespace-nowrap text-base font-bold tabular-nums ${
                             tx.direction === "in"
-                              ? "text-teal-700 dark:text-teal-300"
-                              : "text-amber-700 dark:text-amber-400"
+                              ? "text-in-700 dark:text-in-400"
+                              : "text-uit-700 dark:text-uit-400"
                           }`}
                         >
                           {tx.direction === "in" ? "+" : "−"}
                           {formatEuro(tx.amount)}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between gap-3 text-xs text-navy-500 dark:text-navy-300">
+                      <div className="flex items-center justify-between gap-3 text-xs text-ink-700 dark:text-ink-500">
                         <span className="min-w-0 truncate">
                           {formatDate(tx.occurredOn)}
                           {accounts.length > 1 && tx.bankAccount && (
-                            <span className="ml-2 font-mono text-[11px] text-navy-400 dark:text-navy-500">
+                            <span className="ml-2 font-mono text-[11px] text-ink-600 dark:text-ink-700">
                               {tx.bankAccount}
                             </span>
                           )}
@@ -551,7 +548,7 @@ export function PotDetail({
                               if (await confirm({ title: "Transactie verwijderen?", confirmLabel: "Verwijderen", danger: true }))
                                 onDeleteTransaction(tx.transactionId);
                             }}
-                            className="rounded-md px-2 py-1 text-navy-300 hover:bg-rose-50 hover:text-rose-600 dark:text-navy-500 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
+                            className="rounded-md px-2 py-1 text-ink-500 hover:bg-fout-100 hover:text-fout-600 dark:text-ink-700 dark:hover:bg-fout-600/30 dark:hover:text-fout-400"
                             aria-label="Verwijderen"
                           >
                             ✕
@@ -559,7 +556,7 @@ export function PotDetail({
                         )}
                       </div>
                       {tx.memo && (
-                        <p className="mt-1 text-sm text-navy-500 dark:text-navy-400">{tx.memo}</p>
+                        <p className="mt-1 text-sm text-ink-700 dark:text-ink-600">{tx.memo}</p>
                       )}
                       {canUseAttachments && (
                         <div className="mt-2">
@@ -567,12 +564,12 @@ export function PotDetail({
                             onClick={() =>
                               setExpandedTx((id) => (id === tx.id ? null : tx.id))
                             }
-                            className="text-xs font-medium text-teal-700 hover:underline dark:text-teal-300"
+                            className="text-xs font-medium text-in-700 hover:underline dark:text-in-400"
                           >
                             📎 Bijlagen {expandedTx === tx.id ? "verbergen" : "tonen"}
                           </button>
                           {expandedTx === tx.id && orgId && (
-                            <div className="mt-2 rounded-lg bg-canvas p-3 dark:bg-navy-800/40">
+                            <div className="mt-2 rounded-lg bg-ink-50 p-3 dark:bg-ink-900/40">
                               <TransactionAttachments
                                 orgId={orgId}
                                 transactionId={tx.transactionId}
@@ -588,7 +585,7 @@ export function PotDetail({
                 </ul>
 
                 <table className="hidden w-full text-sm sm:table">
-                  <thead className="bg-canvas text-xs font-semibold uppercase tracking-wider text-navy-400 dark:bg-navy-800/50 dark:text-navy-300">
+                  <thead className="bg-ink-50 text-xs font-semibold text-ink-600 dark:bg-ink-900/50 dark:text-ink-500">
                     <tr>
                       {isAdmin && (
                         <th className="w-10 px-4 py-3 text-left">
@@ -608,12 +605,12 @@ export function PotDetail({
                       <th className="px-4 py-3" />
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-navy-100 dark:divide-navy-700/60">
+                  <tbody className="divide-y divide-ink-200 dark:divide-ink-800/60">
                     {filtered.map((tx) => (
                       <Fragment key={tx.id}>
                       <tr
-                        className={`transition hover:bg-canvas dark:hover:bg-navy-800/40 ${
-                          selected.has(tx.id) ? "bg-teal-50/60 dark:bg-teal-900/10" : ""
+                        className={`transition hover:bg-ink-50 dark:hover:bg-ink-900/40 ${
+                          selected.has(tx.id) ? "bg-in-100/60 dark:bg-in-700/10" : ""
                         }`}
                       >
                         {isAdmin && (
@@ -627,25 +624,25 @@ export function PotDetail({
                             />
                           </td>
                         )}
-                        <td className="whitespace-nowrap px-4 py-3 text-navy-500 dark:text-navy-300">
+                        <td className="whitespace-nowrap px-4 py-3 text-ink-700 dark:text-ink-500">
                           {formatDate(tx.occurredOn)}
                         </td>
-                        <td className="px-4 py-3 font-medium text-navy-900 dark:text-navy-50">
+                        <td className="px-4 py-3 font-medium text-ink-900 dark:text-ink-100">
                           {tx.counterparty}
                           {accounts.length > 1 && tx.bankAccount && (
-                            <span className="mt-0.5 block font-mono text-[11px] font-normal text-navy-400 dark:text-navy-500">
+                            <span className="mt-0.5 block font-mono text-[11px] font-normal text-ink-600 dark:text-ink-700">
                               {tx.bankAccount}
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-navy-500 dark:text-navy-400">
+                        <td className="px-4 py-3 text-ink-700 dark:text-ink-600">
                           {tx.memo ?? "—"}
                         </td>
                         <td
                           className={`whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums ${
                             tx.direction === "in"
-                              ? "text-teal-700 dark:text-teal-300"
-                              : "text-amber-700 dark:text-amber-400"
+                              ? "text-in-700 dark:text-in-400"
+                              : "text-uit-700 dark:text-uit-400"
                           }`}
                         >
                           {tx.direction === "in" ? "+" : "−"}
@@ -660,8 +657,8 @@ export function PotDetail({
                                 }
                                 className={`text-sm ${
                                   expandedTx === tx.id
-                                    ? "text-teal-700 dark:text-teal-300"
-                                    : "text-navy-300 hover:text-teal-700 dark:text-navy-500 dark:hover:text-teal-300"
+                                    ? "text-in-700 dark:text-in-400"
+                                    : "text-ink-500 hover:text-in-700 dark:text-ink-700 dark:hover:text-in-400"
                                 }`}
                                 aria-label="Bijlagen"
                                 title="Bijlagen"
@@ -675,7 +672,7 @@ export function PotDetail({
                                   if (await confirm({ title: "Transactie verwijderen?", confirmLabel: "Verwijderen", danger: true }))
                                     onDeleteTransaction(tx.transactionId);
                                 }}
-                                className="text-xs text-navy-300 hover:text-rose-600 dark:text-navy-500 dark:hover:text-rose-400"
+                                className="text-xs text-ink-500 hover:text-fout-600 dark:text-ink-700 dark:hover:text-fout-400"
                                 aria-label="Verwijderen"
                               >
                                 ✕
@@ -685,7 +682,7 @@ export function PotDetail({
                         </td>
                       </tr>
                       {canUseAttachments && expandedTx === tx.id && orgId && (
-                        <tr className="bg-canvas dark:bg-navy-800/40">
+                        <tr className="bg-ink-50 dark:bg-ink-900/40">
                           <td colSpan={isAdmin ? 6 : 5} className="px-4 py-3">
                             <TransactionAttachments
                               orgId={orgId}

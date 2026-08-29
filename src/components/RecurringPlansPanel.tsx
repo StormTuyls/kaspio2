@@ -53,14 +53,14 @@ export function RecurringPlansPanel({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-ink-muted dark:text-navy-300">
+      <p className="text-sm text-ink-muted dark:text-ink-500">
         Terugkerende stortingen en domiciliëringen rond je potjes. Reserveringen
         zet Kaspio 's nachts zelf klaar, of jij bevestigt ze met één klik op het
         dashboard; de echte afhouding herkent Kaspio bij de bankimport.
       </p>
 
       {plans.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-navy-200 bg-canvas px-4 py-6 text-center text-sm text-ink-muted dark:border-navy-700 dark:bg-navy-900/40 dark:text-navy-300">
+        <p className="rounded-xl border border-dashed border-ink-300 bg-ink-50 px-4 py-6 text-center text-sm text-ink-muted dark:border-ink-800 dark:bg-ink-950/40 dark:text-ink-500">
           Nog geen terugkerende boekingen.
         </p>
       ) : (
@@ -111,7 +111,7 @@ function PlanRow({
 
   return (
     <li
-      className={`rounded-xl border border-navy-100 px-3.5 py-3 dark:border-navy-700/60 ${
+      className={`rounded-xl border border-ink-200 px-3.5 py-3 dark:border-ink-800/60 ${
         plan.active ? "" : "opacity-60"
       }`}
     >
@@ -123,24 +123,24 @@ function PlanRow({
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="truncate text-sm font-semibold text-navy-900 dark:text-navy-50">
+            <span className="truncate text-sm font-semibold text-ink-900 dark:text-ink-100">
               {plan.counterparty || (isDom ? "Domiciliëring" : "Storting")}
             </span>
             <span
-              className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+              className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
                 isDom
-                  ? "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                  : "bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300"
+                  ? "bg-uit-100 text-uit-700 dark:bg-uit-700/30 dark:text-uit-400"
+                  : "bg-in-100 text-in-700 dark:bg-in-700/30 dark:text-in-400"
               }`}
             >
               {isDom ? "Domiciliëring" : "Storting"}
             </span>
           </div>
-          <p className="text-xs text-ink-muted dark:text-navy-300">
+          <p className="text-xs text-ink-muted dark:text-ink-500">
             {potName} · dag {plan.day_of_month}
           </p>
         </div>
-        <span className="flex-shrink-0 font-num text-sm font-bold tabular-nums text-navy-900 dark:text-white">
+        <span className="flex-shrink-0 font-num text-sm font-bold tabular-nums text-ink-900 dark:text-white">
           {formatEuro(plan.amount)}
         </span>
       </div>
@@ -148,16 +148,16 @@ function PlanRow({
       <div className="mt-2.5 flex items-center justify-end gap-2 text-xs">
         {confirming ? (
           <>
-            <span className="mr-auto text-ink-muted dark:text-navy-300">Verwijderen?</span>
+            <span className="mr-auto text-ink-muted dark:text-ink-500">Verwijderen?</span>
             <button
               onClick={() => setConfirming(false)}
-              className="rounded-lg border border-navy-200 px-2.5 py-1 font-semibold text-navy-600 dark:border-navy-600 dark:text-navy-200"
+              className="rounded-lg border border-ink-300 px-2.5 py-1 font-semibold text-ink-700 dark:border-ink-600 dark:text-ink-300"
             >
               Nee
             </button>
             <button
               onClick={onRemove}
-              className="rounded-lg bg-rose-600 px-2.5 py-1 font-semibold text-white hover:bg-rose-700"
+              className="rounded-lg bg-fout-600 px-2.5 py-1 font-semibold text-white hover:bg-fout-600"
             >
               Ja, verwijder
             </button>
@@ -166,19 +166,19 @@ function PlanRow({
           <>
             <button
               onClick={onToggle}
-              className="rounded-lg border border-navy-200 px-2.5 py-1 font-semibold text-navy-600 dark:border-navy-600 dark:text-navy-200"
+              className="rounded-lg border border-ink-300 px-2.5 py-1 font-semibold text-ink-700 dark:border-ink-600 dark:text-ink-300"
             >
               {plan.active ? "Pauzeer" : "Activeer"}
             </button>
             <button
               onClick={onEdit}
-              className="rounded-lg border border-navy-200 px-2.5 py-1 font-semibold text-navy-600 dark:border-navy-600 dark:text-navy-200"
+              className="rounded-lg border border-ink-300 px-2.5 py-1 font-semibold text-ink-700 dark:border-ink-600 dark:text-ink-300"
             >
               Bewerk
             </button>
             <button
               onClick={() => setConfirming(true)}
-              className="rounded-lg px-2.5 py-1 font-semibold text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-900/20"
+              className="rounded-lg px-2.5 py-1 font-semibold text-fout-600 hover:bg-fout-100 dark:text-fout-400 dark:hover:bg-fout-600/20"
             >
               Verwijder
             </button>

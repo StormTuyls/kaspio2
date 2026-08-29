@@ -66,27 +66,27 @@ export function TransactionAttachments({ orgId, transactionId, isAdmin }: Props)
   return (
     <div className="space-y-2">
       {loading && attachments.length === 0 ? (
-        <p className="text-xs text-navy-400 dark:text-navy-500">Bijlagen laden…</p>
+        <p className="text-xs text-ink-600 dark:text-ink-700">Bijlagen laden…</p>
       ) : attachments.length === 0 ? (
-        <p className="text-xs text-navy-400 dark:text-navy-500">Nog geen bijlagen.</p>
+        <p className="text-xs text-ink-600 dark:text-ink-700">Nog geen bijlagen.</p>
       ) : (
         <ul className="flex flex-wrap gap-2">
           {attachments.map((att) => (
             <li
               key={att.id}
-              className="flex items-center gap-2 rounded-lg border border-navy-100 bg-white px-2.5 py-1.5 text-xs dark:border-navy-700/60 dark:bg-navy-800/60"
+              className="flex items-center gap-2 rounded-lg border border-ink-200 bg-white px-2.5 py-1.5 text-xs dark:border-ink-800/60 dark:bg-ink-900/60"
             >
               <button
                 type="button"
                 onClick={() => openAttachment(att)}
-                className="flex items-center gap-1.5 font-medium text-teal-700 hover:underline dark:text-teal-300"
+                className="flex items-center gap-1.5 font-medium text-in-700 hover:underline dark:text-in-400"
                 title="Openen"
               >
                 <span aria-hidden>📎</span>
                 <span className="max-w-[12rem] truncate">{att.name}</span>
               </button>
               {att.size ? (
-                <span className="tabular-nums text-navy-400 dark:text-navy-500">
+                <span className="tabular-nums text-ink-600 dark:text-ink-700">
                   {formatSize(att.size)}
                 </span>
               ) : null}
@@ -95,7 +95,7 @@ export function TransactionAttachments({ orgId, transactionId, isAdmin }: Props)
                   type="button"
                   onClick={() => handleRemove(att)}
                   disabled={busy}
-                  className="text-navy-300 hover:text-rose-600 disabled:opacity-50 dark:text-navy-500 dark:hover:text-rose-400"
+                  className="text-ink-500 hover:text-fout-600 disabled:opacity-50 dark:text-ink-700 dark:hover:text-fout-400"
                   aria-label="Bijlage verwijderen"
                 >
                   ✕
@@ -108,7 +108,7 @@ export function TransactionAttachments({ orgId, transactionId, isAdmin }: Props)
 
       {isAdmin && (
         <div className="flex items-center gap-3">
-          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-navy-200 px-2.5 py-1.5 text-xs font-medium text-navy-600 hover:border-teal-400 hover:text-teal-700 dark:border-navy-600 dark:text-navy-300 dark:hover:border-teal-500 dark:hover:text-teal-300">
+          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-ink-300 px-2.5 py-1.5 text-xs font-medium text-ink-700 hover:border-in-600 hover:text-in-700 dark:border-ink-600 dark:text-ink-500 dark:hover:border-in-600 dark:hover:text-in-400">
             <input
               ref={inputRef}
               type="file"
@@ -119,13 +119,13 @@ export function TransactionAttachments({ orgId, transactionId, isAdmin }: Props)
             />
             {busy ? "Bezig…" : "+ Bijlage toevoegen"}
           </label>
-          <span className="text-[11px] text-navy-400 dark:text-navy-500">
+          <span className="text-[11px] text-ink-600 dark:text-ink-700">
             Afbeelding of PDF, max 10 MB
           </span>
         </div>
       )}
 
-      {error && <p className="text-xs text-rose-600 dark:text-rose-400">{error}</p>}
+      {error && <p className="text-xs text-fout-600 dark:text-fout-400">{error}</p>}
     </div>
   );
 }

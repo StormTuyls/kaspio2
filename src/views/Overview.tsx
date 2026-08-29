@@ -11,6 +11,7 @@ import {
 import { potProgress } from "../potProgress";
 import type { Member, Pot, PotGroup, Transaction } from "../types";
 import { UpgradeHint } from "../components/UpgradeHint";
+import { Bedrag } from "../components/Bedrag";
 
 type PotsViewProps = {
   pots: Pot[];
@@ -106,36 +107,50 @@ export function PotsView({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-navy-900 dark:text-white">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <h1 className="titel">
           {seesAll ? "Alle potjes" : "Mijn potjes"}
         </h1>
-        {/* Vier knoppen passen niet naast elkaar op een telefoon; op mobiel
-            krijgen ze een eigen regel en mogen ze onderling wrappen. */}
+        {/* Vier gelijkwaardige knoppen kostten op een telefoon twee volle
+            regels, samen bijna 190px voordat je een potje zag. Nu staat de
+            primaire actie apart en delen de drie hulpacties er één, kleiner.
+            De hiërarchie is meteen ook eerlijker: aanmaken is wat je hier komt
+            doen, importeren doe je één keer. */}
         {isAdmin && (
-          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-            {onImport && (
-              <button onClick={onImport} className="btn-secondary text-sm">
-                Importeer CSV
-              </button>
-            )}
-            {onAddTransaction && (
-              <button onClick={onAddTransaction} className="btn-secondary text-sm">
-                + Transactie
-              </button>
-            )}
-            {onTransfer && (
-              <button onClick={onTransfer} className="btn-secondary text-sm">
-                Verplaats
-              </button>
-            )}
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <div className="flex min-w-0 flex-1 gap-1.5 sm:flex-none">
+              {onImport && (
+                <button
+                  onClick={onImport}
+                  className="btn-ghost min-w-0 truncate px-2.5 text-[0.8125rem] sm:px-3.5 sm:text-sm"
+                >
+                  Importeer CSV
+                </button>
+              )}
+              {onAddTransaction && (
+                <button
+                  onClick={onAddTransaction}
+                  className="btn-ghost min-w-0 truncate px-2.5 text-[0.8125rem] sm:px-3.5 sm:text-sm"
+                >
+                  + Transactie
+                </button>
+              )}
+              {onTransfer && (
+                <button
+                  onClick={onTransfer}
+                  className="btn-ghost min-w-0 truncate px-2.5 text-[0.8125rem] sm:px-3.5 sm:text-sm"
+                >
+                  Verplaats
+                </button>
+              )}
+            </div>
             {canAddPot ? (
-              <button onClick={onAddPot} className="btn-accent text-sm">
+              <button onClick={onAddPot} className="btn-primary flex-shrink-0 text-sm">
                 + Nieuw potje
               </button>
             ) : (
-              <button onClick={onUpgrade} className="btn-accent text-sm">
-                Upgrade voor meer potjes
+              <button onClick={onUpgrade} className="btn-primary flex-shrink-0 text-sm">
+                Upgrade
               </button>
             )}
           </div>
@@ -153,10 +168,10 @@ export function PotsView({
 
       {pots.length === 0 ? (
         <div className="card border-dashed py-14 text-center">
-          <p className="mb-1 text-base font-semibold text-navy-900 dark:text-navy-50">
+          <p className="mb-1 text-base font-semibold text-ink-900 dark:text-ink-100">
             {isAdmin ? "Nog geen potjes" : "Je hebt nog geen potjes"}
           </p>
-          <p className="mb-5 text-sm text-navy-500 dark:text-navy-300">
+          <p className="mb-5 text-sm text-ink-700 dark:text-ink-500">
             {isAdmin
               ? "Maak je eerste potje aan om geldstromen te organiseren."
               : "Vraag de admin om je een potje toe te wijzen."}
@@ -178,7 +193,7 @@ export function PotsView({
           )}
         </div>
       ) : !hasGroups ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="border-t border-ink-200 dark:border-ink-800">
           {pots.map((pot) => (
             <PotCard
               key={pot.id}
@@ -207,12 +222,12 @@ export function PotsView({
               <section
                 key={key}
                 id={`grp-${key}`}
-                className="scroll-mt-24 rounded-2xl border border-navy-100 bg-white/40 p-2 dark:border-navy-700/60 dark:bg-navy-900/30"
+                className="scroll-mt-24 rounded-md border border-ink-200 bg-white/40 p-2 dark:border-ink-800/60 dark:bg-ink-950/30"
               >
                 <button
                   type="button"
                   onClick={() => toggle(key)}
-                  className="flex w-full items-center justify-between gap-2 rounded-xl px-2 py-1.5 text-left transition hover:bg-navy-50 dark:hover:bg-navy-800/50"
+                  className="flex w-full items-center justify-between gap-2 rounded-xl px-2 py-1.5 text-left transition hover:bg-ink-50 dark:hover:bg-ink-900/50"
                   aria-expanded={!isCollapsed}
                 >
                   <span className="flex min-w-0 items-center gap-2">
@@ -225,31 +240,32 @@ export function PotsView({
                       strokeWidth="2.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className={`flex-shrink-0 text-navy-400 transition-transform ${
+                      className={`flex-shrink-0 text-ink-600 transition-transform ${
                         isCollapsed ? "" : "rotate-90"
                       }`}
                     >
                       <polyline points="9 18 15 12 9 6" />
                     </svg>
                     <h3
-                      className={`truncate text-sm font-bold uppercase tracking-wider ${
+                      className={`truncate text-[0.9375rem] font-semibold ${
                         muted
-                          ? "text-navy-400 dark:text-navy-400"
-                          : "text-navy-600 dark:text-navy-200"
+                          ? "text-ink-600 dark:text-ink-400"
+                          : "text-ink-900 dark:text-ink-100"
                       }`}
                     >
                       {label}
                     </h3>
-                    <span className="rounded-full bg-navy-100 px-1.5 text-[11px] font-semibold text-navy-500 dark:bg-navy-800 dark:text-navy-300">
+                    <span className="rounded-full bg-ink-100 px-1.5 text-[11px] font-semibold text-ink-700 dark:bg-ink-900 dark:text-ink-500">
                       {secPots.length}
                     </span>
                   </span>
-                  <span className="flex-shrink-0 text-sm font-semibold tabular-nums text-navy-700 dark:text-navy-200">
-                    {formatEuro(sumBalance(secPots))}
-                  </span>
+                  <Bedrag
+                    waarde={sumBalance(secPots)}
+                    className="flex-shrink-0 text-[0.9375rem] font-semibold"
+                  />
                 </button>
                 {!isCollapsed && (
-                  <div className="mt-2 grid gap-3 px-0.5 pb-0.5 sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="mt-1 border-t border-ink-200 dark:border-ink-800">
                     {secPots.map((pot) => (
                       <PotCard
                         key={pot.id}
@@ -270,6 +286,23 @@ export function PotsView({
   );
 }
 
+/**
+ * Eén potje als regel in een lijst, niet als doos.
+ *
+ * Waarom een regel en geen kaart: deze klant heeft 120 posten. Honderdtwintig
+ * witte dozen op een bijna-witte achtergrond geven geen hiërarchie, alleen
+ * scrollwerk. Een geruled lijstje leest zoals het rekenblad waar deze mensen
+ * vandaan komen: naam links, bedrag rechts, uitgelijnd.
+ *
+ * Drie dingen die bewust weg zijn ten opzichte van de vorige kaart:
+ *   - de gekleurde zijstreep. De potjeskleur stond er twee keer op (bolletje
+ *     en streep); één keer is genoeg en een streep van 6px is geen informatie.
+ *   - "Geen verantwoordelijke" en "Nog geen inkomsten". Wat leeg is neemt geen
+ *     ruimte in, anders staat er 67 keer dezelfde lege regel.
+ *   - de <button> om de hele kaart. De toegankelijke naam was de volledige
+ *     inhoud, dus een schermlezer las per potje een alinea voor. Nu is de naam
+ *     de knop en is de rest gewone tekst.
+ */
 export function PotCard({
   pot,
   owner,
@@ -282,95 +315,72 @@ export function PotCard({
   onSelect: () => void;
 }) {
   const balance = calcBalance(transactions, pot.id);
-  const potTx = transactions.filter((t) => t.potId === pot.id);
-  const lastIncoming = [...potTx]
-    .filter((t) => t.direction === "in")
-    .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn))[0];
   const progress = potProgress(
     pot.targetAmount,
     pot.targetKind,
     { balance, totalOut: calcSpent(transactions, pot.id) },
     pot.forecastAmount,
   );
-
-  const dotColor = pot.color ?? "#1D9E75";
+  const kleur = pot.color ?? "currentColor";
 
   return (
-    <button
-      onClick={onSelect}
-      className="card group relative flex flex-col overflow-hidden p-5 text-left transition duration-200 hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-lg dark:hover:border-teal-800"
-    >
+    <div className="group grid grid-cols-[auto_1fr_auto] items-baseline gap-x-3 border-b border-ink-200 py-2.5 transition-colors hover:bg-ink-50 sm:gap-x-4 dark:border-ink-800 dark:hover:bg-ink-900">
       <span
         aria-hidden
-        className="absolute left-0 top-0 h-full w-1.5"
-        style={{ backgroundColor: dotColor }}
+        className="h-2 w-2 translate-y-[-1px] rounded-full"
+        style={{ backgroundColor: kleur }}
       />
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <span
-            aria-hidden
-            className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-            style={{ backgroundColor: dotColor }}
-          />
-          <h3 className="truncate text-base font-semibold text-navy-900 transition group-hover:text-teal-700 dark:text-navy-50 dark:group-hover:text-teal-300">
-            {pot.name}
-          </h3>
-        </div>
-        <span className="text-navy-300 transition group-hover:translate-x-0.5 group-hover:text-teal-600 dark:text-navy-500 dark:group-hover:text-teal-400">
-          →
-        </span>
-      </div>
-      <div className="mb-4 flex items-center gap-2 text-sm text-navy-500 dark:text-navy-300">
-        <Avatar name={owner?.name ?? "—"} size="sm" />
-        <span className="truncate">{owner?.name ?? "Geen verantwoordelijke"}</span>
-      </div>
 
-      <div className="mb-3 text-2xl font-bold tabular-nums text-navy-900 dark:text-navy-50">
-        {formatEuro(balance)}
-      </div>
-
-      {progress !== null && (
-        <div className="mb-3">
-          <div className="mb-1 flex justify-between text-xs text-navy-400 dark:text-navy-300">
-            <span>{progress.label}</span>
-            <span
-              className={`font-semibold ${
-                progress.over
-                  ? "text-rose-600 dark:text-rose-400"
-                  : "text-teal-600 dark:text-teal-400"
-              }`}
-            >
-              {progress.pct.toFixed(0)}%
-            </span>
+      <div className="min-w-0">
+        <button
+          onClick={onSelect}
+          className="max-w-full truncate text-left text-[0.9375rem] font-medium text-ink-900 underline-offset-4 hover:underline dark:text-ink-100"
+        >
+          {pot.name}
+        </button>
+        {/* Alleen tonen wat er echt is. */}
+        {(owner || progress) && (
+          <div className="mt-0.5 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[0.75rem] text-ink-600 dark:text-ink-400">
+            {owner && <span className="truncate">{owner.name}</span>}
+            {progress && (
+              <span className="flex items-baseline gap-1.5">
+                <span>{progress.label}</span>
+                <span
+                  className={`font-num font-semibold ${
+                    progress.over ? "text-fout-600 dark:text-fout-400" : ""
+                  }`}
+                >
+                  {progress.pct.toFixed(0)}%
+                </span>
+              </span>
+            )}
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-navy-100 dark:bg-navy-700">
-            <div
-              className={`h-full rounded-full transition-all ${
-                progress.over
-                  ? "bg-gradient-to-r from-rose-400 to-rose-600"
-                  : "bg-gradient-to-r from-teal-400 to-teal-600"
+        )}
+      </div>
+
+      {/* Vaste kolombreedte, anders schuift de balk mee met de lengte van het
+          bedrag en lijnt er niets meer uit. */}
+      <div className="flex items-baseline justify-end gap-3 justify-self-end">
+        {progress && (
+          /* Massieve kleur, geen verloop: een verloop over 3px is onzichtbaar. */
+          <span
+            className="hidden h-1 w-20 overflow-hidden rounded-full bg-ink-200 sm:block dark:bg-ink-800"
+            aria-hidden
+          >
+            <span
+              className={`block h-full rounded-full ${
+                progress.over ? "bg-fout-600" : "bg-in-600"
               }`}
               style={{ width: `${progress.barPct}%` }}
             />
-          </div>
-        </div>
-      )}
-
-      <div className="mt-auto flex items-center justify-between border-t border-navy-100 pt-3 text-xs dark:border-navy-700/60">
-        {lastIncoming ? (
-          <>
-            <span className="text-navy-500 dark:text-navy-300">
-              Laatste in: {formatDate(lastIncoming.occurredOn)}
-            </span>
-            <span className="font-semibold tabular-nums text-teal-700 dark:text-teal-300">
-              +{formatEuro(lastIncoming.amount)}
-            </span>
-          </>
-        ) : (
-          <span className="text-navy-400 dark:text-navy-400">Nog geen inkomsten</span>
+          </span>
         )}
+        <Bedrag
+          waarde={balance}
+          className="min-w-[7rem] text-right text-[0.9375rem] font-semibold sm:min-w-[8.5rem]"
+        />
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -383,11 +393,11 @@ export function RecentActivity({
 }) {
   return (
     <aside className="card flex h-fit flex-col p-5">
-      <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+      <h2 className="mb-4 text-sm font-semibold text-ink-600 dark:text-ink-500">
         Recente activiteit
       </h2>
       {recent.length === 0 ? (
-        <p className="text-sm text-navy-400 dark:text-navy-400">Nog geen transacties.</p>
+        <p className="text-sm text-ink-600 dark:text-ink-600">Nog geen transacties.</p>
       ) : (
         <ul className="space-y-3">
           {recent.map((tx) => {
@@ -399,8 +409,8 @@ export function RecentActivity({
                 <div
                   className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
                     positive
-                      ? "bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400"
-                      : "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                      ? "bg-in-100 text-in-600 dark:bg-in-700/30 dark:text-in-400"
+                      : "bg-uit-100 text-uit-700 dark:bg-uit-700/30 dark:text-uit-400"
                   }`}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -413,21 +423,21 @@ export function RecentActivity({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="truncate text-sm font-medium text-navy-900 dark:text-navy-50">
+                    <span className="truncate text-sm font-medium text-ink-900 dark:text-ink-100">
                       {tx.counterparty}
                     </span>
                     <span
                       className={`whitespace-nowrap text-sm font-semibold tabular-nums ${
                         positive
-                          ? "text-teal-700 dark:text-teal-300"
-                          : "text-amber-700 dark:text-amber-400"
+                          ? "text-in-700 dark:text-in-400"
+                          : "text-uit-700 dark:text-uit-400"
                       }`}
                     >
                       {positive ? "+" : "−"}
                       {formatEuro(tx.amount)}
                     </span>
                   </div>
-                  <div className="flex items-baseline justify-between gap-2 text-xs text-navy-400 dark:text-navy-400">
+                  <div className="flex items-baseline justify-between gap-2 text-xs text-ink-600 dark:text-ink-600">
                     <span className="truncate">{potLabel}</span>
                     <span className="whitespace-nowrap">{formatDate(tx.occurredOn)}</span>
                   </div>
@@ -456,33 +466,33 @@ export function Stat({
 }) {
   const ring = {
     "teal-bold":
-      "before:bg-gradient-to-b before:from-teal-500 before:to-teal-700",
-    teal: "before:bg-teal-400",
-    amber: "before:bg-amber-500",
-    rose: "before:bg-rose-500",
+      "before:bg-gradient-to-b before:from-in-500 before:to-in-600",
+    teal: "before:bg-in-300",
+    amber: "before:bg-uit-600",
+    rose: "before:bg-fout-600",
   }[accent];
   const isHero = accent === "teal-bold";
   return (
     <div
       className={`card relative overflow-hidden p-5 before:absolute before:left-0 before:top-0 before:h-full before:w-1 ${ring} ${
         isHero
-          ? "ring-1 ring-teal-100/60 dark:ring-teal-900/40"
+          ? "ring-1 ring-in-600/60 dark:ring-in-600/40"
           : ""
       }`}
     >
-      <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+      <p className="mb-1 text-xs font-semibold text-ink-600 dark:text-ink-500">
         {label}
       </p>
       <p
         className={`font-extrabold ${
           isHero
-            ? "text-teal-700 dark:text-teal-300"
-            : "text-navy-900 dark:text-navy-50"
+            ? "text-in-700 dark:text-in-400"
+            : "text-ink-900 dark:text-ink-100"
         } ${big ? "text-3xl" : "text-2xl"}`}
       >
         {value}
       </p>
-      {delta && <p className="mt-0.5 text-xs text-navy-500 dark:text-navy-400">{delta}</p>}
+      {delta && <p className="mt-0.5 text-xs text-ink-700 dark:text-ink-600">{delta}</p>}
     </div>
   );
 }
@@ -492,7 +502,7 @@ export function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md"
   const cls = size === "sm" ? "h-6 w-6 text-[10px]" : "h-9 w-9 text-sm";
   return (
     <span
-      className={`flex flex-shrink-0 items-center justify-center rounded-full bg-navy-100 font-semibold text-navy-700 dark:bg-navy-800 dark:text-navy-100 ${cls}`}
+      className={`flex flex-shrink-0 items-center justify-center rounded-full bg-ink-100 font-semibold text-ink-800 dark:bg-ink-900 dark:text-ink-200 ${cls}`}
     >
       {initials}
     </span>

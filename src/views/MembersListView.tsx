@@ -46,12 +46,12 @@ export function MembersListView({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 rounded-2xl border border-navy-100 bg-white p-4 sm:flex-row sm:items-center sm:justify-between dark:border-navy-700 dark:bg-navy-900">
+      <div className="flex flex-col gap-3 rounded-md border border-ink-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between dark:border-ink-800 dark:bg-ink-950">
         <div className="min-w-0">
-          <h3 className="font-bold text-navy-900 dark:text-white">
+          <h3 className="font-bold text-ink-900 dark:text-white">
             Iemand uitnodigen
           </h3>
-          <p className="text-sm text-navy-500 dark:text-navy-300">
+          <p className="text-sm text-ink-700 dark:text-ink-500">
             Admin, pot-owner of lezer. Krijg een KASP-code om door te sturen.
           </p>
         </div>
@@ -61,8 +61,8 @@ export function MembersListView({
       </div>
 
       {pendingInvites.length > 0 && (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900/40 dark:bg-amber-950/20">
-          <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-amber-800 dark:text-amber-200">
+        <section className="rounded-md border border-uit-300 bg-uit-100 p-5 dark:border-uit-700/40 dark:bg-uit-700/20">
+          <h3 className="mb-3 text-sm font-bold text-uit-700 dark:text-uit-300">
             Openstaande uitnodigingen ({pendingInvites.length})
           </h3>
           <ul className="space-y-2">
@@ -77,13 +77,13 @@ export function MembersListView({
               return (
                 <li
                   key={inv.id}
-                  className="flex flex-col gap-1 rounded-lg bg-white px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-2 dark:bg-navy-900"
+                  className="flex flex-col gap-1 rounded-lg bg-white px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-2 dark:bg-ink-950"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="break-all font-medium text-navy-900 sm:truncate dark:text-white">
+                    <div className="break-all font-medium text-ink-900 sm:truncate dark:text-white">
                       {inv.email}
                     </div>
-                    <div className="text-xs text-navy-400">
+                    <div className="text-xs text-ink-600">
                       {roleLabel(inv.role)}
                       {invitePots.length > 0 &&
                         ` · ${invitePots.join(", ")}`}
@@ -92,7 +92,7 @@ export function MembersListView({
                   </div>
                   <button
                     onClick={() => onRevokeInvite(inv.id)}
-                    className="self-start text-xs font-semibold text-rose-600 hover:underline sm:self-auto"
+                    className="self-start text-xs font-semibold text-fout-600 hover:underline sm:self-auto"
                   >
                     Intrekken
                   </button>
@@ -103,16 +103,16 @@ export function MembersListView({
         </section>
       )}
 
-      <section className="rounded-2xl border border-navy-100 bg-white p-5 dark:border-navy-700 dark:bg-navy-900">
-        <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-navy-500 dark:text-navy-300">
+      <section className="rounded-md border border-ink-200 bg-white p-5 dark:border-ink-800 dark:bg-ink-950">
+        <h3 className="mb-4 text-sm font-bold text-ink-700 dark:text-ink-500">
           Actieve leden ({grouped.length})
         </h3>
         {grouped.length === 0 ? (
-          <p className="text-sm text-navy-400">
+          <p className="text-sm text-ink-600">
             Nog geen actieve leden. Nodig iemand uit met de knop hierboven.
           </p>
         ) : (
-          <ul className="divide-y divide-navy-100 dark:divide-navy-700">
+          <ul className="divide-y divide-ink-200 dark:divide-ink-800">
             {grouped.map((m) => (
               <MemberRow
                 key={m.user_id}
@@ -181,22 +181,22 @@ function MemberRow({
     <li className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="min-w-0 truncate font-medium text-navy-900 dark:text-white">
+          <span className="min-w-0 truncate font-medium text-ink-900 dark:text-white">
             {member.full_name}
           </span>
           {isCurrentUser && (
-            <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">
+            <span className="rounded-full bg-in-100 px-2 py-0.5 text-[10px] font-bold text-in-700 dark:bg-in-700/40 dark:text-in-400">
               jij
             </span>
           )}
           {isOnlyAdmin && (
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+            <span className="rounded-full bg-uit-100 px-2 py-0.5 text-[10px] font-bold text-uit-700">
               enige admin
             </span>
           )}
         </div>
-        <div className="text-xs text-navy-400">{member.email}</div>
-        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-navy-500">
+        <div className="text-xs text-ink-600">{member.email}</div>
+        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-ink-700">
           <span className="font-semibold">{roleLabel(member.effectiveRole)}</span>
           {member.effectiveRole === "group_owner" && groupNames.length > 0 && (
             <>
@@ -205,7 +205,7 @@ function MemberRow({
                 {groupNames.map((naam) => (
                   <span
                     key={naam}
-                    className="rounded-md bg-navy-100 px-1.5 py-0.5 text-[11px] text-navy-700 dark:bg-navy-700 dark:text-navy-100"
+                    className="rounded-md bg-ink-100 px-1.5 py-0.5 text-[11px] text-ink-800 dark:bg-ink-800 dark:text-ink-200"
                   >
                     {naam}
                   </span>
@@ -223,7 +223,7 @@ function MemberRow({
                   return (
                     <span
                       key={id}
-                      className="inline-flex items-center gap-1 rounded-full bg-canvas px-2 py-0.5 dark:bg-navy-800"
+                      className="inline-flex items-center gap-1 rounded-full bg-ink-50 px-2 py-0.5 dark:bg-ink-900"
                     >
                       <span
                         aria-hidden

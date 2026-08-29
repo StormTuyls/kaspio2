@@ -53,15 +53,15 @@ export function PasswordResetView({ onDone }: Props) {
 
   if (status === "success") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-canvas px-6 dark:bg-navy-950">
+      <div className="flex min-h-screen items-center justify-center bg-ink-50 px-6 dark:bg-ink-950">
         <div className="card max-w-md p-7 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-mint-100 text-2xl text-mint-700">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-in-100 text-2xl text-in-600">
             ✓
           </div>
-          <h1 className="mb-2 text-xl font-bold text-navy-900 dark:text-white">
+          <h1 className="mb-2 text-xl font-bold text-ink-900 dark:text-white">
             Wachtwoord aangepast
           </h1>
-          <p className="text-sm text-navy-500 dark:text-navy-300">
+          <p className="text-sm text-ink-700 dark:text-ink-500">
             Je wordt zo doorgestuurd naar de app.
           </p>
         </div>
@@ -70,20 +70,20 @@ export function PasswordResetView({ onDone }: Props) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-canvas px-6 dark:bg-navy-950">
+    <div className="flex min-h-screen items-center justify-center bg-ink-50 px-6 dark:bg-ink-950">
       <div className="w-full max-w-md">
         <div className="mb-6 flex items-center justify-center gap-2.5">
           <Mark size={36} />
-          <span className="text-lg font-bold text-navy-900 dark:text-white">
+          <span className="text-lg font-bold text-ink-900 dark:text-white">
             Kaspio
           </span>
         </div>
 
         <div className="card p-7">
-          <h1 className="mb-2 text-xl font-bold text-navy-900 dark:text-white">
+          <h1 className="mb-2 text-xl font-bold text-ink-900 dark:text-white">
             Stel een nieuw wachtwoord in
           </h1>
-          <p className="mb-6 text-sm text-navy-500 dark:text-navy-300">
+          <p className="mb-6 text-sm text-ink-700 dark:text-ink-500">
             Kies een sterk wachtwoord. Daarna ben je weer ingelogd.
           </p>
 
@@ -113,7 +113,7 @@ export function PasswordResetView({ onDone }: Props) {
             </Field>
 
             {error && (
-              <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
                 {error}
               </div>
             )}
@@ -129,7 +129,7 @@ export function PasswordResetView({ onDone }: Props) {
             <button
               type="button"
               onClick={cancel}
-              className="block w-full text-center text-xs text-navy-400 hover:text-navy-700 dark:hover:text-navy-100"
+              className="block w-full text-center text-xs text-ink-600 hover:text-ink-800 dark:hover:text-ink-200"
             >
               Annuleren en uitloggen
             </button>
@@ -151,12 +151,12 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+      <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
         {label}
       </span>
       {children}
       {hint && (
-        <span className="mt-1 block text-xs text-navy-400 dark:text-navy-300">
+        <span className="mt-1 block text-xs text-ink-600 dark:text-ink-500">
           {hint}
         </span>
       )}

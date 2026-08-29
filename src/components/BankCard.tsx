@@ -63,48 +63,48 @@ export function BankCard({
   const potsPct = Math.min(100, Math.max(0, (inPots / span) * 100));
 
   return (
-    <div className="flex h-full flex-col rounded-2xl bg-navy-900 p-5 text-white shadow-[0_1px_2px_rgba(15,23,42,0.06),0_4px_18px_-4px_rgba(15,23,42,0.18)] dark:bg-navy-700 dark:shadow-[0_1px_2px_rgba(0,0,0,0.4),0_4px_18px_-4px_rgba(0,0,0,0.5)]">
+    <div className="flex h-full flex-col rounded-md bg-ink-950 p-5 text-white shadow-[0_1px_2px_rgba(15,23,42,0.06),0_4px_18px_-4px_rgba(15,23,42,0.18)] dark:bg-ink-800 dark:shadow-[0_1px_2px_rgba(0,0,0,0.4),0_4px_18px_-4px_rgba(0,0,0,0.5)]">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="font-num text-[11px] font-semibold uppercase tracking-[0.16em] text-navy-300 dark:text-navy-200">
+        <p className="font-num text-[11px] font-semibold text-ink-500 dark:text-ink-300">
           {label}
         </p>
-        <p className="text-xs text-navy-300 dark:text-navy-200">
+        <p className="text-xs text-ink-500 dark:text-ink-300">
           {potCount} {potCount === 1 ? "potje" : "potjes"} · {groupCount}{" "}
           {groupCount === 1 ? "groep" : "groepen"}
         </p>
       </div>
 
-      <p className="mt-1 font-num text-4xl font-extrabold tracking-tight tabular-nums">
+      <p className="mt-1 font-num text-[clamp(1.75rem,1.4rem+1.4vw,2.25rem)] font-bold tabular-nums [letter-spacing:-0.02em]">
         {loading ? "\u2014" : formatEuro(total)}
       </p>
 
       {/* De verdeelbalk hangt onderaan (mt-auto), zodat de kaart even hoog kan
           zijn als de kolom ernaast zonder een gat onder de inhoud. */}
       <div className="mt-auto pt-5" />
-      <div className="flex h-2 overflow-hidden rounded-full bg-navy-700 dark:bg-navy-800">
-        <div className="bg-teal-500" style={{ width: `${potsPct}%` }} />
-        <div className={hasUnallocated ? "flex-1 bg-amber-400" : "flex-1"} />
+      <div className="flex h-2 overflow-hidden rounded-full bg-ink-800 dark:bg-ink-900">
+        <div className="bg-in-600" style={{ width: `${potsPct}%` }} />
+        <div className={hasUnallocated ? "flex-1 bg-uit-300" : "flex-1"} />
       </div>
 
       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs">
-        <span className="text-navy-300 dark:text-navy-200">
+        <span className="text-ink-500 dark:text-ink-300">
           <span className="font-num font-semibold tabular-nums">
             {loading ? "\u2014" : formatEuro(inPots)}
           </span>{" "}
           in potjes
         </span>
         {loading ? null : hasUnallocated ? (
-          <span className="font-semibold text-amber-300">
+          <span className="font-semibold text-uit-400">
             <span className="font-num tabular-nums">{formatEuro(unallocated)}</span> nog te
             verdelen
           </span>
         ) : overDistributed ? (
-          <span className="text-rose-300">
+          <span className="text-fout-400">
             Hoofdpot staat{" "}
             <span className="font-num font-semibold tabular-nums">{formatEuro(unallocated)}</span>
           </span>
         ) : (
-          <span className="text-teal-300">Alles verdeeld</span>
+          <span className="text-in-400">Alles verdeeld</span>
         )}
       </div>
 
@@ -115,7 +115,7 @@ export function BankCard({
           {onDistribute && hasUnallocated && (
             <button
               onClick={onDistribute}
-              className="rounded-xl bg-teal-500 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-teal-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
+              className="rounded-md bg-white px-3.5 py-2 text-sm font-semibold text-ink-950 transition-colors hover:bg-ink-100"
             >
               Verdelen
             </button>
@@ -123,7 +123,7 @@ export function BankCard({
           {onOpenInbox && unassignedCount > 0 && (
             <button
               onClick={onOpenInbox}
-              className="rounded-xl bg-white/10 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
+              className="rounded-md bg-white/10 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/15"
             >
               {unassignedCount} {unassignedCount === 1 ? "transactie" : "transacties"} toewijzen
             </button>
@@ -133,8 +133,8 @@ export function BankCard({
               onClick={onAddMoney}
               className={
                 hasUnallocated
-                  ? "rounded-xl px-3.5 py-2 text-sm font-semibold text-navy-200 transition hover:bg-white/10 hover:text-white"
-                  : "rounded-xl bg-teal-500 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-teal-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
+                  ? "rounded-md px-3.5 py-2 text-sm font-semibold text-ink-300 transition-colors hover:bg-white/10 hover:text-white"
+                  : "rounded-md bg-white px-3.5 py-2 text-sm font-semibold text-ink-950 transition-colors hover:bg-ink-100"
               }
             >
               Geld toevoegen
