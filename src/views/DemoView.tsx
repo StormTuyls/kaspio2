@@ -48,16 +48,16 @@ export function DemoView({ onSignup, onExit }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-canvas dark:bg-navy-950">
+    <div className="min-h-screen bg-ink-50 dark:bg-ink-950">
       <DemoBanner onSignup={onSignup} onExit={onExit} />
 
-      <header className="border-b border-navy-100 bg-white/80 backdrop-blur dark:border-navy-800 dark:bg-navy-900/60">
+      <header className="border-b border-ink-200 bg-white/80 backdrop-blur dark:border-ink-800 dark:bg-ink-950/60">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-8">
           <div className="flex items-center gap-3">
             <Mark size={30} />
             <OrgSwitcher orgId={org.id} onChange={switchOrg} />
           </div>
-          <nav className="flex items-center gap-1 rounded-xl bg-canvas p-1 dark:bg-navy-800">
+          <nav className="flex items-center gap-1 rounded-xl bg-ink-50 p-1 dark:bg-ink-900">
             <TabButton active={!selectedPot && tab === "overzicht"} onClick={() => switchTab("overzicht")}>
               Overzicht
             </TabButton>
@@ -124,7 +124,7 @@ function OrgSwitcher({ orgId, onChange }: { orgId: string; onChange: (id: string
       <select
         value={orgId}
         onChange={(e) => onChange(e.target.value)}
-        className="cursor-pointer rounded-lg border border-navy-200 bg-white py-1.5 pl-3 pr-8 text-sm font-bold text-navy-900 shadow-sm transition hover:border-navy-300 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-navy-700 dark:bg-navy-800 dark:text-white"
+        className="cursor-pointer rounded-lg border border-ink-300 bg-white py-1.5 pl-3 pr-8 text-sm font-bold text-ink-900 shadow-sm transition hover:border-ink-300 focus:outline-none focus:ring-2 focus:ring-in-600 dark:border-ink-800 dark:bg-ink-900 dark:text-white"
       >
         {DEMO_ORGS.map((o) => (
           <option key={o.id} value={o.id}>
@@ -134,7 +134,7 @@ function OrgSwitcher({ orgId, onChange }: { orgId: string; onChange: (id: string
       </select>
       <span
         aria-hidden
-        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-navy-400"
+        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-600"
       >
         ▾
       </span>
@@ -149,10 +149,10 @@ function OrgSwitcher({ orgId, onChange }: { orgId: string; onChange: (id: string
  */
 function DemoBanner({ onSignup, onExit }: { onSignup: () => void; onExit: () => void }) {
   return (
-    <div className="sticky top-0 z-50 bg-navy-900 text-white">
+    <div className="sticky top-0 z-50 bg-ink-950 text-white">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2.5 sm:px-8">
         <div className="flex items-center gap-2 text-sm">
-          <span className="rounded-full bg-mint-500/20 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-mint-300">
+          <span className="rounded-full bg-in-600/20 px-2 py-0.5 text-xs font-bold text-in-400">
             Demo
           </span>
           <span className="hidden text-white/80 sm:inline">
@@ -169,7 +169,7 @@ function DemoBanner({ onSignup, onExit }: { onSignup: () => void; onExit: () => 
           </button>
           <button
             onClick={onSignup}
-            className="rounded-lg bg-mint-500 px-4 py-1.5 text-sm font-bold text-navy-900 transition hover:bg-mint-400"
+            className="rounded-lg bg-in-600 px-4 py-1.5 text-sm font-bold text-ink-900 transition hover:bg-in-600"
           >
             Gratis account maken
           </button>
@@ -193,8 +193,8 @@ function TabButton({
       onClick={onClick}
       className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
         active
-          ? "bg-white text-navy-900 shadow-sm dark:bg-navy-700 dark:text-white"
-          : "text-navy-500 hover:text-navy-900 dark:text-navy-300 dark:hover:text-white"
+          ? "bg-white text-ink-900 shadow-sm dark:bg-ink-800 dark:text-white"
+          : "text-ink-700 hover:text-ink-900 dark:text-ink-500 dark:hover:text-white"
       }`}
     >
       {children}

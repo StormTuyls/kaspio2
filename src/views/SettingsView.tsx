@@ -66,11 +66,11 @@ export function SettingsView({
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-sm font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+        <p className="text-sm font-semibold text-ink-600 dark:text-ink-500">
           Account
         </p>
-        <h1 className="text-2xl font-bold text-navy-900 dark:text-white">Instellingen</h1>
-        <p className="mt-1 text-sm text-navy-500 dark:text-navy-300">
+        <h1 className="text-2xl font-bold text-ink-900 dark:text-white">Instellingen</h1>
+        <p className="mt-1 text-sm text-ink-700 dark:text-ink-500">
           Beheer je organisatie en hoe je op de hoogte gehouden wordt.
         </p>
       </div>
@@ -101,10 +101,10 @@ export function SettingsView({
       />
 
       <div className="card p-6">
-        <h2 className="mb-1 text-base font-semibold text-navy-900 dark:text-navy-50">
+        <h2 className="mb-1 text-base font-semibold text-ink-900 dark:text-ink-100">
           Organisatie
         </h2>
-        <p className="mb-4 text-sm text-navy-500 dark:text-navy-300">
+        <p className="mb-4 text-sm text-ink-700 dark:text-ink-500">
           Profielgegevens van je account.
         </p>
         <dl className="grid gap-4 sm:grid-cols-2">
@@ -123,10 +123,10 @@ export function SettingsView({
       <div className="card p-6">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-navy-900 dark:text-navy-50">
+            <h2 className="text-base font-semibold text-ink-900 dark:text-ink-100">
               E-mailmeldingen
             </h2>
-            <p className="text-sm text-navy-500 dark:text-navy-300">
+            <p className="text-sm text-ink-700 dark:text-ink-500">
               Krijg een mail wanneer er iets belangrijks gebeurt. Beschikbaar
               vanaf Pro.
             </p>
@@ -134,7 +134,7 @@ export function SettingsView({
           <span className="badge-amber">Pro</span>
         </div>
 
-        <div className="space-y-1 divide-y divide-navy-100 dark:divide-navy-700/60">
+        <div className="space-y-1 divide-y divide-ink-200 dark:divide-ink-800/60">
           <Toggle
             label="Bij nieuwe transactie"
             description="Potverantwoordelijke en beheerders krijgen een mail bij een nieuwe transactie."
@@ -155,9 +155,9 @@ export function SettingsView({
           />
         </div>
 
-        <div className="mt-6 border-t border-navy-100 pt-5 dark:border-navy-700/60">
-          <p className="mb-2 text-sm font-semibold text-navy-900 dark:text-navy-50">Digest</p>
-          <p className="mb-3 text-xs text-navy-500 dark:text-navy-300">
+        <div className="mt-6 border-t border-ink-200 pt-5 dark:border-ink-800/60">
+          <p className="mb-2 text-sm font-semibold text-ink-900 dark:text-ink-100">Digest</p>
+          <p className="mb-3 text-xs text-ink-700 dark:text-ink-500">
             Ontvang periodiek een samenvatting in plaats van losse meldingen.
           </p>
           <div className="grid grid-cols-3 gap-2">
@@ -167,8 +167,8 @@ export function SettingsView({
                 onClick={() => onChange({ digestFrequency: f })}
                 className={`rounded-xl border-2 px-3 py-2 text-sm font-semibold transition ${
                   notifications.digestFrequency === f
-                    ? "border-teal-500 bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300"
-                    : "border-navy-100 text-navy-500 hover:border-navy-200 dark:border-navy-700 dark:text-navy-300 dark:hover:border-navy-600"
+                    ? "border-in-600 bg-in-100 text-in-700 dark:bg-in-700/30 dark:text-in-400"
+                    : "border-ink-200 text-ink-700 hover:border-ink-300 dark:border-ink-800 dark:text-ink-500 dark:hover:border-ink-600"
                 }`}
               >
                 {labelForDigest(f)}
@@ -229,10 +229,10 @@ function ApprovalSection({
 
   return (
     <div className="card p-6">
-      <h2 className="mb-1 text-base font-semibold text-navy-900 dark:text-navy-50">
+      <h2 className="mb-1 text-base font-semibold text-ink-900 dark:text-ink-100">
         Goedkeuring van uitgaven
       </h2>
-      <p className="mb-4 text-sm text-navy-500 dark:text-navy-300">
+      <p className="mb-4 text-sm text-ink-700 dark:text-ink-500">
         Uitgaven van potbeheerders boven de drempel komen eerst in een
         goedkeuringswachtrij op het dashboard. Beheerders boeken meteen.
       </p>
@@ -242,7 +242,7 @@ function ApprovalSection({
         onChange={setEnabled}
       />
       <label className="mt-4 block">
-        <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+        <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
           Drempelbedrag (€)
         </span>
         <input
@@ -254,12 +254,12 @@ function ApprovalSection({
           disabled={!enabled}
           className="input max-w-[160px] disabled:opacity-50"
         />
-        <span className="mt-1 block text-xs text-navy-400 dark:text-navy-300">
+        <span className="mt-1 block text-xs text-ink-600 dark:text-ink-500">
           Uitgaven vanaf dit bedrag vereisen goedkeuring. 0 = alle uitgaven.
         </span>
       </label>
       {error && (
-        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <div className="mt-3 rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
           {error}
         </div>
       )}
@@ -296,17 +296,17 @@ function DangerZone({
   }
 
   return (
-    <div className="rounded-2xl border border-rose-200 bg-white p-6 dark:border-rose-900/40 dark:bg-navy-900">
-      <h2 className="mb-1 text-base font-semibold text-rose-700 dark:text-rose-400">
+    <div className="rounded-md border border-fout-100 bg-white p-6 dark:border-fout-100/40 dark:bg-ink-950">
+      <h2 className="mb-1 text-base font-semibold text-fout-600 dark:text-fout-400">
         Gevarenzone
       </h2>
-      <p className="mb-4 text-sm text-navy-500 dark:text-navy-300">
+      <p className="mb-4 text-sm text-ink-700 dark:text-ink-500">
         Verwijder deze organisatie en <strong>alle</strong> bijhorende data:
         potjes, transacties, leden, uitnodigingen en abonnement. Dit kan niet
         ongedaan gemaakt worden.
       </p>
       <label className="block">
-        <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+        <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
           Typ <strong>{orgName}</strong> om te bevestigen
         </span>
         <input
@@ -318,7 +318,7 @@ function DangerZone({
         />
       </label>
       {error && (
-        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <div className="mt-3 rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
           {error}
         </div>
       )}
@@ -342,11 +342,11 @@ function labelForDigest(f: DigestFrequency): string {
 function Field({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
-      <dt className="mb-0.5 text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+      <dt className="mb-0.5 text-xs font-semibold text-ink-600 dark:text-ink-500">
         {label}
       </dt>
       <dd
-        className={`text-sm font-medium text-navy-900 dark:text-navy-50 ${
+        className={`text-sm font-medium text-ink-900 dark:text-ink-100 ${
           mono ? "font-mono" : ""
         }`}
       >
@@ -373,14 +373,14 @@ function Toggle({
       className="flex w-full items-center justify-between gap-4 py-3 text-left"
     >
       <div>
-        <div className="text-sm font-medium text-navy-900 dark:text-navy-50">{label}</div>
+        <div className="text-sm font-medium text-ink-900 dark:text-ink-100">{label}</div>
         {description && (
-          <div className="text-xs text-navy-500 dark:text-navy-300">{description}</div>
+          <div className="text-xs text-ink-700 dark:text-ink-500">{description}</div>
         )}
       </div>
       <span
         className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition ${
-          value ? "bg-teal-500" : "bg-navy-200 dark:bg-navy-700"
+          value ? "bg-in-600" : "bg-ink-200 dark:bg-ink-800"
         }`}
       >
         <span

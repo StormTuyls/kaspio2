@@ -95,16 +95,16 @@ export function OnboardingChecklist({
     <div className="card p-5">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-bold text-navy-900 dark:text-white">
+          <h2 className="text-base font-bold text-ink-900 dark:text-white">
             Aan de slag met Kaspio
           </h2>
-          <p className="text-sm text-navy-500 dark:text-navy-300">
+          <p className="text-sm text-ink-700 dark:text-ink-500">
             Nog {steps.length - doneCount} van {steps.length} stappen te gaan.
           </p>
         </div>
         <button
           onClick={dismiss}
-          className="flex-shrink-0 text-xs font-medium text-navy-400 hover:text-navy-700 dark:hover:text-navy-100"
+          className="flex-shrink-0 text-xs font-medium text-ink-600 hover:text-ink-800 dark:hover:text-ink-200"
         >
           Verbergen
         </button>
@@ -113,17 +113,17 @@ export function OnboardingChecklist({
       {!hasPot && onUseTemplate && (
         <button
           onClick={onUseTemplate}
-          className="mb-3 flex w-full items-center justify-between gap-3 rounded-xl border border-teal-200 bg-teal-50/80 px-4 py-3 text-left transition hover:border-teal-300 hover:bg-teal-50 dark:border-teal-900/50 dark:bg-teal-900/20"
+          className="mb-3 flex w-full items-center justify-between gap-3 rounded-xl border border-in-300 bg-in-100/80 px-4 py-3 text-left transition hover:border-in-300 hover:bg-in-100 dark:border-in-700/50 dark:bg-in-700/20"
         >
           <span>
-            <span className="block text-sm font-bold text-teal-800 dark:text-teal-200">
+            <span className="block text-sm font-bold text-in-700 dark:text-in-300">
               Snel opzetten met een sjabloon
             </span>
-            <span className="block text-xs text-teal-700/80 dark:text-teal-300/80">
+            <span className="block text-xs text-in-700/80 dark:text-in-400/80">
               Kies je situatie, wij zetten de potjes klaar.
             </span>
           </span>
-          <span className="flex-shrink-0 text-teal-600 dark:text-teal-300" aria-hidden>
+          <span className="flex-shrink-0 text-in-600 dark:text-in-400" aria-hidden>
             →
           </span>
         </button>
@@ -133,13 +133,13 @@ export function OnboardingChecklist({
         {steps.map((step) => (
           <li
             key={step.label}
-            className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-navy-100 bg-canvas px-3 py-2.5 dark:border-navy-700/60 dark:bg-navy-800/40"
+            className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-ink-200 bg-ink-50 px-3 py-2.5 dark:border-ink-800/60 dark:bg-ink-900/40"
           >
             <span
               className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                 step.done
-                  ? "bg-teal-500 text-white"
-                  : "border-2 border-navy-200 text-navy-300 dark:border-navy-600"
+                  ? "bg-in-600 text-white"
+                  : "border-2 border-ink-300 text-ink-500 dark:border-ink-600"
               }`}
               aria-hidden
             >
@@ -149,14 +149,14 @@ export function OnboardingChecklist({
               <p
                 className={`text-sm font-semibold ${
                   step.done
-                    ? "text-navy-400 line-through dark:text-navy-500"
-                    : "text-navy-900 dark:text-navy-50"
+                    ? "text-ink-600 line-through dark:text-ink-700"
+                    : "text-ink-900 dark:text-ink-100"
                 }`}
               >
                 {step.label}
               </p>
               {!step.done && (
-                <p className="text-xs text-navy-500 dark:text-navy-300">{step.hint}</p>
+                <p className="text-xs text-ink-700 dark:text-ink-500">{step.hint}</p>
               )}
             </div>
             {/* Op mobiel zakken de knoppen naar een eigen regel. Een stap met

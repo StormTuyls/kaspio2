@@ -68,7 +68,7 @@ export function OrgSwitcher({
 
   const triggerClasses = isDark
     ? "flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left transition hover:bg-white/5"
-    : "flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left transition hover:bg-navy-50";
+    : "flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left transition hover:bg-ink-50";
 
   return (
     <div ref={containerRef} className="relative">
@@ -81,7 +81,7 @@ export function OrgSwitcher({
       >
         <span
           className={`min-w-0 flex-1 truncate text-xs ${
-            isDark ? "text-navy-300" : "text-navy-500"
+            isDark ? "text-ink-500" : "text-ink-700"
           }`}
         >
           {selected.name}
@@ -95,7 +95,7 @@ export function OrgSwitcher({
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={isDark ? "text-navy-400" : "text-navy-400"}
+          className={isDark ? "text-ink-600" : "text-ink-600"}
         >
           <polyline points="6 9 12 15 18 9" />
         </svg>
@@ -104,9 +104,9 @@ export function OrgSwitcher({
       {open && (
         <div
           role="menu"
-          className="absolute left-0 right-0 top-full z-40 mt-1 rounded-lg border border-navy-100 bg-white py-1 shadow-lg dark:border-navy-700 dark:bg-navy-800"
+          className="absolute left-0 right-0 top-full z-40 mt-1 rounded-lg border border-ink-200 bg-white py-1 shadow-lg dark:border-ink-800 dark:bg-ink-900"
         >
-          <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-navy-400">
+          <div className="px-3 py-1.5 text-[10px] font-bold text-ink-600">
             Organisaties
           </div>
           {orgs.map((o) => (
@@ -118,21 +118,21 @@ export function OrgSwitcher({
                 onSelect(o.id);
                 setOpen(false);
               }}
-              className={`flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm transition hover:bg-canvas dark:hover:bg-navy-700 ${
+              className={`flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm transition hover:bg-ink-50 dark:hover:bg-ink-800 ${
                 o.id === selected.id
-                  ? "font-semibold text-navy-900 dark:text-white"
-                  : "text-navy-700 dark:text-navy-200"
+                  ? "font-semibold text-ink-900 dark:text-white"
+                  : "text-ink-800 dark:text-ink-300"
               }`}
             >
               <span className="truncate">{o.name}</span>
               {o.id === selected.id && (
-                <span className="text-teal-500" aria-label="Geselecteerd">
+                <span className="text-in-600" aria-label="Geselecteerd">
                   ✓
                 </span>
               )}
             </button>
           ))}
-          <div className="my-1 border-t border-navy-100 dark:border-navy-700" />
+          <div className="my-1 border-t border-ink-200 dark:border-ink-800" />
           <button
             type="button"
             role="menuitem"
@@ -140,7 +140,7 @@ export function OrgSwitcher({
               onCreateNew();
               setOpen(false);
             }}
-            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-teal-700 transition hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-navy-700"
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-in-700 transition hover:bg-in-100 dark:text-in-400 dark:hover:bg-ink-800"
           >
             <span aria-hidden>+</span>
             <span>Nieuwe organisatie</span>
@@ -152,14 +152,14 @@ export function OrgSwitcher({
               role="menuitem"
               onClick={handleLeave}
               disabled={leaving}
-              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-rose-600 transition hover:bg-rose-50 disabled:opacity-60 dark:text-rose-400 dark:hover:bg-navy-700"
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-fout-600 transition hover:bg-fout-100 disabled:opacity-60 dark:text-fout-400 dark:hover:bg-ink-800"
             >
               <span aria-hidden>↪</span>
               <span>{leaving ? "Bezig…" : `"${selected.name}" verlaten`}</span>
             </button>
           )}
           {leaveErr && (
-            <p className="px-3 py-1.5 text-xs text-rose-600 dark:text-rose-400">
+            <p className="px-3 py-1.5 text-xs text-fout-600 dark:text-fout-400">
               {leaveErr}
             </p>
           )}

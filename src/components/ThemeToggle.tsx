@@ -17,7 +17,7 @@ export function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(next)}
-      className="flex items-center gap-1.5 rounded-xl border border-navy-100 bg-white px-2.5 py-1.5 text-xs font-semibold text-navy-600 shadow-sm transition hover:bg-navy-50 dark:border-navy-700 dark:bg-navy-800 dark:text-navy-200 dark:hover:bg-navy-700"
+      className="flex items-center gap-1.5 rounded-xl border border-ink-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-ink-700 shadow-sm transition hover:bg-ink-50 dark:border-ink-800 dark:bg-ink-900 dark:text-ink-300 dark:hover:bg-ink-800"
       aria-label={`Thema: ${labels[theme]}`}
       title={`Thema: ${labels[theme]}. Klik voor ${labels[next]}`}
     >

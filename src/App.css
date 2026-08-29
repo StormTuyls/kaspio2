@@ -1,297 +1,471 @@
 @import "tailwindcss";
 
+/* =============================================================================
+   Kaspio , visueel systeem
+   =============================================================================
+   Spec en verantwoording: DESIGN.md in de projectwortel.
+   Controle: python3 scripts/design/contrast.py (25 metingen, licht en donker).
+
+   Drie regels dragen dit bestand:
+
+     1. Kleur betekent geld. Groen is binnenkomend, amber is uitgaand, rood is
+        een fout. Al het interactieve is inkt. Wie een tint wil gebruiken omdat
+        het mooi staat, gebruikt inkt.
+     2. Lijnen, geen dozen. Secties scheiden met witruimte en een haarlijn.
+        `.panel` bestaat, maar alleen voor iets dat echt los staat.
+     3. Elk bedrag staat in font-num. Zonder uitzondering, anders zien twee
+        pagina's naast elkaar eruit als twee producten.
+   ========================================================================== */
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-num: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  /* ---------------------------------------------------------------------
+     Typografie , twee families, allebei met een reden.
+     Instrument Sans voor tekst (eigen karakter, gebouwd voor interfaces).
+     JetBrains Mono uitsluitend voor cijfers, zodat bedragen uitlijnen.
+     --------------------------------------------------------------------- */
+  --font-sans: "Instrument Sans Variable", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+  --font-num: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
-  --color-navy-50: #f3f5f9;
-  --color-navy-100: #e2e7ee;
-  --color-navy-200: #c4cdda;
-  --color-navy-300: #95a3b6;
-  --color-navy-400: #647691;
-  --color-navy-500: #455672;
-  --color-navy-600: #344358;
-  --color-navy-700: #283449;
-  --color-navy-800: #1f2a3d;
-  --color-navy-900: #1e2a3a;
-  --color-navy-950: #0a1018;
+  /* ---------------------------------------------------------------------
+     Inkt , neutralen met chroma 0.002-0.014 richting hue 250. Net genoeg om
+     niet dood grijs te zijn, te weinig om een kleur te lijken. Bewust koel:
+     de warme bijna-witte achtergrond is de verzadigde standaardkeuze.
+     --------------------------------------------------------------------- */
+  --color-paper: oklch(0.993 0.002 250);
+  --color-ink-50: oklch(0.974 0.003 250);
+  --color-ink-100: oklch(0.943 0.0045 250);
+  --color-ink-200: oklch(0.895 0.006 250);
+  --color-ink-300: oklch(0.81 0.008 250);
+  --color-ink-400: oklch(0.66 0.011 250);
+  --color-ink-500: oklch(0.556 0.013 250);
+  --color-ink-600: oklch(0.47 0.013 250);
+  --color-ink-700: oklch(0.385 0.013 250);
+  --color-ink-800: oklch(0.295 0.013 250);
+  --color-ink-900: oklch(0.225 0.013 250);
+  --color-ink-950: oklch(0.165 0.014 250);
 
-  --color-mint-50: #ecfdf5;
-  --color-mint-100: #d1fae5;
-  --color-mint-200: #a7f3d0;
-  --color-mint-300: #6ee7b7;
-  --color-mint-400: #4ad591;
-  --color-mint-500: #2fbf71;
-  --color-mint-600: #25a05f;
-  --color-mint-700: #1f7c4a;
-  --color-mint-800: #185f39;
-  --color-mint-900: #134c2f;
+  /* Geld erin. */
+  --color-in-700: oklch(0.43 0.094 162);
+  --color-in-600: oklch(0.502 0.109 162);
+  --color-in-500: oklch(0.63 0.135 162);
+  --color-in-400: oklch(0.73 0.12 162);
+  --color-in-300: oklch(0.83 0.085 162);
+  --color-in-100: oklch(0.953 0.03 162);
 
-  --color-azure-50: #eff7ff;
-  --color-azure-100: #daedff;
-  --color-azure-200: #b8dcff;
-  --color-azure-300: #84c2ff;
-  --color-azure-400: #4da3ff;
-  --color-azure-500: #2289f5;
-  --color-azure-600: #136cd1;
-  --color-azure-700: #1057a8;
-  --color-azure-800: #134a87;
+  /* Geld eruit. Amber en niet rood: rood is voor fouten, en groen/amber is
+     veel veiliger bij deuteranopie dan groen/rood. */
+  --color-uit-700: oklch(0.45 0.103 62);
+  --color-uit-600: oklch(0.53 0.12 62);
+  --color-uit-500: oklch(0.66 0.14 62);
+  --color-uit-400: oklch(0.76 0.125 62);
+  --color-uit-300: oklch(0.85 0.085 62);
+  --color-uit-100: oklch(0.95 0.033 70);
 
-  --color-teal-50: #f0fdf8;
-  --color-teal-100: #E1F5EE;
-  --color-teal-200: #c1ead9;
-  --color-teal-300: #9FE1CB;
-  --color-teal-400: #5fc3a0;
-  --color-teal-500: #1D9E75;
-  --color-teal-600: #168566;
-  --color-teal-700: #0F6E56;
-  --color-teal-800: #085041;
-  --color-teal-900: #04342C;
+  /* Uitsluitend fouten en verwijderen. */
+  --color-fout-600: oklch(0.525 0.19 25);
+  --color-fout-400: oklch(0.7 0.16 25);
+  --color-fout-100: oklch(0.945 0.026 25);
 
-  --color-amber-50: #FAEEDA;
-  --color-amber-100: #f7e3bf;
-  --color-amber-200: #f3cf90;
-  --color-amber-300: #efba60;
-  --color-amber-400: #efaa3a;
-  --color-amber-500: #EF9F27;
-  --color-amber-600: #d18613;
-  --color-amber-700: #BA7517;
-  --color-amber-800: #8e5710;
-  --color-amber-900: #6a410c;
+  /* ---------------------------------------------------------------------
+     Ritme. Niet elke afstand hetzelfde: dat is waarom de vorige versie geen
+     groepering had.
+     --------------------------------------------------------------------- */
+  --radius-sm: 0.375rem;
+  --radius-DEFAULT: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.75rem;
 
-  --color-canvas: #f7f9fc;
-  --color-ink: #1a1a18;
-  --color-ink-muted: #5F5E5A;
-  --color-ink-light: #888780;
+  /* Eén curve voor alles. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* =============================================================================
+   Fonts , alleen latin en latin-ext.
+   =============================================================================
+   De vorige opzet laadde 15 woff2-bestanden (376 kB) met Cyrillisch, Grieks en
+   Vietnamees erbij, voor een app met lang="nl". Instrument Sans levert alleen
+   latin-subsets; voor de mono schrijven we de @font-face zelf zodat de andere
+   subsets niet meekomen.
+   ========================================================================== */
+
+@font-face {
+  font-family: "JetBrains Mono Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url("@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2")
+    format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "JetBrains Mono Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url("@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-ext-wght-normal.woff2")
+    format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* =============================================================================
+   Basis
+   ========================================================================== */
+
+:root {
+  /* Semantische lagen, zodat een component nooit een ruwe tint hoeft te kennen. */
+  --oppervlak: var(--color-paper);
+  --oppervlak-verhoogd: #ffffff;
+  --oppervlak-gedempt: var(--color-ink-50);
+  --lijn: var(--color-ink-200);
+  --lijn-sterk: var(--color-ink-300);
+  --tekst: var(--color-ink-900);
+  --tekst-secundair: var(--color-ink-700);
+  --tekst-tertiair: var(--color-ink-600);
+  --tekst-zwak: var(--color-ink-500);
+  --bedrag-in: var(--color-in-600);
+  --bedrag-uit: var(--color-uit-600);
+  --fout: var(--color-fout-600);
+  --fout-vlak: var(--color-fout-100);
+  --actie: var(--color-ink-950);
+  --actie-hover: var(--color-ink-800);
+  --focus: var(--color-ink-900);
+  /* Chroom (zijbalk, kopbalk) is in lichte modus donker en dus vanzelf apart.
+     In donkere modus zou het samenvallen met de pagina, dus daar gaat het een
+     trap dieper in plaats van gelijk. */
+  --oppervlak-chroom: var(--color-ink-950);
+
+  /* Een schaal, geen willekeurige getallen. */
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-overlay: 30;
+  --z-modal: 40;
+  --z-toast: 50;
+}
+
+html.dark {
+  --oppervlak: var(--color-ink-950);
+  --oppervlak-verhoogd: var(--color-ink-900);
+  --oppervlak-gedempt: oklch(0.2 0.013 250);
+  --lijn: oklch(0.3 0.013 250);
+  --lijn-sterk: oklch(0.38 0.013 250);
+  --tekst: var(--color-ink-100);
+  --tekst-secundair: var(--color-ink-300);
+  --tekst-tertiair: var(--color-ink-400);
+  --tekst-zwak: var(--color-ink-400);
+  --bedrag-in: var(--color-in-400);
+  --bedrag-uit: var(--color-uit-400);
+  --fout: var(--color-fout-400);
+  --fout-vlak: oklch(0.3 0.06 25);
+  --actie: var(--color-ink-100);
+  --actie-hover: #ffffff;
+  --focus: var(--color-ink-300);
+  --oppervlak-chroom: oklch(0.125 0.012 250);
+  color-scheme: dark;
 }
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
-/* Sterke ease-out curve (emil-design-eng): de ingebouwde CSS-easings missen punch. */
-:root {
-  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+html,
+body {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  background-color: var(--oppervlak);
+  color: var(--tekst);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scroll-reveal: secties stijgen subtiel op bij in-view (IntersectionObserver
-   zet .is-in). Alleen actief NA dat JS de .reveal-ready-klasse zet, zodat
-   content zonder JS / in headless renderers gewoon zichtbaar blijft. */
-.reveal-ready .reveal {
+/* Koppen breken op zinsniveau in plaats van met een weesje op de laatste regel. */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+  letter-spacing: -0.015em;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* Eén zichtbare focusstijl voor de hele app. Voorheen leunde 214 van de 220
+   knoppen op de browserdefault, die op donkere vlakken nauwelijks te zien is. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background: var(--color-ink-900);
+  color: var(--color-paper);
+}
+
+html.dark ::selection {
+  background: var(--color-ink-100);
+  color: var(--color-ink-950);
+}
+
+/* =============================================================================
+   Componenten
+   ========================================================================== */
+
+@layer components {
+  /* --- Knoppen ------------------------------------------------------------
+     Op touch minstens 44px hoog; vanaf sm compacter. Geen rand plus wijde
+     slagschaduw op hetzelfde element: kies er een.
+
+     De oude namen (.btn-primary, .btn-accent, ...) staan in dezelfde
+     selectorlijst in plaats van ernaar te verwijzen. Zo blijven de bestaande
+     views werken zonder dat er een tweede knoppensysteem ontstaat, en Tailwind
+     hoeft geen eigen componentklasse te resolven. */
+  .btn,
+  .btn-primary,
+  .btn-accent,
+  .btn-secondary,
+  .btn-ghost,
+  .btn-danger {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3.5
+      text-[0.875rem] font-semibold whitespace-nowrap transition-colors duration-150
+      disabled:cursor-not-allowed disabled:opacity-45 sm:min-h-9;
+  }
+
+  .btn--primary,
+  .btn-primary,
+  .btn-accent {
+    background: var(--actie);
+    color: var(--oppervlak);
+  }
+  .btn--primary:hover:not(:disabled),
+  .btn-primary:hover:not(:disabled),
+  .btn-accent:hover:not(:disabled) {
+    background: var(--actie-hover);
+  }
+
+  .btn--secondary,
+  .btn-secondary {
+    background: var(--oppervlak-verhoogd);
+    color: var(--tekst-secundair);
+    box-shadow: inset 0 0 0 1px var(--lijn);
+  }
+  .btn--secondary:hover:not(:disabled),
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--oppervlak-gedempt);
+    color: var(--tekst);
+  }
+
+  .btn--ghost,
+  .btn-ghost {
+    color: var(--tekst-tertiair);
+  }
+  .btn--ghost:hover:not(:disabled),
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--oppervlak-gedempt);
+    color: var(--tekst);
+  }
+
+  .btn--danger,
+  .btn-danger {
+    background: transparent;
+    color: var(--fout);
+    box-shadow: inset 0 0 0 1px var(--lijn);
+  }
+  .btn--danger:hover:not(:disabled),
+  .btn-danger:hover:not(:disabled) {
+    background: var(--fout-vlak);
+  }
+
+  /* --- Invoer -------------------------------------------------------------
+     16px op touch, want kleiner laat iOS Safari inzoomen bij focus. */
+  .input {
+    @apply min-h-11 w-full rounded-lg px-3 py-2 text-base transition-colors
+      sm:min-h-9 sm:text-[0.875rem];
+    background: var(--oppervlak-verhoogd);
+    color: var(--tekst);
+    box-shadow: inset 0 0 0 1px var(--lijn-sterk);
+  }
+  .input::placeholder {
+    /* Gemeten 4.64:1. De vorige placeholder haalde 2.43:1. */
+    color: var(--tekst-zwak);
+  }
+  .input:focus {
+    outline: 2px solid var(--focus);
+    outline-offset: -1px;
+  }
+  .input:disabled {
+    background: var(--oppervlak-gedempt);
+    color: var(--tekst-zwak);
+  }
+
+  /* --- Vlakken ------------------------------------------------------------
+     `.panel` is voor iets dat echt los staat van de leesrichting: een dialoog,
+     een neerklapmenu. Niet voor "een lijst met een kopje erboven". Daarvoor is
+     `.rule`. Nooit een panel in een panel. */
+  .panel,
+  .card {
+    @apply rounded-md;
+    background: var(--oppervlak-verhoogd);
+    box-shadow: inset 0 0 0 1px var(--lijn);
+  }
+
+  .rule {
+    border-top: 1px solid var(--lijn);
+  }
+
+  /* --- Bedragen -----------------------------------------------------------
+     Elk bedrag in de app gaat hierlangs. Mono en tabular, zodat kolommen
+     uitlijnen zoals in een kasboek. */
+  .amount {
+    font-family: var(--font-num);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: -0.02em;
+  }
+  .amount--in {
+    color: var(--bedrag-in);
+  }
+  .amount--uit {
+    color: var(--bedrag-uit);
+  }
+
+  .font-num {
+    font-family: var(--font-num);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  /* --- Labels -------------------------------------------------------------- */
+  .tag,
+  .badge-teal,
+  .badge-amber {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.75rem] font-semibold;
+  }
+  .tag--in,
+  .badge-teal {
+    background: var(--color-in-100);
+    color: var(--color-in-600);
+  }
+  .tag--uit,
+  .badge-amber {
+    background: var(--color-uit-100);
+    color: var(--color-uit-600);
+  }
+  .tag--neutraal {
+    background: var(--oppervlak-gedempt);
+    color: var(--tekst-tertiair);
+  }
+  .tag--fout {
+    background: var(--fout-vlak);
+    color: var(--fout);
+  }
+
+  /* --- Tekstrollen --------------------------------------------------------- */
+  .titel {
+    @apply text-[clamp(1.5rem,1.3rem+0.9vw,2rem)] font-bold;
+    letter-spacing: -0.02em;
+    color: var(--tekst);
+  }
+  .sectiekop {
+    @apply text-[1.0625rem] font-semibold;
+    letter-spacing: -0.01em;
+    color: var(--tekst);
+  }
+  .meta {
+    @apply text-[0.8125rem];
+    color: var(--tekst-tertiair);
+  }
+  .micro {
+    @apply text-[0.75rem] font-medium;
+    color: var(--tekst-zwak);
+  }
+
+  /* Leesbare regellengte voor lopende tekst. */
+  .prose-kaspio {
+    max-width: 68ch;
+  }
+}
+
+/* =============================================================================
+   Beweging , kort, functioneel, één curve.
+   =============================================================================
+   Wat weg is: de zwevende gloed achter de hero, de aurora op het inlogscherm,
+   het kleurverloop op een balk van 6px. Beweging zonder functie.
+   ========================================================================== */
+
+.reveal {
   opacity: 0;
-  transform: translateY(18px);
-  transition:
-    opacity 700ms var(--ease-out-strong),
-    transform 700ms var(--ease-out-strong);
+  transform: translateY(12px);
 }
+
+.reveal-ready .reveal {
+  transition:
+    opacity 420ms var(--ease-out),
+    transform 420ms var(--ease-out);
+}
+
+.reveal.is-in,
 .reveal-ready .reveal.is-in {
   opacity: 1;
   transform: none;
 }
 
-/* Hero entrance-stagger: kinderen rijzen na elkaar op bij load. */
+/* Zonder JS blijft alles zichtbaar: de klasse .reveal-ready zet JS pas neer als
+   de observer draait. Anders levert een headless renderer een lege pagina. */
+html:not(.reveal-ready) .reveal {
+  opacity: 1;
+  transform: none;
+}
+
 @keyframes kaspio-rise {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
     transform: none;
   }
 }
+
 .hero-rise > * {
-  animation: kaspio-rise 700ms var(--ease-out-strong) both;
+  animation: kaspio-rise 480ms var(--ease-out) both;
 }
-.hero-rise > *:nth-child(1) { animation-delay: 60ms; }
-.hero-rise > *:nth-child(2) { animation-delay: 130ms; }
-.hero-rise > *:nth-child(3) { animation-delay: 200ms; }
-.hero-rise > *:nth-child(4) { animation-delay: 270ms; }
-.hero-rise > *:nth-child(5) { animation-delay: 340ms; }
+.hero-rise > *:nth-child(1) { animation-delay: 40ms; }
+.hero-rise > *:nth-child(2) { animation-delay: 90ms; }
+.hero-rise > *:nth-child(3) { animation-delay: 140ms; }
+.hero-rise > *:nth-child(4) { animation-delay: 190ms; }
+.hero-rise > *:nth-child(5) { animation-delay: 240ms; }
 
-/* Hero-asset (mockup) komt iets later op dan de tekst. */
 .hero-rise-asset {
-  animation: kaspio-rise 800ms var(--ease-out-strong) both;
-  animation-delay: 300ms;
+  animation: kaspio-rise 560ms var(--ease-out) both;
+  animation-delay: 180ms;
 }
-
-/* Hero achtergrond-glow: zweeft in een organische baan rond + ademt (scale). */
-@keyframes kaspio-glow-drift {
-  0% {
-    transform: translate3d(-8%, -10%, 0) scale(1);
-    opacity: 0.8;
-  }
-  25% {
-    transform: translate3d(7%, -4%, 0) scale(1.12);
-    opacity: 1;
-  }
-  50% {
-    transform: translate3d(9%, 6%, 0) scale(1.05);
-    opacity: 0.92;
-  }
-  75% {
-    transform: translate3d(-4%, 4%, 0) scale(1.14);
-    opacity: 1;
-  }
-  100% {
-    transform: translate3d(-8%, -10%, 0) scale(1);
-    opacity: 0.8;
-  }
-}
-.kaspio-glow {
-  animation: kaspio-glow-drift 16s ease-in-out infinite;
-}
-
-/* Tweede, tegengestelde glow-blob voor diepte achter de hero. */
-@keyframes kaspio-glow-float {
-  0% {
-    transform: translate3d(6%, 8%, 0) scale(1.05);
-    opacity: 0.7;
-  }
-  50% {
-    transform: translate3d(-7%, -6%, 0) scale(1.2);
-    opacity: 0.95;
-  }
-  100% {
-    transform: translate3d(6%, 8%, 0) scale(1.05);
-    opacity: 0.7;
-  }
-}
-.kaspio-glow-2 {
-  animation: kaspio-glow-float 22s ease-in-out infinite;
-}
-
-/* Auth-pagina: levende aurora-blobs die traag rondzweven. */
-@keyframes kaspio-aurora-a {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  33% { transform: translate3d(12%, 8%, 0) scale(1.18); }
-  66% { transform: translate3d(-8%, 14%, 0) scale(0.95); }
-  100% { transform: translate3d(0, 0, 0) scale(1); }
-}
-@keyframes kaspio-aurora-b {
-  0% { transform: translate3d(0, 0, 0) scale(1.1); }
-  50% { transform: translate3d(-14%, -10%, 0) scale(1.3); }
-  100% { transform: translate3d(0, 0, 0) scale(1.1); }
-}
-@keyframes kaspio-aurora-c {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  40% { transform: translate3d(10%, -12%, 0) scale(1.22); }
-  80% { transform: translate3d(-10%, 6%, 0) scale(0.9); }
-  100% { transform: translate3d(0, 0, 0) scale(1); }
-}
-.aurora-a { animation: kaspio-aurora-a 19s ease-in-out infinite; }
-.aurora-b { animation: kaspio-aurora-b 24s ease-in-out infinite; }
-.aurora-c { animation: kaspio-aurora-c 28s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
-  .reveal {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal,
+  .reveal-ready .reveal {
     opacity: 1;
     transform: none;
-    transition: none;
-  }
-  .hero-rise > * {
-    animation: none;
-  }
-  .hero-rise-asset {
-    animation: none;
-  }
-  .kaspio-glow,
-  .kaspio-glow-2,
-  .aurora-a,
-  .aurora-b,
-  .aurora-c {
-    animation: none;
-  }
-}
-
-html,
-body {
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #f7f9fc;
-  color: #1f2937;
-}
-
-html.dark,
-html.dark body {
-  background-color: #0a1018;
-  color: #e2e7ee;
-  color-scheme: dark;
-}
-
-@layer components {
-  /* Op touch: velden 16px (kleiner laat iOS Safari inzoomen bij focus) en
-     knoppen minstens 44px hoog. Vanaf sm valt alles terug op de compacte
-     desktop-maten. */
-  .input {
-    @apply min-h-11 w-full rounded-xl border border-navy-100 bg-white px-3.5 py-2.5 text-base text-navy-900 shadow-sm transition placeholder:text-navy-300 focus:border-teal-500 focus:outline-none focus:ring-4 focus:ring-teal-100 sm:min-h-0 sm:text-sm dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50 dark:placeholder:text-navy-500 dark:focus:border-teal-400 dark:focus:ring-teal-500/20;
-  }
-
-  .btn-primary {
-    @apply inline-flex min-h-11 items-center justify-center rounded-xl bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-navy-800 active:bg-navy-950 disabled:opacity-50 sm:min-h-0 dark:bg-white dark:text-navy-900 dark:hover:bg-navy-100;
-  }
-
-  .btn-accent {
-    @apply inline-flex min-h-11 items-center justify-center rounded-xl bg-teal-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-600 active:bg-teal-700 disabled:opacity-50 sm:min-h-0;
-  }
-
-  .btn-secondary {
-    @apply inline-flex min-h-11 items-center justify-center rounded-xl border border-navy-100 bg-white px-4 py-2.5 text-sm font-semibold text-navy-700 shadow-sm transition hover:bg-navy-50 sm:min-h-0 dark:border-navy-700 dark:bg-navy-800 dark:text-navy-100 dark:hover:bg-navy-700;
-  }
-
-  .btn-danger {
-    @apply inline-flex min-h-11 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50 sm:min-h-0 dark:border-rose-900/40 dark:bg-navy-800 dark:text-rose-400 dark:hover:bg-rose-900/30;
-  }
-
-  .btn-ghost {
-    @apply inline-flex min-h-11 items-center justify-center rounded-xl px-3 py-1.5 text-sm font-semibold text-navy-500 transition hover:bg-navy-50 hover:text-navy-900 sm:min-h-0 dark:text-navy-300 dark:hover:bg-navy-800 dark:hover:text-white;
-  }
-
-  .card {
-    @apply rounded-2xl border border-navy-100 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_18px_-4px_rgba(15,23,42,0.06)] dark:border-navy-700/60 dark:bg-navy-900 dark:shadow-[0_1px_2px_rgba(0,0,0,0.4),0_4px_18px_-4px_rgba(0,0,0,0.5)];
-  }
-
-  .badge-teal {
-    @apply inline-flex items-center gap-1 rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-semibold text-teal-700 dark:bg-teal-900/40 dark:text-teal-300;
-  }
-
-  .badge-amber {
-    @apply inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300;
-  }
-
-  /* Display-font voor de landing (Plus Jakarta Sans). Body in de app blijft Inter. */
-  .font-display {
-    font-family: var(--font-display);
-    font-optical-sizing: auto;
-  }
-}
-
-/* Landing page: scroll reveal (transform/opacity only, GPU-friendly). */
-.reveal {
-  opacity: 0;
-  transform: translateY(18px);
-  transition:
-    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: opacity, transform;
-}
-
-.reveal.is-in {
-  opacity: 1;
-  transform: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
   }
 }

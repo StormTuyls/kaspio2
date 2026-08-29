@@ -77,7 +77,7 @@ export function TransferForm({
   if (parties.length < 2) {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-navy-500 dark:text-navy-300">
+        <p className="text-sm text-ink-700 dark:text-ink-500">
           Je hebt minstens twee plekken nodig om geld te kunnen verplaatsen.
         </p>
         <div className="flex justify-end">
@@ -115,7 +115,7 @@ export function TransferForm({
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <p className="text-sm text-navy-500 dark:text-navy-300">
+      <p className="text-sm text-ink-700 dark:text-ink-500">
         Verschuif geld tussen potjes, of terug naar de hoofdpot om het later
         opnieuw te verdelen. Je totale rekeningsaldo verandert niet, de verdeling
         wel.
@@ -125,7 +125,7 @@ export function TransferForm({
           mobiel. */}
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+          <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
             Van
           </span>
           <select
@@ -139,12 +139,12 @@ export function TransferForm({
               </option>
             ))}
           </select>
-          <span className="mt-1 block text-xs text-navy-500 dark:text-navy-300">
+          <span className="mt-1 block text-xs text-ink-700 dark:text-ink-500">
             Saldo: <span className="font-semibold tabular-nums">{formatEuro(fromBalance)}</span>
           </span>
         </label>
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+          <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
             Naar
           </span>
           <select
@@ -158,7 +158,7 @@ export function TransferForm({
               </option>
             ))}
           </select>
-          <span className="mt-1 block text-xs text-navy-400 dark:text-navy-300">
+          <span className="mt-1 block text-xs text-ink-600 dark:text-ink-500">
             Saldo: <span className="tabular-nums">{formatEuro(toBalance)}</span>
           </span>
         </label>
@@ -166,20 +166,20 @@ export function TransferForm({
 
       <div className="grid grid-cols-2 gap-3">
         <label className="block">
-          <span className="mb-1.5 flex items-center justify-between gap-2 text-sm font-medium text-navy-700 dark:text-navy-200">
+          <span className="mb-1.5 flex items-center justify-between gap-2 text-sm font-medium text-ink-800 dark:text-ink-300">
             Bedrag
             {fromBalance !== 0 && (
               <button
                 type="button"
                 onClick={() => setAmount(String(Math.abs(fromBalance)).replace(".", ","))}
-                className="text-xs font-semibold text-teal-700 hover:underline dark:text-teal-300"
+                className="text-xs font-semibold text-in-700 hover:underline dark:text-in-400"
               >
                 Alles ({formatEuro(Math.abs(fromBalance))})
               </button>
             )}
           </span>
           <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-navy-400">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-600">
               €
             </span>
             <input
@@ -193,7 +193,7 @@ export function TransferForm({
           </div>
         </label>
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+          <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
             Datum
           </span>
           <input
@@ -206,21 +206,21 @@ export function TransferForm({
       </div>
 
       {toIsHoofdpot && parsedAmount > 0 && (
-        <p className="text-xs text-navy-500 dark:text-navy-300">
+        <p className="text-xs text-ink-700 dark:text-ink-500">
           Dit bedrag komt weer bij "nog te verdelen" in de hoofdpot te staan.
         </p>
       )}
 
       {willGoNegative && (
-        <p className="text-xs text-amber-700 dark:text-amber-400">
+        <p className="text-xs text-uit-700 dark:text-uit-400">
           Het bronpotje komt hiermee onder nul (saldo nu {formatEuro(fromBalance)}).
           Dat mag, maar goed om te weten.
         </p>
       )}
 
       <label className="block">
-        <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
-          Notitie <span className="text-navy-400">(optioneel)</span>
+        <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
+          Notitie <span className="text-ink-600">(optioneel)</span>
         </span>
         <input
           type="text"
@@ -232,7 +232,7 @@ export function TransferForm({
       </label>
 
       {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
           {error}
         </div>
       )}

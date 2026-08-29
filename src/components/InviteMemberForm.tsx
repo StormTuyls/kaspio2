@@ -63,16 +63,16 @@ export function InviteMemberForm({
   return (
     <div className="space-y-6">
       <form onSubmit={submit} className="space-y-4">
-        <h2 className="text-lg font-bold text-navy-900 dark:text-white">
+        <h2 className="text-lg font-bold text-ink-900 dark:text-white">
           Iemand uitnodigen
         </h2>
-        <p className="text-sm text-navy-500 dark:text-navy-300">
+        <p className="text-sm text-ink-700 dark:text-ink-500">
           Vul email + rol in. Je krijgt een persoonlijke uitnodigingslink om
           door te sturen, wie hem opent wordt meteen lid met de juiste toegang.
         </p>
 
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+          <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
             E-mailadres
           </span>
           <input
@@ -86,7 +86,7 @@ export function InviteMemberForm({
         </label>
 
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+          <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
             Rol
           </span>
           <select
@@ -107,19 +107,19 @@ export function InviteMemberForm({
 
         {role === "pot_owner" && (
           <div>
-            <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+            <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
               Welke potjes
             </span>
             {pots.length === 0 ? (
-              <p className="text-sm text-navy-400">
+              <p className="text-sm text-ink-600">
                 Geen potjes beschikbaar. Maak eerst een potje aan.
               </p>
             ) : (
-              <div className="space-y-1.5 rounded-lg border border-navy-100 p-2 dark:border-navy-700">
+              <div className="space-y-1.5 rounded-lg border border-ink-200 p-2 dark:border-ink-800">
                 {pots.map((p) => (
                   <label
                     key={p.id}
-                    className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-canvas dark:hover:bg-navy-800"
+                    className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-ink-50 dark:hover:bg-ink-900"
                   >
                     <input
                       type="checkbox"
@@ -132,7 +132,7 @@ export function InviteMemberForm({
                       className="h-2.5 w-2.5 rounded-full"
                       style={{ backgroundColor: p.color }}
                     />
-                    <span className="text-sm text-navy-900 dark:text-white">
+                    <span className="text-sm text-ink-900 dark:text-white">
                       {p.name}
                     </span>
                   </label>
@@ -140,7 +140,7 @@ export function InviteMemberForm({
               </div>
             )}
             {potIds.length > 0 && (
-              <p className="mt-2 text-xs text-navy-400">
+              <p className="mt-2 text-xs text-ink-600">
                 {potIds.length} potje{potIds.length === 1 ? "" : "s"} geselecteerd
               </p>
             )}
@@ -148,7 +148,7 @@ export function InviteMemberForm({
         )}
 
         {error && (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
             {error}
           </div>
         )}
@@ -172,8 +172,8 @@ export function InviteMemberForm({
       </form>
 
       {pendingInvites.length > 0 && (
-        <div className="border-t border-navy-100 pt-4 dark:border-navy-700">
-          <h3 className="mb-3 text-sm font-bold text-navy-900 dark:text-white">
+        <div className="border-t border-ink-200 pt-4 dark:border-ink-800">
+          <h3 className="mb-3 text-sm font-bold text-ink-900 dark:text-white">
             Openstaande uitnodigingen
           </h3>
           <ul className="space-y-2">
@@ -182,13 +182,13 @@ export function InviteMemberForm({
               return (
                 <li
                   key={inv.id}
-                  className="flex flex-col gap-2 rounded-lg border border-navy-100 bg-canvas px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between dark:border-navy-700 dark:bg-navy-800"
+                  className="flex flex-col gap-2 rounded-lg border border-ink-200 bg-ink-50 px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between dark:border-ink-800 dark:bg-ink-900"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="break-all font-medium text-navy-900 sm:truncate dark:text-white">
+                    <div className="break-all font-medium text-ink-900 sm:truncate dark:text-white">
                       {inv.email}
                     </div>
-                    <div className="text-xs text-navy-400">
+                    <div className="text-xs text-ink-600">
                       {roleLabel(inv.role)}
                       {accepted ? " · ✓ geaccepteerd" : " · wacht op login"}
                     </div>
@@ -199,7 +199,7 @@ export function InviteMemberForm({
                       <button
                         type="button"
                         onClick={() => onRevoke(inv.id)}
-                        className="text-xs font-semibold text-rose-600 hover:underline"
+                        className="text-xs font-semibold text-fout-600 hover:underline"
                       >
                         Intrekken
                       </button>
@@ -256,7 +256,7 @@ function SuccessBox({
     : "";
 
   return (
-    <div className="rounded-lg border border-teal-200 bg-teal-50 px-4 py-4 text-sm text-teal-800 dark:border-teal-800 dark:bg-teal-900/20 dark:text-teal-200">
+    <div className="rounded-lg border border-in-300 bg-in-100 px-4 py-4 text-sm text-in-700 dark:border-in-600 dark:bg-in-700/20 dark:text-in-300">
       <div className="mb-2 font-semibold">
         {emailSent
           ? `✓ Uitnodigingsmail verstuurd naar ${email}`
@@ -269,7 +269,7 @@ function SuccessBox({
               ? "De link staat al in de mail. Hieronder als backup, voor het geval je 'm zelf wil doorsturen."
               : "Stuur deze persoonlijke link door. Wie hem opent maakt een account aan en wordt meteen lid van deze organisatie. Geen aparte code nodig."}
           </p>
-          <div className="mb-3 break-all rounded-md bg-white px-3 py-2 font-mono text-xs text-teal-700 dark:bg-navy-900 dark:text-teal-300">
+          <div className="mb-3 break-all rounded-md bg-white px-3 py-2 font-mono text-xs text-in-700 dark:bg-ink-950 dark:text-in-400">
             {inviteLink}
           </div>
           <div className="flex flex-wrap gap-2">
@@ -293,7 +293,7 @@ function SuccessBox({
         <p>
           Uitnodiging aangemaakt. Herlaad even om de link op te halen, of stuur
           hen handmatig naar{" "}
-          <code className="rounded bg-teal-100 px-1 dark:bg-teal-900/40">kaspio.be</code>.
+          <code className="rounded bg-in-100 px-1 dark:bg-in-700/40">kaspio.be</code>.
         </p>
       )}
     </div>
@@ -318,7 +318,7 @@ function CopyLinkButton({ token, email }: { token: string; email?: string }) {
     <button
       type="button"
       onClick={copy}
-      className="text-xs font-semibold text-teal-700 hover:underline dark:text-teal-300"
+      className="text-xs font-semibold text-in-700 hover:underline dark:text-in-400"
     >
       {copied ? "✓ Gekopieerd" : "Kopieer link"}
     </button>

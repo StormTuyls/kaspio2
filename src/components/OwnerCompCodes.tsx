@@ -42,34 +42,34 @@ export function OwnerCompCodes() {
   }
 
   return (
-    <div className="card border-amber-200 p-6 dark:border-amber-900/40">
+    <div className="card border-uit-300 p-6 dark:border-uit-700/40">
       <div className="mb-1 flex items-center gap-2">
         <span className="badge-amber">Owner</span>
-        <h2 className="text-base font-semibold text-navy-900 dark:text-navy-50">
+        <h2 className="text-base font-semibold text-ink-900 dark:text-ink-100">
           Test-/promocodes
         </h2>
       </div>
-      <p className="mb-4 text-sm text-navy-500 dark:text-navy-300">
+      <p className="mb-4 text-sm text-ink-700 dark:text-ink-500">
         Genereer een link die de organisatie van wie 'm inwisselt gratis naar Pro
         of Team tilt. Voor testers en demo's. Enkel jij ziet dit.
       </p>
 
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-navy-500 dark:text-navy-300">
+          <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
             Tier
           </span>
           <select
             value={tier}
             onChange={(e) => setTier(e.target.value as "pro" | "team")}
-            className="w-full rounded-lg border border-navy-200 bg-white px-2.5 py-2 text-sm dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50"
+            className="w-full rounded-lg border border-ink-300 bg-white px-2.5 py-2 text-sm dark:border-ink-800 dark:bg-ink-900 dark:text-ink-100"
           >
             <option value="pro">Pro</option>
             <option value="team">Team</option>
           </select>
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-navy-500 dark:text-navy-300">
+          <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
             Max. keer inwisselen
           </span>
           <input
@@ -77,11 +77,11 @@ export function OwnerCompCodes() {
             min={1}
             value={max}
             onChange={(e) => setMax(Number(e.target.value))}
-            className="w-full rounded-lg border border-navy-200 bg-white px-2.5 py-2 text-sm dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50"
+            className="w-full rounded-lg border border-ink-300 bg-white px-2.5 py-2 text-sm dark:border-ink-800 dark:bg-ink-900 dark:text-ink-100"
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-navy-500 dark:text-navy-300">
+          <span className="mb-1 block text-xs font-medium text-ink-700 dark:text-ink-500">
             Notitie (optioneel)
           </span>
           <input
@@ -89,7 +89,7 @@ export function OwnerCompCodes() {
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="bv. beta-testers"
-            className="w-full rounded-lg border border-navy-200 bg-white px-2.5 py-2 text-sm dark:border-navy-700 dark:bg-navy-800 dark:text-navy-50"
+            className="w-full rounded-lg border border-ink-300 bg-white px-2.5 py-2 text-sm dark:border-ink-800 dark:bg-ink-900 dark:text-ink-100"
           />
         </label>
       </div>
@@ -98,11 +98,11 @@ export function OwnerCompCodes() {
         {busy ? "Bezig…" : "Genereer link"}
       </button>
 
-      {error && <p className="mt-3 text-sm text-rose-600 dark:text-rose-400">{error}</p>}
+      {error && <p className="mt-3 text-sm text-fout-600 dark:text-fout-400">{error}</p>}
 
       {code && (
-        <div className="mt-4 rounded-xl border border-navy-100 bg-canvas p-3 dark:border-navy-700/60 dark:bg-navy-800/40">
-          <p className="mb-2 text-xs font-medium text-navy-500 dark:text-navy-300">
+        <div className="mt-4 rounded-xl border border-ink-200 bg-ink-50 p-3 dark:border-ink-800/60 dark:bg-ink-900/40">
+          <p className="mb-2 text-xs font-medium text-ink-700 dark:text-ink-500">
             Deelbare link ({tier === "pro" ? "Pro" : "Team"}):
           </p>
           <div className="flex items-center gap-2">
@@ -110,7 +110,7 @@ export function OwnerCompCodes() {
               readOnly
               value={link}
               onFocus={(e) => e.currentTarget.select()}
-              className="flex-1 rounded-lg border border-navy-200 bg-white px-2.5 py-1.5 font-mono text-xs dark:border-navy-700 dark:bg-navy-900 dark:text-navy-50"
+              className="flex-1 rounded-lg border border-ink-300 bg-white px-2.5 py-1.5 font-mono text-xs dark:border-ink-800 dark:bg-ink-950 dark:text-ink-100"
             />
             <button onClick={copy} className="btn-secondary text-sm">
               {copied ? "Gekopieerd" : "Kopieer"}

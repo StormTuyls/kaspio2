@@ -23,11 +23,11 @@ export function MembersView({ members, currentUserId, onAdd, onUpdate, onDelete 
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+          <p className="text-sm font-semibold text-ink-600 dark:text-ink-500">
             Organisatie
           </p>
-          <h1 className="text-2xl font-bold text-navy-900 dark:text-white">Leden</h1>
-          <p className="mt-1 text-sm text-navy-500 dark:text-navy-300">
+          <h1 className="text-2xl font-bold text-ink-900 dark:text-white">Leden</h1>
+          <p className="mt-1 text-sm text-ink-700 dark:text-ink-500">
             Admins en potjesbeheerders binnen je organisatie.
           </p>
         </div>
@@ -37,26 +37,26 @@ export function MembersView({ members, currentUserId, onAdd, onUpdate, onDelete 
       </div>
 
       <div className="card overflow-hidden">
-        <ul className="divide-y divide-navy-100 dark:divide-navy-700/60">
+        <ul className="divide-y divide-ink-200 dark:divide-ink-800/60">
           {members.map((m) => (
             <li
               key={m.id}
-              className="flex flex-col gap-3 px-5 py-4 transition hover:bg-canvas sm:flex-row sm:items-center sm:justify-between dark:hover:bg-navy-800/40"
+              className="flex flex-col gap-3 px-5 py-4 transition hover:bg-ink-50 sm:flex-row sm:items-center sm:justify-between dark:hover:bg-ink-900/40"
             >
               <div className="flex min-w-0 items-center gap-3">
                 <Avatar name={m.name} />
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="truncate font-semibold text-navy-900 dark:text-navy-50">
+                    <span className="truncate font-semibold text-ink-900 dark:text-ink-100">
                       {m.name}
                     </span>
                     {m.id === currentUserId && (
-                      <span className="rounded-full bg-mint-50 px-2 py-0.5 text-xs font-semibold text-mint-700 dark:bg-mint-900/30 dark:text-mint-300">
+                      <span className="rounded-full bg-in-100 px-2 py-0.5 text-xs font-semibold text-in-600 dark:bg-in-700/30 dark:text-in-400">
                         jij
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-navy-400 dark:text-navy-300">
+                  <div className="text-xs text-ink-600 dark:text-ink-500">
                     {m.role === "admin" ? "Admin" : "Potjesbeheerder"}
                   </div>
                 </div>

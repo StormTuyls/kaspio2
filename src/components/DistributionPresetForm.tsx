@@ -60,13 +60,13 @@ export function DistributionPresetForm({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-ink-muted dark:text-navy-300">
+      <p className="text-sm text-ink-muted dark:text-ink-500">
         Kies per potje welk deel van het te verdelen geld het krijgt. Wat je niet
         toewijst blijft in de hoofdpot staan.
       </p>
 
       {pots.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-navy-200 bg-canvas px-4 py-6 text-center text-sm text-ink-muted dark:border-navy-700 dark:bg-navy-900/40 dark:text-navy-300">
+        <p className="rounded-xl border border-dashed border-ink-300 bg-ink-50 px-4 py-6 text-center text-sm text-ink-muted dark:border-ink-800 dark:bg-ink-950/40 dark:text-ink-500">
           Maak eerst een potje aan.
         </p>
       ) : (
@@ -78,7 +78,7 @@ export function DistributionPresetForm({
                 className="h-3 w-3 flex-shrink-0 rounded-full"
                 style={{ backgroundColor: pot.color ?? "#1D9E75" }}
               />
-              <span className="min-w-0 flex-1 truncate text-sm font-medium text-navy-800 dark:text-navy-100">
+              <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink-800 dark:text-ink-200">
                 {pot.name}
               </span>
               <div className="relative w-24 flex-shrink-0">
@@ -104,13 +104,13 @@ export function DistributionPresetForm({
         </ul>
       )}
 
-      <div className="flex items-center justify-between rounded-xl bg-canvas px-4 py-2.5 text-sm dark:bg-navy-900/40">
-        <span className="font-medium text-navy-700 dark:text-navy-200">
+      <div className="flex items-center justify-between rounded-xl bg-ink-50 px-4 py-2.5 text-sm dark:bg-ink-950/40">
+        <span className="font-medium text-ink-800 dark:text-ink-300">
           Samen
         </span>
         <span
           className={`font-num font-bold tabular-nums ${
-            over ? "text-rose-600 dark:text-rose-400" : "text-navy-900 dark:text-white"
+            over ? "text-fout-600 dark:text-fout-400" : "text-ink-900 dark:text-white"
           }`}
         >
           {formatPercent(total)} · {formatPercent(remaining)} in de hoofdpot
@@ -118,7 +118,7 @@ export function DistributionPresetForm({
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <div className="rounded-lg border border-fout-100 bg-fout-100 px-3 py-2 text-sm text-fout-600">
           {error}
         </div>
       )}

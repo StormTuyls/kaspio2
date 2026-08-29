@@ -113,7 +113,7 @@ const INITIAL_COMP_CODE =
 
 // Schermvullende fallback terwijl een lazy-geladen view binnenkomt.
 const routeFallback = (
-  <div className="flex min-h-screen items-center justify-center bg-canvas text-navy-500 dark:bg-navy-950 dark:text-navy-300">
+  <div className="flex min-h-screen items-center justify-center bg-ink-50 text-ink-700 dark:bg-ink-950 dark:text-ink-500">
     Laden…
   </div>
 );
@@ -279,7 +279,7 @@ function App() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-canvas text-navy-500 dark:bg-navy-950 dark:text-navy-300">
+      <div className="flex min-h-screen items-center justify-center bg-ink-50 text-ink-700 dark:bg-ink-950 dark:text-ink-500">
         Laden…
       </div>
     );
@@ -1065,7 +1065,7 @@ function AuthedApp({
   // voordat accepteren + refetch klaar zijn.
   if (orgLoading || ensuringInvites) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-canvas text-navy-500 dark:bg-navy-950 dark:text-navy-300">
+      <div className="flex min-h-screen items-center justify-center bg-ink-50 text-ink-700 dark:bg-ink-950 dark:text-ink-500">
         Organisatie aan het laden…
       </div>
     );
@@ -1076,8 +1076,8 @@ function AuthedApp({
   // belandt een genodigde nooit per ongeluk in de org-aanmaak.
   if (!org && readPendingInviteToken()) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas px-6 text-center dark:bg-navy-950">
-        <p className="text-navy-700 dark:text-navy-100">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-ink-50 px-6 text-center dark:bg-ink-950">
+        <p className="text-ink-800 dark:text-ink-200">
           Je uitnodiging kon niet automatisch verwerkt worden.
         </p>
         <button
@@ -1091,7 +1091,7 @@ function AuthedApp({
             clearPendingInviteToken();
             window.location.reload();
           }}
-          className="text-sm text-navy-400 hover:text-navy-700 dark:hover:text-navy-100"
+          className="text-sm text-ink-600 hover:text-ink-800 dark:hover:text-ink-200"
         >
           Toch zelf een organisatie aanmaken
         </button>
@@ -1131,13 +1131,13 @@ function AuthedApp({
   const brandStyle = paletteToCssVars(store.state.branding.accent) as CSSProperties;
 
   return (
-    <div className="min-h-screen bg-canvas dark:bg-navy-950" style={brandStyle}>
+    <div className="min-h-screen bg-ink-50 dark:bg-ink-950" style={brandStyle}>
       {upgradeNotice && (
         <div
           className={`fixed left-1/2 top-4 z-[60] -translate-x-1/2 rounded-xl px-4 py-2.5 text-sm font-medium shadow-lg ${
             upgradeNotice === "success"
-              ? "bg-teal-600 text-white"
-              : "bg-navy-800 text-white"
+              ? "bg-in-600 text-white"
+              : "bg-ink-900 text-white"
           }`}
           role="status"
         >
@@ -1302,7 +1302,7 @@ function AuthedApp({
             ) : tab === "transacties" ? (
               <Suspense
                 fallback={
-                  <div className="py-10 text-center text-sm text-navy-400">Laden…</div>
+                  <div className="py-10 text-center text-sm text-ink-600">Laden…</div>
                 }
               >
                 <TransactionsView
@@ -1333,7 +1333,7 @@ function AuthedApp({
                 onRevokeInvite={revokeInvite}
               />
             ) : tab === "activiteit" && isAdmin ? (
-              <Suspense fallback={<div className="py-10 text-center text-sm text-navy-400">Laden…</div>}>
+              <Suspense fallback={<div className="py-10 text-center text-sm text-ink-600">Laden…</div>}>
                 <AuditLogView entries={auditEntries} loading={auditLoading} />
               </Suspense>
             ) : tab === "instellingen" && isAdmin ? (
@@ -1823,7 +1823,10 @@ function Sidebar({
       return next;
     });
   return (
-    <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-navy-900 bg-navy-900 px-5 py-6 text-navy-100 lg:sticky lg:top-0 lg:flex lg:h-screen dark:border-navy-800">
+    <aside
+      className="hidden w-64 flex-shrink-0 flex-col border-r border-ink-900 px-5 py-6 text-ink-200 lg:sticky lg:top-0 lg:flex lg:h-screen dark:border-ink-800"
+      style={{ backgroundColor: "var(--oppervlak-chroom)" }}
+    >
       <div className="mb-8">
         <button
           onClick={() => onTab("dashboard")}
@@ -1909,7 +1912,7 @@ function Sidebar({
       </nav>
 
       {pots.length > 0 && (
-        <div className="mt-6 flex-1 overflow-y-auto border-t border-navy-800 pt-4">
+        <div className="mt-6 flex-1 overflow-y-auto border-t border-ink-800 pt-4">
           {sidebarSections.map((section, si) => {
             const key = section.id ?? NONE_KEY;
             const headerLabel =
@@ -1921,13 +1924,13 @@ function Sidebar({
                     naam springt naar de groep. Eén knop voor allebei zou
                     betekenen dat je niet meer kan inklappen zonder weg te
                     navigeren. */}
-                <div className="mb-1 flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-wider text-navy-400">
+                <div className="mb-1 flex items-center gap-0.5 text-[10px] font-bold text-ink-600">
                   <button
                     type="button"
                     onClick={() => toggleGroup(key)}
                     aria-expanded={open}
                     aria-label={`${headerLabel} ${open ? "inklappen" : "uitklappen"}`}
-                    className="flex-shrink-0 rounded p-1 transition hover:bg-white/5 hover:text-navy-200"
+                    className="flex-shrink-0 rounded p-1 transition hover:bg-white/5 hover:text-ink-300"
                   >
                     <svg
                       width="10"
@@ -1946,11 +1949,11 @@ function Sidebar({
                   <button
                     type="button"
                     onClick={() => onSelectGroup(section.id)}
-                    className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-md px-1 py-1 text-left transition hover:bg-white/5 hover:text-navy-200"
+                    className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-md px-1 py-1 text-left transition hover:bg-white/5 hover:text-ink-300"
                     title="Toon in dashboard"
                   >
                     <span className="truncate">{headerLabel}</span>
-                    <span className="font-normal normal-case text-navy-500">
+                    <span className="font-normal normal-case text-ink-700">
                       {section.count}
                     </span>
                   </button>
@@ -1968,12 +1971,12 @@ function Sidebar({
                     {section.children.map((c) => (
                       <div
                         key={c.id}
-                        className="mt-1 border-l border-navy-800 pl-2"
+                        className="mt-1 border-l border-ink-800 pl-2"
                       >
                         <button
                           type="button"
                           onClick={() => onSelectGroup(c.id)}
-                          className="mb-0.5 flex w-full items-center justify-between gap-2 rounded-md px-2 py-0.5 text-left text-[10px] font-semibold uppercase tracking-wider text-navy-500 transition hover:bg-white/5 hover:text-navy-300"
+                          className="mb-0.5 flex w-full items-center justify-between gap-2 rounded-md px-2 py-0.5 text-left text-[10px] font-semibold text-ink-700 transition hover:bg-white/5 hover:text-ink-500"
                           title="Toon in dashboard"
                         >
                           <span className="truncate">{c.label}</span>
@@ -2001,7 +2004,7 @@ function Sidebar({
 
       <button
         onClick={onViewSite}
-        className="mt-auto flex flex-shrink-0 items-center gap-2 rounded-lg px-2 py-2 pt-4 text-xs font-medium text-navy-400 transition hover:text-navy-100"
+        className="mt-auto flex flex-shrink-0 items-center gap-2 rounded-lg px-2 py-2 pt-4 text-xs font-medium text-ink-600 transition hover:text-ink-200"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="9" />
@@ -2044,7 +2047,7 @@ function SidebarPotList({
               className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition ${
                 active
                   ? "bg-white/10 font-semibold text-white"
-                  : "text-navy-200 hover:bg-white/5 hover:text-white"
+                  : "text-ink-300 hover:bg-white/5 hover:text-white"
               }`}
             >
               <span
@@ -2053,7 +2056,7 @@ function SidebarPotList({
                 style={{ backgroundColor: p.color ?? "#1D9E75" }}
               />
               <span className="truncate">{p.name}</span>
-              <span className="ml-auto text-[11px] text-navy-400">
+              <span className="ml-auto text-[11px] text-ink-600">
                 €{Math.round(balanceFor(p.id))}
               </span>
             </button>
@@ -2120,7 +2123,7 @@ function BottomNav({
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-30 flex border-t border-navy-100 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_8px_-2px_rgba(15,23,42,0.06)] lg:hidden dark:border-navy-800 dark:bg-navy-900"
+      className="fixed inset-x-0 bottom-0 z-30 flex border-t border-ink-200 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_8px_-2px_rgba(15,23,42,0.06)] lg:hidden dark:border-ink-800 dark:bg-ink-950"
       aria-label="Navigatie"
     >
       {items.map((it) => {
@@ -2135,8 +2138,8 @@ function BottomNav({
               items.length > 5 ? "text-[10px]" : "text-[11px]"
             } ${
               active
-                ? "text-teal-600 dark:text-teal-400"
-                : "text-navy-400 hover:text-navy-700 dark:text-navy-400 dark:hover:text-white"
+                ? "text-in-600 dark:text-in-400"
+                : "text-ink-600 hover:text-ink-800 dark:text-ink-600 dark:hover:text-white"
             }`}
           >
             <span className="relative">
@@ -2153,14 +2156,14 @@ function BottomNav({
                 {it.icon}
               </svg>
               {it.badge && (
-                <span className="absolute -right-1.5 -top-1 flex min-w-[14px] items-center justify-center rounded-full bg-teal-500 px-1 text-[9px] font-bold text-white">
+                <span className="absolute -right-1.5 -top-1 flex min-w-[14px] items-center justify-center rounded-full bg-in-600 px-1 text-[9px] font-bold text-white">
                   {it.badge}
                 </span>
               )}
             </span>
             <span className="max-w-full truncate">{it.label}</span>
             {active && (
-              <span className="absolute -top-px h-0.5 w-8 rounded-full bg-teal-500" />
+              <span className="absolute -top-px h-0.5 w-8 rounded-full bg-in-600" />
             )}
           </button>
         );
@@ -2182,7 +2185,7 @@ function BrandLogo({
     return (
       <span
         className={`flex items-center justify-center overflow-hidden rounded-xl ${
-          variant === "light" ? "bg-white/10 ring-1 ring-white/20" : "bg-canvas dark:bg-navy-800"
+          variant === "light" ? "bg-white/10 ring-1 ring-white/20" : "bg-ink-50 dark:bg-ink-900"
         }`}
         style={{ width: size, height: size }}
       >
@@ -2215,14 +2218,14 @@ function NavItem({
       onClick={onClick}
       className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition ${
         active
-          ? "bg-teal-500/15 text-white"
-          : "text-navy-200 hover:bg-white/5 hover:text-white"
+          ? "bg-in-600/15 text-white"
+          : "text-ink-300 hover:bg-white/5 hover:text-white"
       }`}
     >
       {active && (
         <span
           aria-hidden
-          className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-teal-400"
+          className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-in-300"
         />
       )}
       <svg
@@ -2234,7 +2237,7 @@ function NavItem({
         strokeWidth="2"
         strokeLinejoin="round"
         strokeLinecap="round"
-        className={active ? "text-teal-300" : ""}
+        className={active ? "text-in-400" : ""}
       >
         {icon}
       </svg>
@@ -2242,7 +2245,7 @@ function NavItem({
       {badge && (
         <span
           className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-            active ? "bg-teal-400/20 text-teal-200" : "bg-white/10"
+            active ? "bg-in-300/20 text-in-300" : "bg-white/10"
           }`}
         >
           {badge}
@@ -2274,7 +2277,7 @@ function Topbar({
   onFeedback: () => void;
 }) {
   return (
-    <header className="border-b border-navy-100 bg-white dark:border-navy-800 dark:bg-navy-900">
+    <header className="border-b border-ink-200 bg-white dark:border-ink-800 dark:bg-ink-950">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-8">
         <div className="flex min-w-0 flex-1 items-center gap-2 lg:hidden">
           <BrandLogo branding={branding} size={32} />
@@ -2296,7 +2299,7 @@ function Topbar({
         <div className="flex flex-shrink-0 items-center gap-1.5 sm:gap-3">
           <button
             onClick={onFeedback}
-            className="inline-flex items-center gap-1.5 rounded-xl p-2 text-navy-500 transition hover:bg-navy-50 hover:text-navy-900 sm:px-3 dark:text-navy-300 dark:hover:bg-navy-800 dark:hover:text-white"
+            className="inline-flex items-center gap-1.5 rounded-xl p-2 text-ink-700 transition hover:bg-ink-50 hover:text-ink-900 sm:px-3 dark:text-ink-500 dark:hover:bg-ink-900 dark:hover:text-white"
             aria-label="Feedback geven"
             title="Feedback"
           >
@@ -2306,18 +2309,18 @@ function Topbar({
             <span className="hidden sm:inline">Feedback</span>
           </button>
           <ThemeToggle />
-          <div className="flex items-center gap-2.5 border-l border-navy-100 pl-2.5 dark:border-navy-700 sm:pl-3">
+          <div className="flex items-center gap-2.5 border-l border-ink-200 pl-2.5 dark:border-ink-800 sm:pl-3">
             <Avatar name={account.fullName} />
             <div className="hidden text-right sm:block">
-              <div className="text-sm font-semibold text-navy-900 dark:text-navy-50">
+              <div className="text-sm font-semibold text-ink-900 dark:text-ink-100">
                 {account.fullName}
               </div>
-              <div className="text-xs text-navy-400 dark:text-navy-300">{account.email}</div>
+              <div className="text-xs text-ink-600 dark:text-ink-500">{account.email}</div>
             </div>
           </div>
           <button
             onClick={onLogout}
-            className="rounded-xl p-2 text-navy-500 transition hover:bg-navy-50 hover:text-navy-900 sm:hidden dark:text-navy-300 dark:hover:bg-navy-800 dark:hover:text-white"
+            className="rounded-xl p-2 text-ink-700 transition hover:bg-ink-50 hover:text-ink-900 sm:hidden dark:text-ink-500 dark:hover:bg-ink-900 dark:hover:text-white"
             aria-label="Uitloggen"
             title="Uitloggen"
           >
