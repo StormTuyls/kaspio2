@@ -1823,7 +1823,10 @@ function Sidebar({
       return next;
     });
   return (
-    <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-ink-900 bg-ink-950 px-5 py-6 text-ink-200 lg:sticky lg:top-0 lg:flex lg:h-screen dark:border-ink-800">
+    <aside
+      className="hidden w-64 flex-shrink-0 flex-col border-r border-ink-900 px-5 py-6 text-ink-200 lg:sticky lg:top-0 lg:flex lg:h-screen dark:border-ink-800"
+      style={{ backgroundColor: "var(--oppervlak-chroom)" }}
+    >
       <div className="mb-8">
         <button
           onClick={() => onTab("dashboard")}

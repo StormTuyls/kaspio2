@@ -137,6 +137,10 @@
   --actie: var(--color-ink-950);
   --actie-hover: var(--color-ink-800);
   --focus: var(--color-ink-900);
+  /* Chroom (zijbalk, kopbalk) is in lichte modus donker en dus vanzelf apart.
+     In donkere modus zou het samenvallen met de pagina, dus daar gaat het een
+     trap dieper in plaats van gelijk. */
+  --oppervlak-chroom: var(--color-ink-950);
 
   /* Een schaal, geen willekeurige getallen. */
   --z-dropdown: 10;
@@ -163,6 +167,7 @@ html.dark {
   --actie: var(--color-ink-100);
   --actie-hover: #ffffff;
   --focus: var(--color-ink-300);
+  --oppervlak-chroom: oklch(0.125 0.012 250);
   color-scheme: dark;
 }
 
