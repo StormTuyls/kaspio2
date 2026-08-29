@@ -7,10 +7,13 @@ export function Mark({
   size?: number;
   variant?: Variant;
 }) {
-  const bg = variant === "light" ? "rgba(255,255,255,0.08)" : "#1e2a3a";
-  const divider = variant === "light" ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.16)";
-  const accent = "#2fbf71";
-  const surface = variant === "light" ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.92)";
+  // Het merk draagt geen kleur meer. Groen betekent in dit systeem "geld erin",
+  // en een logo is geen bedrag. De vorm doet het werk: vier vakken, één vol.
+  // Op een donkere ondergrond ("light") wordt het teken zelf licht.
+  const bg = variant === "light" ? "rgba(255,255,255,0.10)" : "#0a0f14";
+  const divider = "rgba(255,255,255,0.16)";
+  const accent = "#ffffff";
+  const surface = "#ffffff";
 
   return (
     <svg
@@ -22,9 +25,9 @@ export function Mark({
       aria-label="Kaspio"
     >
       <rect x="0" y="0" width="36" height="36" rx="10" fill={bg} />
-      <rect x="6" y="6" width="11" height="11" rx="3" fill={surface} fillOpacity="0.18" />
-      <rect x="19" y="6" width="11" height="11" rx="3" fill={surface} fillOpacity="0.32" />
-      <rect x="6" y="19" width="11" height="11" rx="3" fill={surface} fillOpacity="0.5" />
+      <rect x="6" y="6" width="11" height="11" rx="3" fill={surface} fillOpacity="0.22" />
+      <rect x="19" y="6" width="11" height="11" rx="3" fill={surface} fillOpacity="0.36" />
+      <rect x="6" y="19" width="11" height="11" rx="3" fill={surface} fillOpacity="0.54" />
       <rect x="19" y="19" width="11" height="11" rx="3" fill={accent} />
       <line x1="18" y1="6" x2="18" y2="30" stroke={divider} strokeWidth="0.5" />
       <line x1="6" y1="18" x2="30" y2="18" stroke={divider} strokeWidth="0.5" />

@@ -218,7 +218,7 @@ function Hero({ onSignup, onDemo }: { onSignup: () => void; onDemo: () => void }
         <div className="text-left">
           <Reveal>
             <span className="mb-6 inline-flex items-center gap-2 rounded-full bg-ink-100 px-3 py-1 text-[0.75rem] font-medium text-ink-700 dark:bg-ink-900 dark:text-ink-300">
-              <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-in-600" />
+              <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-ink-900" />
               Gratis te starten
             </span>
           </Reveal>
