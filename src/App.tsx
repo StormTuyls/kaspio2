@@ -1294,6 +1294,7 @@ function AuthedApp({
                 groups={uiGroups}
                 pots={potsForUser}
                 allTransactions={store.state.transactions}
+                members={uiMembers}
                 isAdmin={!!isAdmin}
                 canUseGroups={groupsEnabled(tier)}
                 onUpgrade={goToUpgrade}

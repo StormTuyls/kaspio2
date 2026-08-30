@@ -9,6 +9,7 @@ import {
   ungroupedPots,
 } from "../storage";
 import { potProgress } from "../potProgress";
+import { POT_KLEUR_STANDAARD } from "../types";
 import type { Member, Pot, PotGroup, Transaction } from "../types";
 import { UpgradeHint } from "../components/UpgradeHint";
 import { Bedrag } from "../components/Bedrag";
@@ -321,7 +322,10 @@ export function PotCard({
     { balance, totalOut: calcSpent(transactions, pot.id) },
     pot.forecastAmount,
   );
-  const kleur = pot.color ?? "currentColor";
+  // Eén fallback voor de hele app; currentColor gaf een zwarte stip in
+  // lichte modus en een witte in donkere, terwijl de zijbalk hetzelfde potje
+  // in het groen zette.
+  const kleur = pot.color ?? POT_KLEUR_STANDAARD;
 
   return (
     <div className="group grid grid-cols-[auto_1fr_auto] items-baseline gap-x-3 border-b border-ink-200 py-2.5 transition-colors hover:bg-ink-50 sm:gap-x-4 dark:border-ink-800 dark:hover:bg-ink-900">
@@ -362,14 +366,22 @@ export function PotCard({
           bedrag en lijnt er niets meer uit. */}
       <div className="flex items-baseline justify-end gap-3 justify-self-end">
         {progress && (
-          /* Massieve kleur, geen verloop: een verloop over 3px is onzichtbaar. */
+          /* Massieve kleur, geen verloop: een verloop over 3px is onzichtbaar.
+             Kleur betekent geld, ook hier: een spaardoel vult zich met geld dat
+             binnenkomt (groen), een budget met geld dat buitengaat (amber). De
+             balk stond in beide gevallen op groen, waardoor een budget dat
+             volloopt eruitzag als goed nieuws. Rood blijft voor de overschrijding. */
           <span
             className="hidden h-1 w-20 overflow-hidden rounded-full bg-ink-200 sm:block dark:bg-ink-800"
             aria-hidden
           >
             <span
               className={`block h-full rounded-full ${
-                progress.over ? "bg-fout-600" : "bg-in-600"
+                progress.over
+                  ? "bg-fout-600"
+                  : progress.kind === "budget"
+                    ? "bg-uit-600"
+                    : "bg-in-600"
               }`}
               style={{ width: `${progress.barPct}%` }}
             />
