@@ -333,11 +333,16 @@ export function DashboardView({
               {sections.map((sec) => (
                 <div
                   key={sec.id ?? "__none__"}
-                  className="panel flex flex-col p-4"
+                  /* min-w-0: een grid-item heeft standaard min-width:auto, dus
+                     de kolom groeit mee met de langste potnaam en negeert de
+                     truncate erbinnen. Bij een klant met namen als "INKOMSTEN
+                     LESGELDEN ACHTERSTALLEN" werd de kolom 486px in een raster
+                     van 360, en scrollde de hele pagina zijwaarts. */
+                  className="panel flex min-w-0 flex-col p-4"
                 >
                   <button
                     onClick={() => onOpenGroup(sec.id)}
-                    className="group mb-3 flex items-baseline justify-between gap-2 text-left"
+                    className="group mb-3 flex w-full min-w-0 items-baseline justify-between gap-2 py-1 text-left"
                   >
                     <span className="flex min-w-0 items-baseline gap-2">
                       <span className="truncate text-[0.8125rem] font-semibold text-basis transition-colors group-hover:text-sterk">
@@ -363,7 +368,10 @@ export function DashboardView({
                             className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
                             style={{ backgroundColor: p.color ?? POT_KLEUR_STANDAARD }}
                           />
-                          <span className="min-w-0 flex-1 truncate text-ink-800 dark:text-ink-300">
+                          {/* text-basis, niet een eigen ink-800/ink-300-paar:
+                              de semantische laag bestaat juist zodat er niet
+                              veertien varianten van "secundaire tekst" ontstaan. */}
+                          <span className="min-w-0 flex-1 truncate text-basis">
                             {p.name}
                           </span>
                           <span className="flex-shrink-0 font-num tabular-nums text-basis">

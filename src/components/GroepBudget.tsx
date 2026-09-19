@@ -55,6 +55,7 @@ export function GroepBudgetRegel({
       {budget && (
         <Meting
           label="Budget"
+          werkelijkLabel="uitgegeven"
           plan={budget.budget}
           werkelijk={budget.uitgegeven}
           pct={budget.pct}
@@ -70,6 +71,7 @@ export function GroepBudgetRegel({
       {doel && (
         <Meting
           label="Doel"
+          werkelijkLabel="saldo"
           plan={doel.doel}
           werkelijk={doel.saldo}
           pct={doel.pct}
@@ -90,6 +92,7 @@ export function GroepBudgetRegel({
 
 function Meting({
   label,
+  werkelijkLabel,
   plan,
   werkelijk,
   pct,
@@ -100,6 +103,8 @@ function Meting({
   stand,
 }: {
   label: string;
+  /** Woord voor het tweede bedrag. Alleen zichtbaar waar de balk dat niet is. */
+  werkelijkLabel: string;
   plan: number;
   werkelijk: number;
   pct: number;
@@ -130,7 +135,13 @@ function Meting({
 
       {/* Het plan staat links, hier staat wat er werkelijk gebeurd is. Het
           percentage alleen zou de vraag "hoeveel is dat dan" openlaten, en dat
-          is precies het getal waar een penningmeester naar zoekt. */}
+          is precies het getal waar een penningmeester naar zoekt.
+
+          Onder sm valt de balk hierboven weg, en dan stonden er twee bedragen
+          naast elkaar zonder dat iets zei welk het plan was en welk de stand:
+          "Budget EUR 154.460,00 EUR 24.746,46 16%". Het woord neemt die taak
+          over zodra de balk er niet is, en verdwijnt zodra ze er wel is. */}
+      <span className="text-zacht sm:hidden">{werkelijkLabel}</span>
       <span
         className={`amount font-semibold ${
           overschreden ? "text-fout-600 dark:text-fout-400" : "text-sterk"

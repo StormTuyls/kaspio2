@@ -827,7 +827,13 @@ function GroepRij({
           onClick={onToggle}
           aria-expanded={open}
           aria-label={`${groep.name} ${open ? "inklappen" : "uitklappen"}`}
-          className="-ml-1 flex-shrink-0 self-center rounded p-1 text-zacht transition-colors hover:bg-vlak-gedempt hover:text-sterk"
+          /* Het pijltje blijft optisch 22px, maar het raakvlak rekt via ::after
+             uit tot 44px hoog. Groter maken zou elke groepsregel hoger maken, en
+             met dertien comites is dat een halve schermhoogte extra.
+             Alleen verticaal en naar links de gutter in: een vierkant van 44
+             breed liep vier pixels over de groepsnaam ernaast, en dan opent een
+             tik aan de linkerrand van die naam de groep niet maar klapt hem in. */
+          className="relative -ml-1 flex-shrink-0 self-center rounded p-1 text-zacht transition-colors after:absolute after:-inset-y-[11px] after:-left-2 after:right-0 after:content-[''] hover:bg-vlak-gedempt hover:text-sterk"
         >
           <svg
             width="14"

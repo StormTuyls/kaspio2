@@ -207,6 +207,19 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* De rembasis is 15px en niet de browserstandaard 16px. Dat is een bewuste
+   typografische keuze, maar het betekent dat elke rem-maat 6,25% kleiner
+   uitvalt dan de schaal van Tailwind aanneemt: min-h-11 geeft 41px in plaats
+   van 44, en text-base geeft 15px in plaats van 16.
+
+   Voor gewone tekst maakt dat niets uit. Voor twee dingen wel, en die staan
+   daarom in absolute pixels in @layer components hieronder:
+     - de minimumhoogte van een touch-doel (44px),
+     - de tekstgrootte in een invoerveld (16px, anders zoomt iOS Safari in).
+   Schrijf voor die twee dus geen min-h-11 of text-base.
+
+   Mediaquery's zijn hier niet door geraakt: `rem` rekent daar tegen de
+   initiële 16px, dus sm: breekt gewoon op 640px. */
 html,
 body {
   font-family: var(--font-sans);
@@ -267,9 +280,24 @@ html.dark ::selection {
   .btn-secondary,
   .btn-ghost,
   .btn-danger {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3.5
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5
       text-[0.875rem] font-semibold whitespace-nowrap transition-colors duration-150
-      disabled:cursor-not-allowed disabled:opacity-45 sm:min-h-9;
+      disabled:cursor-not-allowed disabled:opacity-45;
+    /* Absolute pixels, bewust niet min-h-11. De rembasis hierboven is 15px, dus
+       2.75rem levert 41px op terwijl hier 44px hoort te staan: de maat die dit
+       bestand al sinds het begin belooft. Zie de notitie bij html/body. */
+    min-height: 44px;
+  }
+
+  @media (min-width: 640px) {
+    .btn,
+    .btn-primary,
+    .btn-accent,
+    .btn-secondary,
+    .btn-ghost,
+    .btn-danger {
+      min-height: 36px;
+    }
   }
 
   .btn--primary,
@@ -320,11 +348,22 @@ html.dark ::selection {
   /* --- Invoer -------------------------------------------------------------
      16px op touch, want kleiner laat iOS Safari inzoomen bij focus. */
   .input {
-    @apply min-h-11 w-full rounded-lg px-3 py-2 text-base transition-colors
-      sm:min-h-9 sm:text-[0.875rem];
+    @apply w-full rounded-lg px-3 py-2 transition-colors;
+    /* 16px letterlijk, niet text-base. Met een rembasis van 15px levert 1rem
+       precies 15px op, en onder de 16px zoomt iOS Safari in zodra je een veld
+       aanraakt , de bug die deze regel hoort te voorkomen. */
+    font-size: 16px;
+    min-height: 44px;
     background: var(--oppervlak-verhoogd);
     color: var(--tekst);
     box-shadow: inset 0 0 0 1px var(--lijn-sterk);
+  }
+
+  @media (min-width: 640px) {
+    .input {
+      font-size: 0.875rem;
+      min-height: 36px;
+    }
   }
   .input::placeholder {
     /* Gemeten 4.64:1. De vorige placeholder haalde 2.43:1. */

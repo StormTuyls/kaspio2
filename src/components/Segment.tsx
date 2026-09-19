@@ -43,7 +43,9 @@ export function Segment<T extends string>({
             type="button"
             onClick={() => onChange(o.id)}
             aria-pressed={actief}
-            className={`min-h-11 rounded-sm px-2.5 text-xs font-semibold transition-colors sm:min-h-8 ${
+            /* min-h-[44px] en niet min-h-11: de rembasis is 15px, zie de
+               notitie in App.css. */
+            className={`min-h-[44px] rounded-sm px-2.5 text-xs font-semibold transition-colors sm:min-h-8 ${
               actief ? "text-sterk" : "text-zacht hover:text-sterk"
             }`}
             style={actief ? { background: "var(--oppervlak-verhoogd)" } : undefined}

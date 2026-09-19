@@ -252,6 +252,20 @@ schermlezer is dat de naam van het veld, dus "Potje" heette in werkelijkheid
 je het later." Bij elke focus opnieuw. De hint hangt er nu aan via
 `aria-describedby`, waar hij hoort.
 
+### De rembasis is 15px
+
+Bewust, maar het heeft een addertje: elke `rem`-maat valt 6,25% kleiner uit dan
+de schaal van Tailwind aanneemt. `min-h-11` geeft 41px en `text-base` geeft
+15px. Voor lopende tekst maakt dat niets uit, voor twee dingen wel:
+
+- **een touch-doel is 44px**, niet `min-h-11`. Schrijf `min-h-[44px]`.
+- **een invoerveld is 16px op touch**, niet `text-base`. Onder de 16px zoomt
+  iOS Safari in zodra je het veld aanraakt.
+
+`.btn` en `.input` regelen dit zelf in absolute pixels; schrijf je een knop of
+veld buiten die klassen, doe het dan ook. Mediaquery's zijn niet geraakt: `rem`
+rekent daar tegen de initiële 16px, dus `sm:` breekt gewoon op 640px.
+
 ## Anti-patterns die hier verboden zijn
 
 - Gekleurde zijstrepen op kaarten of rijen.

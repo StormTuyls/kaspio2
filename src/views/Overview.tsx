@@ -504,7 +504,10 @@ export function PotCard({
   const kleur = pot.color ?? POT_KLEUR_STANDAARD;
 
   return (
-    <div className="group grid grid-cols-[auto_1fr_auto] items-baseline gap-x-3 border-b border-ink-200 py-2.5 transition-colors hover:bg-ink-50 sm:gap-x-4 dark:border-ink-800 dark:hover:bg-ink-900">
+    /* relative, zodat de naamknop hieronder haar raakvlak over de hele rij kan
+       uitrekken. Zonder dat is het doel op een telefoon 22px hoog in een rij
+       van 57px, en tik je drie keer mis voor je het potje opent. */
+    <div className="group relative grid grid-cols-[auto_1fr_auto] items-baseline gap-x-3 border-b border-ink-200 py-2.5 transition-colors hover:bg-ink-50 sm:gap-x-4 dark:border-ink-800 dark:hover:bg-ink-900">
       <span
         aria-hidden
         className="h-2 w-2 translate-y-[-1px] rounded-full"
@@ -512,9 +515,12 @@ export function PotCard({
       />
 
       <div className="min-w-0">
+        {/* De toegankelijke naam blijft alleen de potnaam; het raakvlak beslaat
+            via ::after de hele rij. Een <button> om de rij zou de naam weer de
+            volledige inhoud maken, en dat is precies wat hier is weggehaald. */}
         <button
           onClick={onSelect}
-          className="max-w-full truncate text-left text-[0.9375rem] font-medium text-sterk underline-offset-4 hover:underline"
+          className="max-w-full truncate text-left text-[0.9375rem] font-medium text-sterk underline-offset-4 after:absolute after:inset-0 after:content-[''] hover:underline"
         >
           {pot.name}
         </button>
