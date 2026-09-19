@@ -1,18 +1,30 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   loadCollapsedGroups,
+  loadWeergave,
   potsInGroup,
   rootGroups,
   saveCollapsedGroups,
+  saveWeergave,
   subGroups,
   ungroupedPots,
 } from "../storage";
+import type { Weergave } from "../storage";
 import type { Member, Pot, PotGroup, Transaction } from "../types";
+import { bedragenPerPot, groepRollup } from "../groupProgress";
+import type { GroepRollup } from "../groupProgress";
 import { UpgradeHint } from "../components/UpgradeHint";
 import { useConfirm } from "../components/ConfirmDialog";
 import { Bedrag } from "../components/Bedrag";
 import { Foutmelding } from "../components/Foutmelding";
+import { Segment } from "../components/Segment";
+import { GroepBudgetRegel } from "../components/GroepBudget";
 import { PotCard } from "./Overview";
+
+const WEERGAVES = [
+  { id: "lijst", label: "Lijst" },
+  { id: "blokken", label: "Blokken" },
+] as const satisfies readonly { id: Weergave; label: string }[];
 
 /** Waarde in de <select> die "geen hoofdgroep, dit is er zelf een" betekent. */
 const ROOT = "__root__";
@@ -104,21 +116,17 @@ export function GroupsView({
 
   // Eén doorloop over de transacties in plaats van per potje opnieuw filteren.
   // Met honderdtwintig potjes en enkele duizenden verrichtingen scheelt dat een
-  // merkbare hoeveelheid werk bij elke toetsaanslag in het zoekveld.
-  const saldoPerPot = useMemo(() => {
-    const saldi = new Map<string, number>();
-    for (const p of pots) saldi.set(p.id, 0);
-    for (const t of allTransactions) {
-      if (!t.potId || t.status === "pending") continue;
-      const huidig = saldi.get(t.potId);
-      if (huidig === undefined) continue;
-      saldi.set(t.potId, huidig + (t.direction === "in" ? t.amount : -t.amount));
-    }
-    return saldi;
-  }, [pots, allTransactions]);
+  // merkbare hoeveelheid werk bij elke toetsaanslag in het zoekveld. Dezelfde
+  // index voedt de saldo's én de budgetrollup per groep.
+  const bedragen = useMemo(() => bedragenPerPot(allTransactions), [allTransactions]);
 
   const saldoVan = (lijst: Pot[]) =>
-    lijst.reduce((som, p) => som + (saldoPerPot.get(p.id) ?? 0), 0);
+    lijst.reduce((som, p) => som + bedragen.saldo(p.id), 0);
+
+  // Budget en prognose van een groep worden over dezelfde potjes gerekend als
+  // het bedrag ernaast. Tijdens het zoeken zijn dat alleen de zichtbare potjes,
+  // anders staat er een budget boven regels die het niet verklaren.
+  const rollupVan = (lijst: Pot[]) => groepRollup(lijst, bedragen);
 
   const totaal = saldoVan(pots);
 
@@ -135,6 +143,21 @@ export function GroupsView({
   useEffect(() => {
     setCollapsed(loadCollapsedGroups(`groepen:${orgId}`));
   }, [orgId]);
+
+  // Lijst of blokken. Lijst is de standaard en het idioom van deze pagina: een
+  // document waarin de totalen optellen. Blokken is de uitzondering, voor wie
+  // acht comités naast elkaar wil leggen in plaats van onder elkaar; zie de
+  // notitie bij dat raster verderop.
+  const [weergave, setWeergave] = useState<Weergave>(() =>
+    loadWeergave(`groepen:${orgId}`, "lijst"),
+  );
+  useEffect(() => {
+    setWeergave(loadWeergave(`groepen:${orgId}`, "lijst"));
+  }, [orgId]);
+  function kiesWeergave(keuze: Weergave) {
+    saveWeergave(`groepen:${orgId}`, keuze);
+    setWeergave(keuze);
+  }
 
   function persist(next: Set<string>) {
     saveCollapsedGroups(`groepen:${orgId}`, next);
@@ -282,7 +305,15 @@ export function GroupsView({
               className="input"
             />
           </div>
-          {roots.length > 1 && !zoekt && (
+          <Segment
+            opties={WEERGAVES}
+            waarde={weergave}
+            onChange={kiesWeergave}
+            label="Weergave van de groepen"
+          />
+          {/* Inklappen gaat over de potjes onder een groep, en die staan er in
+              blokken sowieso niet. */}
+          {weergave === "lijst" && roots.length > 1 && !zoekt && (
             <button onClick={toggleAll} className="btn btn--secondary text-sm">
               {anyOpen ? "Alles inklappen" : "Alles uitklappen"}
             </button>
@@ -390,6 +421,61 @@ export function GroupsView({
             </button>
           )}
         </div>
+      ) : weergave === "blokken" ? (
+        /* Blokken , bewust een uitzondering op "lijnen, geen dozen".
+           ---------------------------------------------------------------
+           De lijst hierboven is het idioom van deze pagina en blijft de
+           standaard. Maar acht comités met elk een budget zijn niet alleen een
+           optelsom, ze zijn ook een vergelijking, en vergelijken doe je naast
+           elkaar en niet onder elkaar. Daarvoor is dit raster, opt-in.
+
+           Wat de uitzondering niet mag meenemen: geen potjes in het blok (dat
+           zou een kaart in een kaart zijn), geen gekleurde rand of zijstreep om
+           de stand te coderen, geen <button> om het hele blok. Alleen .panel,
+           de semantische tekstrollen en dezelfde balk als in PotCard. Zie ook
+           de notitie in DESIGN.md onder Layout. */
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(17rem,1fr))] gap-3">
+          {takken.flatMap(({ groep, eigenPotjes, kinderen }) => {
+            const takZichtbaar = [
+              ...eigenPotjes,
+              ...kinderen.flatMap((k) => k.potjes),
+            ];
+            const diep = potsInGroup(pots, groups, groep.id, true);
+            const hoofdPotjes = zoekt ? takZichtbaar : diep;
+            return [
+              <GroepBlok
+                key={groep.id}
+                groep={groep}
+                onderNaam={null}
+                potCount={hoofdPotjes.length}
+                childCount={subGroups(groups, groep.id).length}
+                saldo={saldoVan(hoofdPotjes)}
+                rollup={rollupVan(hoofdPotjes)}
+                onOpen={onOpenGroup ? () => onOpenGroup(groep.id) : undefined}
+                onSelectPot={onSelectPot}
+              />,
+              /* De subgroep krijgt haar eigen blok, direct na haar hoofdgroep in
+                 dezelfde rasterstroom. Haar bedrag zit ook in het bloktotaal
+                 hierboven; "onder <naam>" zegt dat het geen derde comité is. */
+              ...kinderen.map(({ groep: kind, potjes }) => {
+                const kindPotjes = zoekt ? potjes : potsInGroup(pots, groups, kind.id);
+                return (
+                  <GroepBlok
+                    key={kind.id}
+                    groep={kind}
+                    onderNaam={groep.name}
+                    potCount={kindPotjes.length}
+                    childCount={0}
+                    saldo={saldoVan(kindPotjes)}
+                    rollup={rollupVan(kindPotjes)}
+                    onOpen={onOpenGroup ? () => onOpenGroup(kind.id) : undefined}
+                    onSelectPot={onSelectPot}
+                  />
+                );
+              }),
+            ];
+          })}
+        </div>
       ) : (
         <div>
           {takken.map(({ groep, eigenPotjes, kinderen }) => {
@@ -408,6 +494,8 @@ export function GroupsView({
                   vanCount={zoekt ? potjesDiep.length : undefined}
                   childCount={subGroups(groups, groep.id).length}
                   saldo={saldoVan(zoekt ? takZichtbaar : potjesDiep)}
+                  rollup={rollupVan(zoekt ? takZichtbaar : potjesDiep)}
+                  onSelectPot={onSelectPot}
                   open={open}
                   onToggle={() => toggle(groep.id)}
                   onOpen={onOpenGroup ? () => onOpenGroup(groep.id) : undefined}
@@ -443,6 +531,8 @@ export function GroupsView({
                                 vanCount={zoekt ? kindPotjes.length : undefined}
                                 childCount={0}
                                 saldo={saldoVan(zoekt ? potjes : kindPotjes)}
+                                rollup={rollupVan(zoekt ? potjes : kindPotjes)}
+                                onSelectPot={onSelectPot}
                                 open={kindOpen}
                                 onToggle={() => toggle(kind.id)}
                                 onOpen={
@@ -505,6 +595,95 @@ export function GroupsView({
 }
 
 /**
+ * Eén groep als blok, voor de blokkenweergave.
+ *
+ * Dit is de uitzondering op "lijnen, geen dozen" en blijft daarom zo dun
+ * mogelijk: een `.panel` met de naam, wat erin zit, het bedrag, en de
+ * budgetregel. Geen potjes erin , dat zou een kaart in een kaart zijn, en het
+ * is ook precies wat je hier niet wil zien: je vergelijkt comités en duikt pas
+ * in de potjes van het comité dat eruit springt.
+ *
+ * Geen gekleurde rand om de stand te coderen. Dat is een verboden zijstreep en
+ * bovendien overbodig: de balk en het label zeggen het al.
+ *
+ * Geen <button> om het hele blok, anders wordt de toegankelijke naam de hele
+ * inhoud. De naam is de link, de rest is tekst.
+ */
+function GroepBlok({
+  groep,
+  onderNaam,
+  potCount,
+  childCount,
+  saldo,
+  rollup,
+  onOpen,
+  onSelectPot,
+}: {
+  groep: PotGroup;
+  /** Gevuld bij een subgroep: onder welke hoofdgroep ze hangt. */
+  onderNaam: string | null;
+  potCount: number;
+  childCount: number;
+  saldo: number;
+  rollup: GroepRollup;
+  onOpen?: () => void;
+  onSelectPot: (potId: string) => void;
+}) {
+  const sub = onderNaam !== null;
+  const Kop = sub ? "h3" : "h2";
+  const bijschrift = [
+    potCount > 0 ? `${potCount} ${potCount === 1 ? "potje" : "potjes"}` : null,
+    childCount > 0 ? `${childCount} subgroep${childCount > 1 ? "en" : ""}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <section className="panel flex flex-col gap-3 p-4">
+      <div className="min-w-0">
+        {sub && (
+          <p className="meta truncate">
+            onder <span className="text-basis">{onderNaam}</span>
+          </p>
+        )}
+        <Kop
+          className={`min-w-0 truncate ${
+            sub ? "text-[0.9375rem] font-semibold text-sterk" : "sectiekop"
+          }`}
+        >
+          {onOpen ? (
+            <button
+              type="button"
+              onClick={onOpen}
+              className="max-w-full truncate text-left underline-offset-4 hover:underline"
+            >
+              {groep.name}
+            </button>
+          ) : (
+            groep.name
+          )}
+        </Kop>
+        {bijschrift && <p className="meta mt-0.5 truncate">{bijschrift}</p>}
+      </div>
+
+      <Bedrag
+        waarde={saldo}
+        gekleurd={false}
+        className="text-[1.25rem] font-bold"
+      />
+
+      <GroepBudgetRegel
+        budget={rollup.budget}
+        doel={rollup.doel}
+        probleemPotjes={rollup.probleemPotjes}
+        onSelectPot={onSelectPot}
+        gestapeld
+      />
+    </section>
+  );
+}
+
+/**
  * De kop van één groep: pijltje, naam, wat erin zit, en het totaal.
  *
  * Bewust geen <button> om de hele rij: de toegankelijke naam wordt dan de
@@ -518,6 +697,8 @@ function GroepRij({
   vanCount,
   childCount,
   saldo,
+  rollup,
+  onSelectPot,
   open,
   onToggle,
   onOpen,
@@ -539,6 +720,9 @@ function GroepRij({
   childCount: number;
   /** Saldo inclusief subgroepen, dus voor een hoofdgroep het bloktotaal. */
   saldo: number;
+  /** Budget en doel over dezelfde potjes als het saldo hierboven. */
+  rollup: GroepRollup;
+  onSelectPot: (potId: string) => void;
   open: boolean;
   onToggle: () => void;
   onOpen?: () => void;
@@ -725,6 +909,21 @@ function GroepRij({
           }`}
         />
       </div>
+
+      {/* Budget en prognose van de groep. Het antwoord op "blijft dit comité
+          binnen wat we afgesproken hebben", zodat je pas in de potjes hoeft te
+          duiken als het antwoord nee is.
+
+          De probleempotjes staan er alleen bij als de groep dicht is. Staat ze
+          open, dan staan die potjes één regel lager met hun eigen rode
+          percentage, en zou deze lijst hetzelfde nog eens zeggen. */}
+      <GroepBudgetRegel
+        budget={rollup.budget}
+        doel={rollup.doel}
+        probleemPotjes={open ? [] : rollup.probleemPotjes}
+        onSelectPot={onSelectPot}
+        className="py-1.5 pl-5"
+      />
 
       {/* Beheerrij. Staat er alleen in beheermodus, en dan als één stille regel
           onder de kop in plaats van als knoppenbalk in elke groep. */}

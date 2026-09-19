@@ -1263,6 +1263,7 @@ function AuthedApp({
               />
             ) : tab === "potjes" ? (
               <PotsView
+                orgId={org.id}
                 pots={potsForUser}
                 allTransactions={store.state.transactions}
                 members={uiMembers}

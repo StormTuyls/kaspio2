@@ -88,6 +88,7 @@ export function DemoView({ onSignup, onExit }: Props) {
           />
         ) : tab === "potjes" ? (
           <PotsView
+            orgId={org.id}
             pots={org.pots}
             allTransactions={org.transactions}
             members={org.members}
