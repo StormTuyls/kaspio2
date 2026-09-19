@@ -155,6 +155,27 @@ Een kaart (`.panel`) is toegestaan als het ding echt los staat van de leesrichti
 een dialoog, een neerklapmenu, een blok dat je kan verplaatsen. Niet voor
 "een lijst met een kopje erboven".
 
+**Eén uitzondering, en ze staat hier zodat ze geen precedent wordt.** De
+groepen- en de potjespagina hebben naast de lijst een blokkenweergave: een
+`repeat(auto-fit, minmax(…, 1fr))`-raster van `.panel`-blokken, achter een
+`<Segment>`. De reden is dat acht comités met elk een budget niet alleen een
+optelsom zijn maar ook een vergelijking, en vergelijken doe je naast elkaar.
+
+De voorwaarden waaronder ze mag bestaan:
+
+- **Lijst blijft de standaard.** De blokken zijn opt-in en worden per toestel
+  onthouden, niet per organisatie.
+- **Geen doos in een doos.** Een groepsblok toont de groepscijfers, nooit de
+  potjes die erin zitten.
+- **De stand wordt niet in de rand gecodeerd.** Geen gekleurde omlijsting of
+  zijstreep om "over budget" te zeggen; daar zijn de balk en het label voor.
+- **Geen `<button>` om het blok.** De naam is de link, de rest is tekst.
+- Verder gelden alle regels hieronder onverkort: semantische tekstrollen,
+  `font-num` op elk bedrag, massieve kleur zonder verloop.
+
+Blijkt bij gebruik dat niemand de blokken aanzet, dan gaan ze eruit en blijft
+het document over.
+
 Spacingschaal, met ritme in plaats van overal hetzelfde:
 
 ```

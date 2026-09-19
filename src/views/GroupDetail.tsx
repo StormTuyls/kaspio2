@@ -12,6 +12,8 @@ import type { Member, Pot, PotGroup, Transaction } from "../types";
 import type { SubTier } from "../supabase";
 import { chartsEnabled } from "../data";
 import { BalanceChart } from "../components/BalanceChart";
+import { bedragenPerPot, groepRollup } from "../groupProgress";
+import { GroepBudgetRegel } from "../components/GroepBudget";
 
 type Props = {
   group: PotGroup;
@@ -93,6 +95,15 @@ export function GroupDetail({
 
   // Saldo = som van de potjes (all-time, goedgekeurd). calcBalance negeert pending.
   const saldo = groupPots.reduce((s, p) => s + calcBalance(allTransactions, p.id), 0);
+
+  // Budget en prognose van de hele groep, met dezelfde rekensom als op de
+  // groepenpagina. Bewust all-time en niet per periode: een budget is een
+  // afspraak voor het hele werkjaar, geen maandcijfer, dus de periodekiezer
+  // hierboven raakt dit blok niet.
+  const rollup = useMemo(
+    () => groepRollup(groupPots, bedragenPerPot(allTransactions)),
+    [groupPots, allTransactions],
+  );
 
   // Goedgekeurde transacties binnen de groep.
   const groupTx = useMemo(
@@ -271,6 +282,25 @@ export function GroupDetail({
           </p>
         </div>
       </div>
+
+      {/* Budget en prognose van de groep. Staat boven alles wat per potje gaat:
+          eerst de vraag of de groep binnen plan blijft, en pas als het antwoord
+          nee is de vraag welk potje dat doet. De probleempotjes staan er hier
+          altijd bij, want de potjeslijst staat verderop op de pagina en niet
+          direct onder deze regel. */}
+      {(rollup.budget || rollup.doel) && (
+        <section>
+          <h2 className="sectiekop mb-2">Budget en prognose</h2>
+          <GroepBudgetRegel
+            budget={rollup.budget}
+            doel={rollup.doel}
+            probleemPotjes={rollup.probleemPotjes}
+            onSelectPot={onSelectPot}
+            gestapeld
+            className="border-t border-rand pt-3"
+          />
+        </section>
+      )}
 
       {/* Cashflow-grafiek (Pro+) over de groep */}
       {chartsEnabled(tier) && groupTx.length > 0 && (

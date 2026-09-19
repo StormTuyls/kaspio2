@@ -4,17 +4,28 @@ import {
   calcSpent,
   formatDate,
   formatEuro,
+  loadWeergave,
   potsInGroup,
   rootGroups,
+  saveWeergave,
   ungroupedPots,
 } from "../storage";
+import type { Weergave } from "../storage";
 import { potProgress } from "../potProgress";
 import { POT_KLEUR_STANDAARD } from "../types";
 import type { Member, Pot, PotGroup, Transaction } from "../types";
 import { UpgradeHint } from "../components/UpgradeHint";
 import { Bedrag } from "../components/Bedrag";
+import { Segment } from "../components/Segment";
+
+const WEERGAVES = [
+  { id: "lijst", label: "Lijst" },
+  { id: "blokken", label: "Blokken" },
+] as const satisfies readonly { id: Weergave; label: string }[];
 
 type PotsViewProps = {
+  /** Nodig om de gekozen weergave per organisatie te bewaren. */
+  orgId: string;
   pots: Pot[];
   allTransactions: Transaction[];
   members: Member[];
@@ -45,6 +56,7 @@ export const NONE_KEY = "__none__";
 
 /** De Potjes-pagina: alle potjes als kaarten, gegroepeerd + inklapbaar. */
 export function PotsView({
+  orgId,
   pots,
   allTransactions,
   members,
@@ -81,6 +93,20 @@ export function PotsView({
   const sumBalance = (groupPots: Pot[]) =>
     groupPots.reduce((sum, p) => sum + calcBalance(allTransactions, p.id), 0);
 
+  // Lijst of blokken. Lijst is de standaard: honderdtwintig posten lees je als
+  // een kasboek, niet als honderdtwintig dozen. Blokken is er voor een korte
+  // lijst die je in één oogopslag wil zien; zie de notitie bij PotBlok.
+  const [weergave, setWeergave] = useState<Weergave>(() =>
+    loadWeergave(`potjes:${orgId}`, "lijst"),
+  );
+  useEffect(() => {
+    setWeergave(loadWeergave(`potjes:${orgId}`, "lijst"));
+  }, [orgId]);
+  function kiesWeergave(keuze: Weergave) {
+    saveWeergave(`potjes:${orgId}`, keuze);
+    setWeergave(keuze);
+  }
+
   // Inklapbare groep-secties: ingeklapte ids in een Set.
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const toggle = (key: string) =>
@@ -109,9 +135,19 @@ export function PotsView({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-        <h1 className="titel">
-          {seesAll ? "Alle potjes" : "Mijn potjes"}
-        </h1>
+        <div className="flex min-w-0 items-center gap-3">
+          <h1 className="titel">
+            {seesAll ? "Alle potjes" : "Mijn potjes"}
+          </h1>
+          {pots.length > 0 && (
+            <Segment
+              opties={WEERGAVES}
+              waarde={weergave}
+              onChange={kiesWeergave}
+              label="Weergave van de potjes"
+            />
+          )}
+        </div>
         {/* Vier gelijkwaardige knoppen kostten op een telefoon twee volle
             regels, samen bijna 190px voordat je een potje zag. Nu staat de
             primaire actie apart en delen de drie hulpacties er één, kleiner.
@@ -194,17 +230,13 @@ export function PotsView({
           )}
         </div>
       ) : !hasGroups ? (
-        <div className="border-t border-ink-200 dark:border-ink-800">
-          {pots.map((pot) => (
-            <PotCard
-              key={pot.id}
-              pot={pot}
-              owner={memberById.get(pot.ownerId)}
-              transactions={allTransactions}
-              onSelect={() => onSelect(pot.id)}
-            />
-          ))}
-        </div>
+        <PotCollectie
+          potjes={pots}
+          weergave={weergave}
+          memberById={memberById}
+          allTransactions={allTransactions}
+          onSelect={onSelect}
+        />
       ) : (
         <div className="space-y-3">
           {[
@@ -223,7 +255,14 @@ export function PotsView({
               <section
                 key={key}
                 id={`grp-${key}`}
-                className="scroll-mt-24 rounded-md border border-ink-200 bg-white/40 p-2 dark:border-ink-800/60 dark:bg-ink-950/30"
+                /* In blokken staan er .panel-blokken in deze sectie, en een
+                   omkaderde sectie eromheen zou een kaart in een kaart zijn.
+                   Dan draagt de kop met de haarlijn de groepering. */
+                className={
+                  weergave === "blokken"
+                    ? "scroll-mt-24 border-b border-rand pb-3"
+                    : "scroll-mt-24 rounded-md border border-ink-200 bg-white/40 p-2 dark:border-ink-800/60 dark:bg-ink-950/30"
+                }
               >
                 <button
                   type="button"
@@ -266,16 +305,14 @@ export function PotsView({
                   />
                 </button>
                 {!isCollapsed && (
-                  <div className="mt-1 border-t border-ink-200 dark:border-ink-800">
-                    {secPots.map((pot) => (
-                      <PotCard
-                        key={pot.id}
-                        pot={pot}
-                        owner={memberById.get(pot.ownerId)}
-                        transactions={allTransactions}
-                        onSelect={() => onSelect(pot.id)}
-                      />
-                    ))}
+                  <div className="mt-1">
+                    <PotCollectie
+                      potjes={secPots}
+                      weergave={weergave}
+                      memberById={memberById}
+                      allTransactions={allTransactions}
+                      onSelect={onSelect}
+                    />
                   </div>
                 )}
               </section>
@@ -283,6 +320,145 @@ export function PotsView({
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Een verzameling potjes in de gekozen weergave. Eén plek, zodat de losse
+ * potjes en de potjes binnen een groepssectie niet uit elkaar kunnen lopen.
+ */
+function PotCollectie({
+  potjes,
+  weergave,
+  memberById,
+  allTransactions,
+  onSelect,
+}: {
+  potjes: Pot[];
+  weergave: Weergave;
+  memberById: Map<string, Member>;
+  allTransactions: Transaction[];
+  onSelect: (id: string) => void;
+}) {
+  if (weergave === "blokken") {
+    return (
+      /* auto-fill en niet auto-fit: auto-fit klapt lege sporen dicht, en dan
+         wordt een groep met één potje één blok over de volle paginabreedte. */
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-3">
+        {potjes.map((pot) => (
+          <PotBlok
+            key={pot.id}
+            pot={pot}
+            owner={memberById.get(pot.ownerId)}
+            transactions={allTransactions}
+            onSelect={() => onSelect(pot.id)}
+          />
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="border-t border-ink-200 dark:border-ink-800">
+      {potjes.map((pot) => (
+        <PotCard
+          key={pot.id}
+          pot={pot}
+          owner={memberById.get(pot.ownerId)}
+          transactions={allTransactions}
+          onSelect={() => onSelect(pot.id)}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Hetzelfde potje als blok, voor de blokkenweergave.
+ *
+ * Dit is de uitzondering op "lijnen, geen dozen", opt-in en niet de standaard:
+ * met honderdtwintig posten wint de lijst, met er twaalf wil je ze naast elkaar
+ * kunnen leggen. Zie de notitie in DESIGN.md onder Layout.
+ *
+ * Wat de uitzondering niet meeneemt uit de oude kaart: geen gekleurde zijstreep
+ * (de potkleur staat al als bolletje naast de naam, en twee keer dezelfde
+ * informatie is twee keer te veel), geen <button> om het hele blok, geen
+ * kleurverloop op de balk, en geen "Geen verantwoordelijke" waar niets is.
+ */
+function PotBlok({
+  pot,
+  owner,
+  transactions,
+  onSelect,
+}: {
+  pot: Pot;
+  owner: Member | undefined;
+  transactions: Transaction[];
+  onSelect: () => void;
+}) {
+  const balance = calcBalance(transactions, pot.id);
+  const progress = potProgress(
+    pot.targetAmount,
+    pot.targetKind,
+    { balance, totalOut: calcSpent(transactions, pot.id) },
+    pot.forecastAmount,
+  );
+  const kleur = pot.color ?? POT_KLEUR_STANDAARD;
+
+  return (
+    <div className="panel flex flex-col gap-2 p-4">
+      <div className="flex min-w-0 items-baseline gap-2">
+        <span
+          aria-hidden
+          className="h-2 w-2 flex-shrink-0 translate-y-[-1px] rounded-full"
+          style={{ backgroundColor: kleur }}
+        />
+        <h3 className="min-w-0 flex-1 truncate text-[0.9375rem] font-semibold text-sterk">
+          <button
+            onClick={onSelect}
+            className="max-w-full truncate text-left underline-offset-4 hover:underline"
+          >
+            {pot.name}
+          </button>
+        </h3>
+      </div>
+
+      <Bedrag waarde={balance} className="text-[1.25rem] font-bold" />
+
+      {/* Alleen tonen wat er echt is, anders staat er in elk blok een lege
+          regel op dezelfde plek. */}
+      {owner && <p className="meta truncate">{owner.name}</p>}
+
+      {progress && (
+        <div className="flex items-center gap-2">
+          <span
+            className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-ink-200 dark:bg-ink-800"
+            aria-hidden
+          >
+            {/* Kleur betekent geld, precies als in PotCard: een spaardoel vult
+                zich met geld dat binnenkomt, een budget met geld dat buitengaat,
+                en rood is de overschrijding. */}
+            <span
+              className={`block h-full rounded-full ${
+                progress.over
+                  ? "bg-fout-600"
+                  : progress.kind === "budget"
+                    ? "bg-uit-600"
+                    : "bg-in-600"
+              }`}
+              style={{ width: `${progress.barPct}%` }}
+            />
+          </span>
+          <span
+            className={`font-num flex-shrink-0 text-[0.75rem] font-semibold ${
+              progress.over ? "text-fout-600 dark:text-fout-400" : "text-zacht"
+            }`}
+          >
+            {progress.pct.toFixed(0)}%
+          </span>
+        </div>
+      )}
+      {progress && <p className="micro truncate">{progress.label}</p>}
     </div>
   );
 }

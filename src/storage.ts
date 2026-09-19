@@ -449,6 +449,33 @@ export function saveCollapsedGroups(scope: string, ids: Set<string>) {
   }
 }
 
+// Lijst of blokken. Net als de ingeklapte groepen een voorkeur van dit toestel
+// en niet van de organisatie. Per scherm apart bewaard: op de groepenpagina wil
+// je misschien blokken om comités naast elkaar te leggen en op de potjespagina
+// tegelijk een lijst om iets terug te vinden.
+export type Weergave = "lijst" | "blokken";
+
+const WEERGAVE_SLEUTEL = "kaspio:weergave:";
+
+export function loadWeergave(scope: string, terugval: Weergave): Weergave {
+  if (typeof window === "undefined") return terugval;
+  try {
+    const rauw = window.localStorage.getItem(WEERGAVE_SLEUTEL + scope);
+    return rauw === "lijst" || rauw === "blokken" ? rauw : terugval;
+  } catch {
+    return terugval;
+  }
+}
+
+export function saveWeergave(scope: string, weergave: Weergave) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(WEERGAVE_SLEUTEL + scope, weergave);
+  } catch {
+    // Privémodus of vol quotum: dan onthouden we het gewoon niet.
+  }
+}
+
 export function visiblePots(pots: Pot[], currentUser: Member | null): Pot[] {
   if (!currentUser) return [];
   if (currentUser.role === "admin") return pots;
