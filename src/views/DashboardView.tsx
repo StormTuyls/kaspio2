@@ -368,7 +368,10 @@ export function DashboardView({
                             className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
                             style={{ backgroundColor: p.color ?? POT_KLEUR_STANDAARD }}
                           />
-                          <span className="min-w-0 flex-1 truncate text-ink-800 dark:text-ink-300">
+                          {/* text-basis, niet een eigen ink-800/ink-300-paar:
+                              de semantische laag bestaat juist zodat er niet
+                              veertien varianten van "secundaire tekst" ontstaan. */}
+                          <span className="min-w-0 flex-1 truncate text-basis">
                             {p.name}
                           </span>
                           <span className="flex-shrink-0 font-num tabular-nums text-basis">
