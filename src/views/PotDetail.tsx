@@ -210,7 +210,9 @@ export function PotDetail({
     <div className="space-y-6">
       <button
         onClick={onBack}
-        className="flex items-center gap-1 text-sm font-medium text-basis hover:text-ink-900 dark:hover:text-white"
+        /* -my-2 houdt de knop optisch op zijn plek terwijl het raakvlak naar
+           44px groeit. Dit is op een telefoon de weg terug, en die was 19px. */
+        className="-my-2 flex min-h-[44px] items-center gap-1 py-2 text-sm sm:my-0 sm:min-h-0 sm:py-0 font-medium text-basis hover:text-ink-900 dark:hover:text-white"
       >
         ← Terug naar overzicht
       </button>

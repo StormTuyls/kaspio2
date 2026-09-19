@@ -870,14 +870,14 @@ export function ImportTransactionsModal({
           <div className="flex flex-col gap-2 border-t border-ink-200 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:pb-4 dark:border-ink-800/60">
             <button
               onClick={onClose}
-              className="min-h-11 rounded-lg px-4 py-2 text-sm font-medium text-basis hover:bg-ink-50 sm:min-h-0 dark:hover:bg-ink-900"
+              className="min-h-[44px] rounded-lg px-4 py-2 text-sm font-medium text-basis hover:bg-ink-50 sm:min-h-0 dark:hover:bg-ink-900"
             >
               Annuleren
             </button>
             <button
               onClick={() => runImport(importIndexes)}
               disabled={!canImport}
-              className="min-h-11 rounded-lg bg-in-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-in-700 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0"
+              className="min-h-[44px] rounded-lg bg-in-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-in-700 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0"
             >
               {busy
                 ? "Importeren…"
