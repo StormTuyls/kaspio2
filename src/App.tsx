@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import "./App.css";
@@ -53,6 +53,7 @@ import { OrgSwitcher } from "./components/OrgSwitcher";
 import { CreateOrgForm } from "./components/CreateOrgForm";
 import type { Organisation } from "./supabase";
 import type { Pot as DbPot, Transaction as DbTransaction } from "./supabase";
+import { POT_KLEUR_STANDAARD } from "./types";
 import type { Pot, PotGroup, PotTargetKind, Role, Transaction } from "./types";
 import { signOut, supabase, useSession } from "./supabase";
 import { PotsView, Avatar, NONE_KEY } from "./views/Overview";
@@ -113,7 +114,7 @@ const INITIAL_COMP_CODE =
 
 // Schermvullende fallback terwijl een lazy-geladen view binnenkomt.
 const routeFallback = (
-  <div className="flex min-h-screen items-center justify-center bg-canvas text-navy-500 dark:bg-navy-950 dark:text-navy-300">
+  <div className="flex min-h-screen items-center justify-center bg-ink-50 text-basis dark:bg-ink-950">
     Laden…
   </div>
 );
@@ -279,7 +280,7 @@ function App() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-canvas text-navy-500 dark:bg-navy-950 dark:text-navy-300">
+      <div className="flex min-h-screen items-center justify-center bg-ink-50 text-basis dark:bg-ink-950">
         Laden…
       </div>
     );
@@ -543,7 +544,7 @@ function useBridgedStore(
       }) => {
         await addDbPot({
           name: input.name,
-          color: input.color ?? "#1D9E75",
+          color: input.color ?? POT_KLEUR_STANDAARD,
           targetAmount: input.targetAmount,
           forecastAmount: input.forecastAmount ?? null,
           targetKind: input.targetKind,
@@ -1065,7 +1066,7 @@ function AuthedApp({
   // voordat accepteren + refetch klaar zijn.
   if (orgLoading || ensuringInvites) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-canvas text-navy-500 dark:bg-navy-950 dark:text-navy-300">
+      <div className="flex min-h-screen items-center justify-center bg-ink-50 text-basis dark:bg-ink-950">
         Organisatie aan het laden…
       </div>
     );
@@ -1076,8 +1077,8 @@ function AuthedApp({
   // belandt een genodigde nooit per ongeluk in de org-aanmaak.
   if (!org && readPendingInviteToken()) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas px-6 text-center dark:bg-navy-950">
-        <p className="text-navy-700 dark:text-navy-100">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-ink-50 px-6 text-center dark:bg-ink-950">
+        <p className="text-ink-800 dark:text-ink-200">
           Je uitnodiging kon niet automatisch verwerkt worden.
         </p>
         <button
@@ -1091,7 +1092,7 @@ function AuthedApp({
             clearPendingInviteToken();
             window.location.reload();
           }}
-          className="text-sm text-navy-400 hover:text-navy-700 dark:hover:text-navy-100"
+          className="text-sm text-zacht hover:text-ink-800 dark:hover:text-ink-200"
         >
           Toch zelf een organisatie aanmaken
         </button>
@@ -1131,13 +1132,13 @@ function AuthedApp({
   const brandStyle = paletteToCssVars(store.state.branding.accent) as CSSProperties;
 
   return (
-    <div className="min-h-screen bg-canvas dark:bg-navy-950" style={brandStyle}>
+    <div className="min-h-screen bg-ink-50 dark:bg-ink-950" style={brandStyle}>
       {upgradeNotice && (
         <div
-          className={`fixed left-1/2 top-4 z-[60] -translate-x-1/2 rounded-xl px-4 py-2.5 text-sm font-medium shadow-lg ${
+          className={`fixed left-1/2 top-4 z-[var(--z-toast)] -translate-x-1/2 rounded-lg px-4 py-2.5 text-sm font-medium shadow-lg ${
             upgradeNotice === "success"
-              ? "bg-teal-600 text-white"
-              : "bg-navy-800 text-white"
+              ? "bg-in-600 text-white"
+              : "bg-ink-900 text-white"
           }`}
           role="status"
         >
@@ -1147,6 +1148,14 @@ function AuthedApp({
         </div>
       )}
       <div className="flex min-h-screen">
+        {/* Zonder dit tabt een toetsenbordgebruiker eerst door de hele
+            zijbalk (zeven menu-items plus elk potje) voor hij bij de inhoud is. */}
+        <a
+          href="#inhoud"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-[var(--z-toast)] focus:rounded-md focus:bg-ink-950 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+        >
+          Naar de inhoud
+        </a>
         <Sidebar
           tab={tab}
           isAdmin={!!isAdmin}
@@ -1205,7 +1214,7 @@ function AuthedApp({
           {/* De onderbalk is fixed en ~58px hoog; op een toestel met home-indicator
               komt daar env(safe-area-inset-bottom) bovenop. pb-24 alleen liet
               daar nog 4px over, vandaar de expliciete berekening. */}
-          <main className="mx-auto max-w-6xl px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 sm:px-8 sm:pt-8 lg:pb-8">
+          <main id="inhoud" tabIndex={-1} className="mx-auto max-w-6xl px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 sm:px-8 sm:pt-8 lg:pb-8">
             {selectedPot ? (
               <PotDetail
                 pot={selectedPot}
@@ -1254,6 +1263,7 @@ function AuthedApp({
               />
             ) : tab === "potjes" ? (
               <PotsView
+                orgId={org.id}
                 pots={potsForUser}
                 allTransactions={store.state.transactions}
                 members={uiMembers}
@@ -1285,6 +1295,7 @@ function AuthedApp({
                 groups={uiGroups}
                 pots={potsForUser}
                 allTransactions={store.state.transactions}
+                members={uiMembers}
                 isAdmin={!!isAdmin}
                 canUseGroups={groupsEnabled(tier)}
                 onUpgrade={goToUpgrade}
@@ -1302,7 +1313,7 @@ function AuthedApp({
             ) : tab === "transacties" ? (
               <Suspense
                 fallback={
-                  <div className="py-10 text-center text-sm text-navy-400">Laden…</div>
+                  <div className="py-10 text-center text-sm text-zacht">Laden…</div>
                 }
               >
                 <TransactionsView
@@ -1333,7 +1344,7 @@ function AuthedApp({
                 onRevokeInvite={revokeInvite}
               />
             ) : tab === "activiteit" && isAdmin ? (
-              <Suspense fallback={<div className="py-10 text-center text-sm text-navy-400">Laden…</div>}>
+              <Suspense fallback={<div className="py-10 text-center text-sm text-zacht">Laden…</div>}>
                 <AuditLogView entries={auditEntries} loading={auditLoading} />
               </Suspense>
             ) : tab === "instellingen" && isAdmin ? (
@@ -1430,6 +1441,7 @@ function AuthedApp({
         isAdmin={!!isAdmin}
         potsCount={store.state.pots.length}
         membersCount={uiMembers.length}
+        auditCount={auditEntries.length}
         onTab={(t) => {
           setTab(t);
           setSelectedPotId(null);
@@ -1823,7 +1835,10 @@ function Sidebar({
       return next;
     });
   return (
-    <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-navy-900 bg-navy-900 px-5 py-6 text-navy-100 lg:sticky lg:top-0 lg:flex lg:h-screen dark:border-navy-800">
+    <aside
+      className="hidden w-64 flex-shrink-0 flex-col border-r border-ink-900 px-5 py-6 text-ink-200 lg:sticky lg:top-0 lg:flex lg:h-screen dark:border-ink-800"
+      style={{ backgroundColor: "var(--oppervlak-chroom)" }}
+    >
       <div className="mb-8">
         <button
           onClick={() => onTab("dashboard")}
@@ -1909,7 +1924,7 @@ function Sidebar({
       </nav>
 
       {pots.length > 0 && (
-        <div className="mt-6 flex-1 overflow-y-auto border-t border-navy-800 pt-4">
+        <div className="mt-6 flex-1 overflow-y-auto border-t border-ink-800 pt-4">
           {sidebarSections.map((section, si) => {
             const key = section.id ?? NONE_KEY;
             const headerLabel =
@@ -1921,13 +1936,13 @@ function Sidebar({
                     naam springt naar de groep. Eén knop voor allebei zou
                     betekenen dat je niet meer kan inklappen zonder weg te
                     navigeren. */}
-                <div className="mb-1 flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-wider text-navy-400">
+                <div className="mb-1 flex items-center gap-0.5 text-[0.75rem] font-semibold text-ink-400">
                   <button
                     type="button"
                     onClick={() => toggleGroup(key)}
                     aria-expanded={open}
                     aria-label={`${headerLabel} ${open ? "inklappen" : "uitklappen"}`}
-                    className="flex-shrink-0 rounded p-1 transition hover:bg-white/5 hover:text-navy-200"
+                    className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md transition-colors hover:bg-white/5 hover:text-ink-200"
                   >
                     <svg
                       width="10"
@@ -1946,11 +1961,11 @@ function Sidebar({
                   <button
                     type="button"
                     onClick={() => onSelectGroup(section.id)}
-                    className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-md px-1 py-1 text-left transition hover:bg-white/5 hover:text-navy-200"
+                    className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-md px-1 py-1 text-left transition hover:bg-white/5 hover:text-ink-300"
                     title="Toon in dashboard"
                   >
                     <span className="truncate">{headerLabel}</span>
-                    <span className="font-normal normal-case text-navy-500">
+                    <span className="font-normal normal-case text-ink-400">
                       {section.count}
                     </span>
                   </button>
@@ -1968,12 +1983,12 @@ function Sidebar({
                     {section.children.map((c) => (
                       <div
                         key={c.id}
-                        className="mt-1 border-l border-navy-800 pl-2"
+                        className="mt-1 border-l border-ink-800 pl-2"
                       >
                         <button
                           type="button"
                           onClick={() => onSelectGroup(c.id)}
-                          className="mb-0.5 flex w-full items-center justify-between gap-2 rounded-md px-2 py-0.5 text-left text-[10px] font-semibold uppercase tracking-wider text-navy-500 transition hover:bg-white/5 hover:text-navy-300"
+                          className="mb-0.5 flex min-h-7 w-full items-center justify-between gap-2 rounded-md px-2 text-left text-[0.75rem] font-semibold text-ink-400 transition-colors hover:bg-white/5 hover:text-ink-200"
                           title="Toon in dashboard"
                         >
                           <span className="truncate">{c.label}</span>
@@ -2001,7 +2016,7 @@ function Sidebar({
 
       <button
         onClick={onViewSite}
-        className="mt-auto flex flex-shrink-0 items-center gap-2 rounded-lg px-2 py-2 pt-4 text-xs font-medium text-navy-400 transition hover:text-navy-100"
+        className="mt-auto flex flex-shrink-0 items-center gap-2 rounded-lg px-2 py-2 pt-4 text-xs font-medium text-ink-400 transition hover:text-ink-200"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="9" />
@@ -2044,17 +2059,17 @@ function SidebarPotList({
               className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition ${
                 active
                   ? "bg-white/10 font-semibold text-white"
-                  : "text-navy-200 hover:bg-white/5 hover:text-white"
+                  : "text-ink-300 hover:bg-white/5 hover:text-white"
               }`}
             >
               <span
                 aria-hidden
                 className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                style={{ backgroundColor: p.color ?? "#1D9E75" }}
+                style={{ backgroundColor: p.color ?? POT_KLEUR_STANDAARD }}
               />
               <span className="truncate">{p.name}</span>
-              <span className="ml-auto text-[11px] text-navy-400">
-                €{Math.round(balanceFor(p.id))}
+              <span className="amount ml-auto text-[11px] text-ink-400">
+                €{Math.round(balanceFor(p.id)).toLocaleString("nl-BE")}
               </span>
             </button>
           </li>
@@ -2069,14 +2084,39 @@ function BottomNav({
   isAdmin,
   potsCount,
   membersCount,
+  auditCount,
   onTab,
 }: {
   tab: Tab;
   isAdmin: boolean;
   potsCount: number;
   membersCount: number;
+  auditCount: number;
   onTab: (t: Tab) => void;
 }) {
+  // Overloopmenu. Met admin stonden er zes items in de balk, wat "Transacties"
+  // op een smal toestel over 10px liet lopen, en Activiteit paste er helemaal
+  // niet in: die pagina was op mobiel onbereikbaar. Vijf items plus een
+  // overloop is de standaard (Material: max 5), en zet alles binnen bereik.
+  const [meerOpen, setMeerOpen] = useState(false);
+  const meerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!meerOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMeerOpen(false);
+    };
+    const onDown = (e: MouseEvent) => {
+      if (!meerRef.current?.contains(e.target as Node)) setMeerOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("mousedown", onDown);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("mousedown", onDown);
+    };
+  }, [meerOpen]);
+
   const items: { tab: Tab; label: string; icon: ReactNode; badge?: string }[] = [
     {
       tab: "dashboard",
@@ -2090,82 +2130,154 @@ function BottomNav({
       icon: <path d="M3 7h18v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7zM3 7l2-3h14l2 3M9 12h6" />,
     },
     {
-      tab: "groepen",
-      label: "Groepen",
-      icon: <path d="M4 5h7v7H4zM13 5h7v4h-7zM13 11h7v8h-7zM4 14h7v5H4z" />,
-    },
-    {
       tab: "transacties",
       label: "Transacties",
       icon: <path d="M4 8h13m0 0-3-3m3 3-3 3M20 16H7m0 0 3-3m-3 3 3 3" />,
     },
-    ...(isAdmin
-      ? [
-          {
-            tab: "leden" as Tab,
-            label: "Leden",
-            badge: membersCount > 1 ? String(membersCount) : undefined,
-            icon: (
-              <path d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM12 14c-4.4 0-8 2.7-8 6v1h16v-1c0-3.3-3.6-6-8-6z" />
-            ),
-          },
-          {
-            tab: "instellingen" as Tab,
-            label: "Meer",
-            icon: <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />,
-          },
-        ]
-      : []),
+    {
+      tab: "groepen",
+      label: "Groepen",
+      icon: <path d="M4 5h7v7H4zM13 5h7v4h-7zM13 11h7v8h-7zM4 14h7v5H4z" />,
+    },
   ];
 
+  // Wat niet in de balk past, maar wel bereikbaar moet blijven.
+  const meerItems: { tab: Tab; label: string; badge?: string }[] = isAdmin
+    ? [
+        { tab: "leden", label: "Leden", badge: membersCount > 1 ? String(membersCount) : undefined },
+        {
+          tab: "activiteit",
+          label: "Activiteit",
+          badge: auditCount > 0 ? String(Math.min(auditCount, 99)) : undefined,
+        },
+        { tab: "instellingen", label: "Instellingen" },
+      ]
+    : [];
+
+  const meerActief = meerItems.some((m) => m.tab === tab);
+  const labelKlasse = "text-[11px]";
+
   return (
-    <nav
-      className="fixed inset-x-0 bottom-0 z-30 flex border-t border-navy-100 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_8px_-2px_rgba(15,23,42,0.06)] lg:hidden dark:border-navy-800 dark:bg-navy-900"
-      aria-label="Navigatie"
-    >
-      {items.map((it) => {
-        const active = tab === it.tab;
-        return (
+    <div ref={meerRef} className="lg:hidden">
+      {meerOpen && meerItems.length > 0 && (
+        <>
+          <div
+            className="fixed inset-0 z-[var(--z-overlay)] bg-ink-950/40"
+            onClick={() => setMeerOpen(false)}
+            aria-hidden
+          />
+          <div
+            className="fixed inset-x-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom))] z-[var(--z-overlay)] mx-3 overflow-hidden rounded-md border border-ink-200 bg-white shadow-lg dark:border-ink-800 dark:bg-ink-900"
+            role="menu"
+            aria-label="Meer"
+          >
+            {meerItems.map((m) => (
+              <button
+                key={m.tab}
+                role="menuitem"
+                onClick={() => {
+                  setMeerOpen(false);
+                  onTab(m.tab);
+                }}
+                className={`flex min-h-12 w-full items-center justify-between gap-3 px-4 text-left text-sm font-semibold transition-colors ${
+                  tab === m.tab
+                    ? "bg-ink-100 text-sterk dark:bg-ink-800"
+                    : "text-basis hover:bg-ink-50 dark:hover:bg-ink-800/60"
+                }`}
+              >
+                <span>{m.label}</span>
+                {m.badge && (
+                  <span className="font-num rounded-full bg-ink-100 px-2 py-0.5 text-xs font-semibold text-zacht dark:bg-ink-800">
+                    {m.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <nav
+        className="fixed inset-x-0 bottom-0 z-[var(--z-sticky)] flex border-t border-ink-200 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_8px_-2px_rgba(15,23,42,0.06)] dark:border-ink-800 dark:bg-ink-950"
+        aria-label="Hoofdnavigatie"
+      >
+        {items.map((it) => {
+          const active = tab === it.tab;
+          return (
+            <button
+              key={it.tab}
+              onClick={() => onTab(it.tab)}
+              aria-current={active ? "page" : undefined}
+              className={`relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-0.5 py-2 font-semibold transition-colors ${labelKlasse} ${
+                active
+                  ? "text-sterk"
+                  : "text-zacht hover:text-sterk"
+              }`}
+            >
+              <span className="relative">
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                  aria-hidden
+                >
+                  {it.icon}
+                </svg>
+                {it.badge && (
+                  <span className="font-num absolute -right-2 -top-1 flex min-w-[16px] items-center justify-center rounded-full bg-ink-950 px-1 text-[10px] font-bold text-white dark:bg-ink-100 dark:text-ink-950">
+                    {it.badge}
+                  </span>
+                )}
+              </span>
+              <span className="max-w-full truncate">{it.label}</span>
+              {active && (
+                <span
+                  aria-hidden
+                  className="absolute -top-px h-0.5 w-8 rounded-full bg-ink-950 dark:bg-ink-100"
+                />
+              )}
+            </button>
+          );
+        })}
+
+        {meerItems.length > 0 && (
           <button
-            key={it.tab}
-            onClick={() => onTab(it.tab)}
-            className={`relative flex min-w-0 flex-1 flex-col items-center gap-0.5 px-0.5 py-2.5 font-semibold transition ${
-              // Met een admin-menu passen er 6 items in de balk; op smalle
-              // toestellen loopt "Transacties" dan over 11px heen.
-              items.length > 5 ? "text-[10px]" : "text-[11px]"
-            } ${
-              active
-                ? "text-teal-600 dark:text-teal-400"
-                : "text-navy-400 hover:text-navy-700 dark:text-navy-400 dark:hover:text-white"
+            onClick={() => setMeerOpen((v) => !v)}
+            aria-expanded={meerOpen}
+            aria-haspopup="menu"
+            className={`relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-0.5 py-2 font-semibold transition-colors ${labelKlasse} ${
+              meerActief || meerOpen ? "text-sterk" : "text-zacht hover:text-sterk"
             }`}
           >
-            <span className="relative">
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              >
-                {it.icon}
-              </svg>
-              {it.badge && (
-                <span className="absolute -right-1.5 -top-1 flex min-w-[14px] items-center justify-center rounded-full bg-teal-500 px-1 text-[9px] font-bold text-white">
-                  {it.badge}
-                </span>
-              )}
-            </span>
-            <span className="max-w-full truncate">{it.label}</span>
-            {active && (
-              <span className="absolute -top-px h-0.5 w-8 rounded-full bg-teal-500" />
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              aria-hidden
+            >
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <span className="max-w-full truncate">Meer</span>
+            {meerActief && (
+              <span
+                aria-hidden
+                className="absolute -top-px h-0.5 w-8 rounded-full bg-ink-950 dark:bg-ink-100"
+              />
             )}
           </button>
-        );
-      })}
-    </nav>
+        )}
+      </nav>
+    </div>
   );
 }
 
@@ -2181,8 +2293,8 @@ function BrandLogo({
   if (branding.logoDataUrl) {
     return (
       <span
-        className={`flex items-center justify-center overflow-hidden rounded-xl ${
-          variant === "light" ? "bg-white/10 ring-1 ring-white/20" : "bg-canvas dark:bg-navy-800"
+        className={`flex items-center justify-center overflow-hidden rounded-lg ${
+          variant === "light" ? "bg-white/10 ring-1 ring-white/20" : "bg-ink-50 dark:bg-ink-900"
         }`}
         style={{ width: size, height: size }}
       >
@@ -2213,16 +2325,16 @@ function NavItem({
   return (
     <button
       onClick={onClick}
-      className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition ${
+      className={`group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 transition ${
         active
-          ? "bg-teal-500/15 text-white"
-          : "text-navy-200 hover:bg-white/5 hover:text-white"
+          ? "bg-white/10 text-white"
+          : "text-ink-300 hover:bg-white/5 hover:text-white"
       }`}
     >
       {active && (
         <span
           aria-hidden
-          className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-teal-400"
+          className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-white"
         />
       )}
       <svg
@@ -2234,7 +2346,7 @@ function NavItem({
         strokeWidth="2"
         strokeLinejoin="round"
         strokeLinecap="round"
-        className={active ? "text-teal-300" : ""}
+        className={active ? "text-white" : ""}
       >
         {icon}
       </svg>
@@ -2242,7 +2354,7 @@ function NavItem({
       {badge && (
         <span
           className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-            active ? "bg-teal-400/20 text-teal-200" : "bg-white/10"
+            active ? "bg-white/15 text-white" : "bg-white/10"
           }`}
         >
           {badge}
@@ -2274,7 +2386,7 @@ function Topbar({
   onFeedback: () => void;
 }) {
   return (
-    <header className="border-b border-navy-100 bg-white dark:border-navy-800 dark:bg-navy-900">
+    <header className="border-b border-ink-200 bg-white dark:border-ink-800 dark:bg-ink-950">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-8">
         <div className="flex min-w-0 flex-1 items-center gap-2 lg:hidden">
           <BrandLogo branding={branding} size={32} />
@@ -2296,7 +2408,7 @@ function Topbar({
         <div className="flex flex-shrink-0 items-center gap-1.5 sm:gap-3">
           <button
             onClick={onFeedback}
-            className="inline-flex items-center gap-1.5 rounded-xl p-2 text-navy-500 transition hover:bg-navy-50 hover:text-navy-900 sm:px-3 dark:text-navy-300 dark:hover:bg-navy-800 dark:hover:text-white"
+            className="inline-flex items-center gap-1.5 rounded-lg p-2 text-basis transition hover:bg-ink-50 hover:text-ink-900 sm:px-3 dark:hover:bg-ink-900 dark:hover:text-white"
             aria-label="Feedback geven"
             title="Feedback"
           >
@@ -2306,18 +2418,18 @@ function Topbar({
             <span className="hidden sm:inline">Feedback</span>
           </button>
           <ThemeToggle />
-          <div className="flex items-center gap-2.5 border-l border-navy-100 pl-2.5 dark:border-navy-700 sm:pl-3">
+          <div className="flex items-center gap-2.5 border-l border-ink-200 pl-2.5 dark:border-ink-800 sm:pl-3">
             <Avatar name={account.fullName} />
             <div className="hidden text-right sm:block">
-              <div className="text-sm font-semibold text-navy-900 dark:text-navy-50">
+              <div className="text-sm font-semibold text-sterk">
                 {account.fullName}
               </div>
-              <div className="text-xs text-navy-400 dark:text-navy-300">{account.email}</div>
+              <div className="text-xs text-zacht">{account.email}</div>
             </div>
           </div>
           <button
             onClick={onLogout}
-            className="rounded-xl p-2 text-navy-500 transition hover:bg-navy-50 hover:text-navy-900 sm:hidden dark:text-navy-300 dark:hover:bg-navy-800 dark:hover:text-white"
+            className="rounded-lg p-2 text-basis transition hover:bg-ink-50 hover:text-ink-900 sm:hidden dark:hover:bg-ink-900 dark:hover:text-white"
             aria-label="Uitloggen"
             title="Uitloggen"
           >

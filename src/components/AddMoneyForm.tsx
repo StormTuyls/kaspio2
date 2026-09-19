@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 
+import { Foutmelding } from "./Foutmelding";
 type Props = {
   onSubmit: (values: {
     amount: number;
@@ -51,7 +52,7 @@ export function AddMoneyForm({ onSubmit, onCancel }: Props) {
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <p className="text-sm text-navy-500 dark:text-navy-300">
+      <p className="text-sm text-basis">
         Het bedrag komt in de <strong>hoofdpot</strong> te staan, bij "nog te
         verdelen". Van daaruit verdeel je het over je potjes. Begin je net met
         Kaspio? Zet hier wat er al op je rekening stond.
@@ -59,11 +60,11 @@ export function AddMoneyForm({ onSubmit, onCancel }: Props) {
 
       <div className="grid grid-cols-2 gap-3">
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+          <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
             Bedrag
           </span>
           <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-navy-400">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zacht">
               €
             </span>
             <input
@@ -79,7 +80,7 @@ export function AddMoneyForm({ onSubmit, onCancel }: Props) {
         </label>
 
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+          <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
             Datum
           </span>
           <input
@@ -92,8 +93,8 @@ export function AddMoneyForm({ onSubmit, onCancel }: Props) {
       </div>
 
       <label className="block">
-        <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
-          Omschrijving <span className="text-navy-400">(optioneel)</span>
+        <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
+          Omschrijving <span className="text-zacht">(optioneel)</span>
         </span>
         <input
           type="text"
@@ -105,9 +106,9 @@ export function AddMoneyForm({ onSubmit, onCancel }: Props) {
       </label>
 
       {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <Foutmelding>
           {error}
-        </div>
+        </Foutmelding>
       )}
 
       <div className="flex justify-end gap-2 pt-1">

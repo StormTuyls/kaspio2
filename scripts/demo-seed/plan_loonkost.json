@@ -1,0 +1,15 @@
+{
+  "comite": "Dagelijks bestuur",
+  "posten": [
+    {"post": "TOTALE LOONKOST VAST BARPERSONEEL", "pot": "Loon Barman",
+     "pot_id": "b64b6412-fb96-413e-b3ca-628c22869c02", "stand": -21741},
+    {"post": "LOON SECRETARIS", "pot": "Loon Secretaris",
+     "pot_id": "0862c114-fd83-4b18-892a-b2e7d06dbfc3", "stand": -17936.92},
+    {"post": "MAALTIJDCHEQUES & ECO-CHEQUES", "pot": "Maaltijdcheques & Eco-cheques",
+     "pot_id": "dc786135-4d96-4d23-b86f-ab7fa64aa46c", "stand": -2603.21},
+    {"post": "SOC SECR", "pot": "Soc Secr",
+     "pot_id": "8f7e4f03-0986-495a-8113-66277ef2d363", "stand": -41946.80},
+    {"post": "RSZ & SOC. FONDS", "pot": "RSZ & SOC. FONDS",
+     "pot_id": "ab746641-d9a8-4453-a98b-588223b89a33", "stand": 319.43}
+  ]
+}

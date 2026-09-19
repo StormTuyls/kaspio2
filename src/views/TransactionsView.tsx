@@ -15,6 +15,7 @@ import {
   rootGroups,
   subGroups,
 } from "../storage";
+import { POT_KLEUR_STANDAARD } from "../types";
 import type { Pot, PotGroup, Transaction, TransactionDirection } from "../types";
 import type { SubTier } from "../supabase";
 import { chartsEnabled } from "../data";
@@ -176,10 +177,10 @@ export function TransactionsView({
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-navy-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-ink-900 dark:text-white">
             Transacties
           </h1>
-          <p className="mt-1 text-sm text-navy-500 dark:text-navy-300">
+          <p className="mt-1 text-sm text-basis">
             De volledige geschiedenis van {orgName}, over alle potjes heen.
           </p>
         </div>
@@ -227,7 +228,7 @@ export function TransactionsView({
       <div className="card space-y-3 p-4">
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-navy-500 dark:text-navy-300">
+            <span className="mb-1 block text-xs font-medium text-basis">
               Periode
             </span>
             <select
@@ -244,7 +245,7 @@ export function TransactionsView({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-navy-500 dark:text-navy-300">
+            <span className="mb-1 block text-xs font-medium text-basis">
               Groep
             </span>
             <select
@@ -284,7 +285,7 @@ export function TransactionsView({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-navy-500 dark:text-navy-300">
+            <span className="mb-1 block text-xs font-medium text-basis">
               Potje
             </span>
             <select
@@ -310,7 +311,7 @@ export function TransactionsView({
         {preset === "custom" && (
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">
-              <span className="mb-1 block text-xs font-medium text-navy-500 dark:text-navy-300">
+              <span className="mb-1 block text-xs font-medium text-basis">
                 Van
               </span>
               <input
@@ -321,7 +322,7 @@ export function TransactionsView({
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-xs font-medium text-navy-500 dark:text-navy-300">
+              <span className="mb-1 block text-xs font-medium text-basis">
                 Tot en met
               </span>
               <input
@@ -336,7 +337,7 @@ export function TransactionsView({
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <div className="relative flex-1">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-navy-300 dark:text-navy-500">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zwak">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="7" />
                 <path d="m21 21-4.35-4.35" />
@@ -350,15 +351,15 @@ export function TransactionsView({
               className="input pl-9"
             />
           </div>
-          <div className="grid grid-cols-3 gap-1 rounded-xl border border-navy-100 bg-white p-1 text-xs font-semibold sm:flex dark:border-navy-700 dark:bg-navy-800">
+          <div className="grid grid-cols-3 gap-1 rounded-lg border border-ink-200 bg-white p-1 text-xs font-semibold sm:flex dark:border-ink-800 dark:bg-ink-900">
             {(["all", "in", "out"] as const).map((d) => (
               <button
                 key={d}
                 onClick={() => setDirection(d)}
                 className={`rounded-lg px-3 py-1.5 transition ${
                   direction === d
-                    ? "bg-navy-900 text-white dark:bg-white dark:text-navy-900"
-                    : "text-navy-500 hover:text-navy-900 dark:text-navy-300 dark:hover:text-white"
+                    ? "bg-ink-950 text-white dark:bg-white dark:text-ink-900"
+                    : "text-basis hover:text-ink-900 dark:hover:text-white"
                 }`}
               >
                 {d === "all" ? "Alle" : d === "in" ? "Inkomend" : "Uitgaand"}
@@ -376,43 +377,43 @@ export function TransactionsView({
       {/* ---- Totalen over de filter ---- */}
       <div className="card grid grid-cols-2 gap-3 p-4 sm:grid-cols-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+          <p className="text-xs font-semibold text-zacht">
             Transacties
           </p>
-          <p className="text-xl font-bold tabular-nums text-navy-900 dark:text-white">
+          <p className="text-xl font-bold tabular-nums text-ink-900 dark:text-white">
             {filtered.length}
             {totals.pending > 0 && (
-              <span className="ml-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+              <span className="ml-2 text-xs font-medium text-uit-700 dark:text-uit-400">
                 {totals.pending} wacht op goedkeuring
               </span>
             )}
           </p>
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+          <p className="text-xs font-semibold text-zacht">
             Inkomend
           </p>
-          <p className="text-xl font-bold tabular-nums text-teal-700 dark:text-teal-300">
+          <p className="text-xl font-bold tabular-nums text-in-700 dark:text-in-400">
             {formatEuro(totals.in)}
           </p>
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+          <p className="text-xs font-semibold text-zacht">
             Uitgaand
           </p>
-          <p className="text-xl font-bold tabular-nums text-amber-700 dark:text-amber-400">
+          <p className="text-xl font-bold tabular-nums text-uit-700 dark:text-uit-400">
             {formatEuro(totals.out)}
           </p>
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+          <p className="text-xs font-semibold text-zacht">
             Resultaat
           </p>
           <p
             className={`text-xl font-bold tabular-nums ${
               totals.result < 0
-                ? "text-rose-600 dark:text-rose-400"
-                : "text-navy-900 dark:text-white"
+                ? "text-fout-600 dark:text-fout-400"
+                : "text-ink-900 dark:text-white"
             }`}
           >
             {totals.result >= 0 ? "+" : "−"}
@@ -424,10 +425,10 @@ export function TransactionsView({
       {/* ---- Lijst ---- */}
       {filtered.length === 0 ? (
         <div className="card border-dashed py-12 text-center">
-          <p className="mb-1 text-base font-semibold text-navy-900 dark:text-navy-50">
+          <p className="mb-1 text-base font-semibold text-sterk">
             {scoped.length === 0 ? "Nog geen transacties" : "Geen resultaten"}
           </p>
-          <p className="text-sm text-navy-500 dark:text-navy-300">
+          <p className="text-sm text-basis">
             {scoped.length === 0
               ? "Zodra er geld binnenkomt of vertrekt, zie je het hier."
               : "Geen transacties die overeenkomen met je filters."}
@@ -440,25 +441,25 @@ export function TransactionsView({
         </div>
       ) : (
         <div className="card overflow-hidden">
-          <ul className="divide-y divide-navy-100 sm:hidden dark:divide-navy-700/60">
+          <ul className="divide-y divide-ink-200 sm:hidden dark:divide-ink-800/60">
             {filtered.map((tx) => (
               <li key={tx.id} className="px-4 py-3.5">
                 <div className="mb-1 flex items-baseline justify-between gap-3">
-                  <span className="truncate font-semibold text-navy-900 dark:text-navy-50">
+                  <span className="truncate font-semibold text-sterk">
                     {tx.counterparty}
                   </span>
                   <span
                     className={`whitespace-nowrap text-base font-bold tabular-nums ${
                       tx.direction === "in"
-                        ? "text-teal-700 dark:text-teal-300"
-                        : "text-amber-700 dark:text-amber-400"
+                        ? "text-in-700 dark:text-in-400"
+                        : "text-uit-700 dark:text-uit-400"
                     }`}
                   >
                     {tx.direction === "in" ? "+" : "−"}
                     {formatEuro(tx.amount)}
                   </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-navy-500 dark:text-navy-300">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-basis">
                   <span>{formatDate(tx.occurredOn)}</span>
                   <span aria-hidden>·</span>
                   <PotChip
@@ -469,7 +470,7 @@ export function TransactionsView({
                   {tx.status === "pending" && <PendingChip />}
                 </div>
                 {tx.memo && (
-                  <p className="mt-1 text-sm text-navy-500 dark:text-navy-400">
+                  <p className="mt-1 text-sm text-basis">
                     {tx.memo}
                   </p>
                 )}
@@ -478,7 +479,7 @@ export function TransactionsView({
           </ul>
 
           <table className="hidden w-full text-sm sm:table">
-            <thead className="bg-canvas text-xs font-semibold uppercase tracking-wider text-navy-400 dark:bg-navy-800/50 dark:text-navy-300">
+            <thead className="bg-ink-50 text-xs font-semibold text-zacht dark:bg-ink-900/50">
               <tr>
                 <th className="px-4 py-3 text-left">Datum</th>
                 <th className="px-4 py-3 text-left">Potje</th>
@@ -487,13 +488,13 @@ export function TransactionsView({
                 <th className="px-4 py-3 text-right">Bedrag</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-navy-100 dark:divide-navy-700/60">
+            <tbody className="divide-y divide-ink-200 dark:divide-ink-800/60">
               {filtered.map((tx) => (
                 <tr
                   key={tx.id}
-                  className="transition hover:bg-canvas dark:hover:bg-navy-800/40"
+                  className="transition hover:bg-ink-50 dark:hover:bg-ink-900/40"
                 >
-                  <td className="whitespace-nowrap px-4 py-3 text-navy-500 dark:text-navy-300">
+                  <td className="whitespace-nowrap px-4 py-3 text-basis">
                     {formatDate(tx.occurredOn)}
                   </td>
                   <td className="px-4 py-3">
@@ -505,20 +506,20 @@ export function TransactionsView({
                       }
                     />
                   </td>
-                  <td className="px-4 py-3 font-medium text-navy-900 dark:text-navy-50">
+                  <td className="px-4 py-3 font-medium text-sterk">
                     <span className="flex items-center gap-2">
                       {tx.counterparty}
                       {tx.status === "pending" && <PendingChip />}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-navy-500 dark:text-navy-400">
+                  <td className="px-4 py-3 text-basis">
                     {tx.memo ?? "—"}
                   </td>
                   <td
                     className={`whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums ${
                       tx.direction === "in"
-                        ? "text-teal-700 dark:text-teal-300"
-                        : "text-amber-700 dark:text-amber-400"
+                        ? "text-in-700 dark:text-in-400"
+                        : "text-uit-700 dark:text-uit-400"
                     }`}
                   >
                     {tx.direction === "in" ? "+" : "−"}
@@ -548,20 +549,20 @@ function PotChip({
       <span
         aria-hidden
         className="h-2 w-2 flex-shrink-0 rounded-full"
-        style={{ backgroundColor: pot?.color ?? "#94a3b8" }}
+        style={{ backgroundColor: pot?.color ?? POT_KLEUR_STANDAARD }}
       />
       <span className="truncate">{label}</span>
     </>
   );
   const base =
-    "inline-flex max-w-[14rem] items-center gap-1.5 text-navy-700 dark:text-navy-200";
+    "inline-flex max-w-[14rem] items-center gap-1.5 text-ink-800 dark:text-ink-300";
   if (!onClick) {
     return <span className={base}>{content}</span>;
   }
   return (
     <button
       onClick={onClick}
-      className={`${base} rounded-md hover:text-teal-700 hover:underline dark:hover:text-teal-300`}
+      className={`${base} rounded-md hover:text-in-700 hover:underline dark:hover:text-in-400`}
       title={`Open ${label}`}
     >
       {content}
@@ -571,7 +572,7 @@ function PotChip({
 
 function PendingChip() {
   return (
-    <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+    <span className="rounded-full bg-uit-100 px-1.5 py-0.5 text-[10px] font-semibold text-uit-700 dark:bg-uit-700/40 dark:text-uit-400">
       Wacht op goedkeuring
     </span>
   );

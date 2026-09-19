@@ -7,10 +7,13 @@ import {
   potsInGroup,
   subGroups,
 } from "../storage";
+import { POT_KLEUR_STANDAARD } from "../types";
 import type { Member, Pot, PotGroup, Transaction } from "../types";
 import type { SubTier } from "../supabase";
 import { chartsEnabled } from "../data";
 import { BalanceChart } from "../components/BalanceChart";
+import { bedragenPerPot, groepRollup } from "../groupProgress";
+import { GroepBudgetRegel } from "../components/GroepBudget";
 
 type Props = {
   group: PotGroup;
@@ -93,6 +96,15 @@ export function GroupDetail({
   // Saldo = som van de potjes (all-time, goedgekeurd). calcBalance negeert pending.
   const saldo = groupPots.reduce((s, p) => s + calcBalance(allTransactions, p.id), 0);
 
+  // Budget en prognose van de hele groep, met dezelfde rekensom als op de
+  // groepenpagina. Bewust all-time en niet per periode: een budget is een
+  // afspraak voor het hele werkjaar, geen maandcijfer, dus de periodekiezer
+  // hierboven raakt dit blok niet.
+  const rollup = useMemo(
+    () => groepRollup(groupPots, bedragenPerPot(allTransactions)),
+    [groupPots, allTransactions],
+  );
+
   // Goedgekeurde transacties binnen de groep.
   const groupTx = useMemo(
     () =>
@@ -138,7 +150,7 @@ export function GroupDetail({
       <div>
         <button
           onClick={onBack}
-          className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-navy-500 hover:text-navy-900 dark:text-navy-300 dark:hover:text-white"
+          className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-basis hover:text-ink-900 dark:hover:text-white"
         >
           ← Terug naar groepen
         </button>
@@ -148,16 +160,16 @@ export function GroupDetail({
               <button
                 type="button"
                 onClick={() => onOpenGroup(parent.id)}
-                className="font-num text-[11px] font-semibold uppercase tracking-[0.22em] text-teal-600 hover:underline dark:text-teal-300"
+                className="text-[0.8125rem] font-semibold text-zacht underline-offset-2 hover:text-sterk hover:underline"
               >
                 {parent.name} ›
               </button>
             ) : (
-              <p className="font-num text-[11px] font-semibold uppercase tracking-[0.22em] text-teal-600 dark:text-teal-300">
+              <p className="text-[0.8125rem] font-semibold text-zacht">
                 Groep
               </p>
             )}
-            <h1 className="text-2xl font-extrabold tracking-tight text-navy-900 dark:text-white">
+            <h1 className="text-2xl font-extrabold tracking-tight text-ink-900 dark:text-white">
               {group.name}
             </h1>
           </div>
@@ -183,15 +195,15 @@ export function GroupDetail({
                 + Subgroep
               </button>
             )}
-            <div className="inline-flex rounded-xl border border-navy-100 bg-white p-1 text-sm dark:border-navy-700/60 dark:bg-navy-900">
+            <div className="inline-flex rounded-lg border border-ink-200 bg-white p-1 text-sm dark:border-ink-800/60 dark:bg-ink-950">
             {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
                 className={`rounded-lg px-3 py-1 font-medium transition ${
                   period === p
-                    ? "bg-teal-500 text-white"
-                    : "text-navy-500 hover:text-navy-900 dark:text-navy-300 dark:hover:text-white"
+                    ? "bg-in-600 text-white"
+                    : "text-basis hover:text-ink-900 dark:hover:text-white"
                 }`}
               >
                 {PERIOD_LABELS[p]}
@@ -236,45 +248,64 @@ export function GroupDetail({
           </div>
         )}
         {subError && (
-          <p className="mt-2 text-sm text-rose-600 dark:text-rose-400">{subError}</p>
+          <p className="mt-2 text-sm text-fout-600 dark:text-fout-400">{subError}</p>
         )}
       </div>
 
       {/* Stat-tegels */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl bg-navy-900 p-5 text-white dark:bg-navy-800">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-navy-300">
+        <div className="rounded-md bg-ink-950 p-5 text-white dark:bg-ink-900">
+          <p className="text-[11px] font-semibold text-zwak">
             Saldo
           </p>
           <p className="mt-1 font-num text-2xl font-extrabold tabular-nums">
             {formatEuro(saldo)}
           </p>
-          <p className="mt-1 text-xs text-navy-300">
+          <p className="mt-1 text-xs text-zwak">
             {groupPots.length} {groupPots.length === 1 ? "potje" : "potjes"}
           </p>
         </div>
-        <div className="rounded-2xl border border-navy-100 bg-white p-5 dark:border-navy-700/60 dark:bg-navy-900">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+        <div className="rounded-md border border-ink-200 bg-white p-5 dark:border-ink-800/60 dark:bg-ink-950">
+          <p className="text-[11px] font-semibold text-zacht">
             Inkomend · {PERIOD_LABELS[period].toLowerCase()}
           </p>
-          <p className="mt-1 font-num text-2xl font-extrabold tabular-nums text-teal-700 dark:text-teal-300">
+          <p className="mt-1 font-num text-2xl font-extrabold tabular-nums text-in-700 dark:text-in-400">
             {formatEuro(totalIn)}
           </p>
         </div>
-        <div className="rounded-2xl border border-navy-100 bg-white p-5 dark:border-navy-700/60 dark:bg-navy-900">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+        <div className="rounded-md border border-ink-200 bg-white p-5 dark:border-ink-800/60 dark:bg-ink-950">
+          <p className="text-[11px] font-semibold text-zacht">
             Uitgaand · {PERIOD_LABELS[period].toLowerCase()}
           </p>
-          <p className="mt-1 font-num text-2xl font-extrabold tabular-nums text-amber-700 dark:text-amber-400">
+          <p className="mt-1 font-num text-2xl font-extrabold tabular-nums text-uit-700 dark:text-uit-400">
             {formatEuro(totalOut)}
           </p>
         </div>
       </div>
 
+      {/* Budget en prognose van de groep. Staat boven alles wat per potje gaat:
+          eerst de vraag of de groep binnen plan blijft, en pas als het antwoord
+          nee is de vraag welk potje dat doet. De probleempotjes staan er hier
+          altijd bij, want de potjeslijst staat verderop op de pagina en niet
+          direct onder deze regel. */}
+      {(rollup.budget || rollup.doel) && (
+        <section>
+          <h2 className="sectiekop mb-2">Budget en prognose</h2>
+          <GroepBudgetRegel
+            budget={rollup.budget}
+            doel={rollup.doel}
+            probleemPotjes={rollup.probleemPotjes}
+            onSelectPot={onSelectPot}
+            gestapeld
+            className="border-t border-rand pt-3"
+          />
+        </section>
+      )}
+
       {/* Cashflow-grafiek (Pro+) over de groep */}
       {chartsEnabled(tier) && groupTx.length > 0 && (
-        <div className="rounded-2xl border border-navy-100 bg-white p-3 sm:p-5 dark:border-navy-700/60 dark:bg-navy-900">
-          <h2 className="mb-3 px-1 text-base font-bold text-navy-900 sm:px-0 dark:text-navy-50">
+        <div className="rounded-md border border-ink-200 bg-white p-3 sm:p-5 dark:border-ink-800/60 dark:bg-ink-950">
+          <h2 className="mb-3 px-1 text-base font-bold text-sterk sm:px-0">
             Verloop saldo
           </h2>
           <BalanceChart transactions={groupTx} />
@@ -285,7 +316,7 @@ export function GroupDetail({
           samen met de potjes die rechtstreeks in deze groep hangen. */}
       {children.length > 0 && (
         <div>
-          <h2 className="mb-2 text-sm font-bold uppercase tracking-wider text-navy-400">
+          <h2 className="mb-2 text-sm font-bold text-zacht">
             Subgroepen
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -295,17 +326,17 @@ export function GroupDetail({
                 <button
                   key={c.id}
                   onClick={() => onOpenGroup(c.id)}
-                  className="card flex items-center justify-between gap-3 p-4 text-left transition hover:border-teal-300 dark:hover:border-teal-500/60"
+                  className="card flex items-center justify-between gap-3 p-4 text-left transition hover:border-in-300 dark:hover:border-in-600/60"
                 >
                   <span className="min-w-0">
-                    <span className="block truncate font-semibold text-navy-900 dark:text-navy-50">
+                    <span className="block truncate font-semibold text-sterk">
                       {c.name}
                     </span>
-                    <span className="block text-xs text-navy-400 dark:text-navy-300">
+                    <span className="block text-xs text-zacht">
                       {cPots.length} {cPots.length === 1 ? "potje" : "potjes"}
                     </span>
                   </span>
-                  <span className="flex-shrink-0 font-num font-bold tabular-nums text-navy-900 dark:text-navy-50">
+                  <span className="flex-shrink-0 font-num font-bold tabular-nums text-sterk">
                     {formatEuro(groupBalance(allTransactions, pots, groups, c.id))}
                   </span>
                 </button>
@@ -317,11 +348,11 @@ export function GroupDetail({
 
       {/* Potjes in de groep */}
       <div>
-        <h2 className="mb-2 text-sm font-bold uppercase tracking-wider text-navy-400">
+        <h2 className="mb-2 text-sm font-bold text-zacht">
           {children.length > 0 ? "Alle potjes, subgroepen inbegrepen" : "Potjes in deze groep"}
         </h2>
         {groupPots.length === 0 ? (
-          <div className="card border-dashed py-10 text-center text-sm text-navy-400 dark:text-navy-300">
+          <div className="card border-dashed py-10 text-center text-sm text-zacht">
             Nog geen potjes in deze groep.
           </div>
         ) : (
@@ -330,23 +361,23 @@ export function GroupDetail({
               <button
                 key={p.id}
                 onClick={() => onSelectPot(p.id)}
-                className="card flex items-center justify-between gap-3 p-4 text-left transition hover:border-teal-300 dark:hover:border-teal-500/60"
+                className="card flex items-center justify-between gap-3 p-4 text-left transition hover:border-in-300 dark:hover:border-in-600/60"
               >
                 <span className="flex min-w-0 items-center gap-2.5">
                   <span
                     className="h-8 w-8 flex-shrink-0 rounded-lg"
-                    style={{ backgroundColor: p.color ?? "#1D9E75" }}
+                    style={{ backgroundColor: p.color ?? POT_KLEUR_STANDAARD }}
                   />
                   <span className="min-w-0">
-                    <span className="block truncate font-semibold text-navy-900 dark:text-navy-50">
+                    <span className="block truncate font-semibold text-sterk">
                       {p.name}
                     </span>
-                    <span className="block truncate text-xs text-navy-400 dark:text-navy-300">
+                    <span className="block truncate text-xs text-zacht">
                       {ownerName(p)}
                     </span>
                   </span>
                 </span>
-                <span className="flex-shrink-0 font-num font-bold tabular-nums text-navy-900 dark:text-navy-50">
+                <span className="flex-shrink-0 font-num font-bold tabular-nums text-sterk">
                   {formatEuro(calcBalance(allTransactions, p.id))}
                 </span>
               </button>
@@ -357,30 +388,30 @@ export function GroupDetail({
 
       {/* Recente transacties over de groep */}
       <div>
-        <h2 className="mb-2 text-sm font-bold uppercase tracking-wider text-navy-400">
+        <h2 className="mb-2 text-sm font-bold text-zacht">
           Recente transacties
         </h2>
         {inPeriod.length === 0 ? (
-          <div className="card border-dashed py-10 text-center text-sm text-navy-400 dark:text-navy-300">
+          <div className="card border-dashed py-10 text-center text-sm text-zacht">
             Geen transacties in deze periode.
           </div>
         ) : (
-          <div className="card divide-y divide-navy-100 dark:divide-navy-700/60">
+          <div className="card divide-y divide-ink-200 dark:divide-ink-800/60">
             {inPeriod.slice(0, 50).map((t) => (
               <div key={t.id} className="flex items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">
-                  <span className="block truncate font-medium text-navy-900 dark:text-navy-50">
+                  <span className="block truncate font-medium text-sterk">
                     {t.counterparty || t.memo || "Transactie"}
                   </span>
-                  <span className="block truncate text-xs text-navy-400 dark:text-navy-300">
+                  <span className="block truncate text-xs text-zacht">
                     {formatDate(t.occurredOn)} · {potName(t.potId)}
                   </span>
                 </div>
                 <span
                   className={`flex-shrink-0 font-num font-bold tabular-nums ${
                     t.direction === "in"
-                      ? "text-teal-700 dark:text-teal-300"
-                      : "text-amber-700 dark:text-amber-400"
+                      ? "text-in-700 dark:text-in-400"
+                      : "text-uit-700 dark:text-uit-400"
                   }`}
                 >
                   {t.direction === "in" ? "+" : "−"}
@@ -391,7 +422,7 @@ export function GroupDetail({
           </div>
         )}
         {inPeriod.length > 50 && (
-          <p className="mt-2 text-center text-xs text-navy-400">
+          <p className="mt-2 text-center text-xs text-zacht">
             + {inPeriod.length - 50} meer in deze periode
           </p>
         )}

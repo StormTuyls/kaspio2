@@ -7,12 +7,14 @@ import {
   rootGroups,
   ungroupedPots,
 } from "../storage";
+import { POT_KLEUR_STANDAARD } from "../types";
 import type { Member, Pot, PotGroup, Transaction } from "../types";
 import type { SubTier } from "../supabase";
 import { chartsEnabled, isReservationDue, type RecurringPlan } from "../data";
 import { CashflowChart } from "../components/CashflowChart";
 import { UpgradeHint } from "../components/UpgradeHint";
 import { BankCard } from "../components/BankCard";
+import { Segment } from "../components/Segment";
 
 type Props = {
   pots: Pot[];
@@ -57,7 +59,6 @@ export function DashboardView({
   pots,
   allTransactions,
   loading,
-  members,
   currentUser,
   organizationName,
   groups = [],
@@ -65,7 +66,6 @@ export function DashboardView({
   onUpgrade,
   onSelect,
   onOpenGroup,
-  onNavigate,
   onOpenInbox,
   onDistribute,
   recurringPlans = [],
@@ -162,15 +162,13 @@ export function DashboardView({
   }
 
   return (
-    <div className="space-y-6 font-display">
+    <div className="space-y-10">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-num text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
+          <p className="truncate text-[0.8125rem] text-zacht">
             {organizationName}
           </p>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Dashboard
-          </h1>
+          <h1 className="titel">Dashboard</h1>
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           {onManageRecurring && (
@@ -183,7 +181,6 @@ export function DashboardView({
               Rapport (PDF)
             </button>
           )}
-          <PeriodTabs value={flowPeriod} onChange={setFlowPeriod} />
         </div>
       </div>
 
@@ -203,7 +200,11 @@ export function DashboardView({
             onAddMoney={isAdmin ? onAddMoney : undefined}
           />
         </div>
-        <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-1">
+        <div className="flex min-w-0 flex-col gap-3">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="sectiekop">Geldstroom</h2>
+            <Segment opties={FLOW_TABS} waarde={flowPeriod} onChange={setFlowPeriod} label="Periode voor de geldstroom" />
+          </div>
           <FlowStat
             label="Inkomend"
             sub={FLOW_LABELS[flowPeriod]}
@@ -219,59 +220,41 @@ export function DashboardView({
         </div>
       </div>
 
-      {/* Tellers */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
-        <CountStat
-          label="Potjes"
-          value={pots.length}
-          onClick={onNavigate ? () => onNavigate("potjes") : undefined}
-        />
-        <CountStat
-          label="Groepen"
-          value={groups.length}
-          onClick={onNavigate ? () => onNavigate("groepen") : undefined}
-        />
-        <CountStat
-          label={members.length === 1 ? "Lid" : "Leden"}
-          value={members.length}
-          onClick={onNavigate && isAdmin ? () => onNavigate("leden") : undefined}
-        />
-      </div>
 
       {/* Te bevestigen: openstaande maandelijkse stortingen */}
       {dueStortingen.length > 0 && onBookStorting && (
-        <div className="rounded-2xl border border-teal-200 bg-teal-50/70 p-4 dark:border-teal-900/50 dark:bg-teal-900/15">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-bold tracking-tight text-teal-900 dark:text-teal-200">
+        <section aria-labelledby="kop-te-bevestigen" className="panel p-4 sm:p-5">
+          <h2 id="kop-te-bevestigen" className="sectiekop mb-3 flex items-center gap-2">
             Te bevestigen
-            <span className="rounded-full bg-teal-100 px-2 py-0.5 font-num text-xs font-bold text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">
-              {dueStortingen.length}
-            </span>
+            <span className="tag tag--in font-num">{dueStortingen.length}</span>
           </h2>
-          <ul className="space-y-2">
-            {dueStortingen.map((plan) => {
+          <ul>
+            {dueStortingen.map((plan, i) => {
               const potName = potById.get(plan.pot_id)?.name ?? "potje";
               return (
                 <li
                   key={plan.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-teal-100 bg-white px-3.5 py-2.5 dark:border-teal-900/40 dark:bg-navy-900"
+                  className={`flex flex-wrap items-center justify-between gap-3 py-2.5 ${
+                    i > 0 ? "rule" : ""
+                  }`}
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-navy-900 dark:text-navy-50">
+                    <p className="truncate text-sm font-medium text-sterk">
                       {plan.kind === "domiciliering"
                         ? `Zet ${plan.counterparty || "de domiciliëring"} klaar in ${potName}`
                         : `Storting in ${potName}`}
                     </p>
-                    <p className="font-num text-xs text-navy-400 dark:text-navy-300">
+                    <p className="text-xs text-zacht">
                       {plan.counterparty || "Maandelijkse storting"}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-num text-sm font-bold tabular-nums text-teal-700 dark:text-teal-300">
+                  <div className="flex items-center gap-3">
+                    <span className="amount amount--in text-sm font-bold">
                       {formatEuro(plan.amount)}
                     </span>
                     <button
                       onClick={() => onBookStorting(plan)}
-                      className="rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-teal-700"
+                      className="btn btn--primary"
                     >
                       Boek
                     </button>
@@ -280,56 +263,50 @@ export function DashboardView({
               );
             })}
           </ul>
-        </div>
+        </section>
       )}
 
       {/* Wacht op goedkeuring (admin) */}
       {isAdmin && pendingApprovals.length > 0 && (
-        <div className="rounded-2xl border border-amber-200 bg-white p-5 dark:border-amber-900/40 dark:bg-navy-900">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-bold tracking-tight text-slate-900 dark:text-navy-50">
+        <section aria-labelledby="kop-goedkeuring" className="panel p-4 sm:p-5">
+          <h2 id="kop-goedkeuring" className="sectiekop mb-3 flex items-center gap-2">
             Wacht op goedkeuring
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 font-num text-xs font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-              {pendingApprovals.length}
-            </span>
+            <span className="tag tag--uit font-num">{pendingApprovals.length}</span>
           </h2>
-          <ul className="space-y-2">
-            {pendingApprovals.map((t) => (
+          <ul>
+            {pendingApprovals.map((t, i) => (
               <li
                 key={t.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2.5 dark:border-navy-700/60 dark:bg-navy-800/40"
+                className={`flex flex-wrap items-center justify-between gap-3 py-2.5 ${
+                  i > 0 ? "rule" : ""
+                }`}
               >
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-slate-900 dark:text-navy-50">
+                  <div className="truncate text-sm font-medium text-sterk">
                     {t.counterparty || "Uitgave"}
-                    <span className="ml-2 font-normal text-slate-400">
+                    <span className="ml-2 font-normal text-zacht">
                       {t.potId ? potById.get(t.potId)?.name ?? "—" : "Nog toe te wijzen"}
                     </span>
                   </div>
-                  <div className="font-num text-xs text-slate-400">
+                  <div className="font-num text-xs text-zacht">
                     {formatDate(t.occurredOn)}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-num text-sm font-semibold tabular-nums text-rose-600 dark:text-rose-400">
+                  <span className="amount amount--uit text-sm font-semibold">
                     −{formatEuro(t.amount)}
                   </span>
-                  <button
-                    onClick={() => onApprove?.(t.id)}
-                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700"
-                  >
+                  <button onClick={() => onApprove?.(t.id)} className="btn btn--primary">
                     Goedkeuren
                   </button>
-                  <button
-                    onClick={() => onReject?.(t.id)}
-                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 dark:border-navy-700"
-                  >
+                  <button onClick={() => onReject?.(t.id)} className="btn btn--danger">
                     Afwijzen
                   </button>
                 </div>
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       )}
 
       {txInScope.length > 0 &&
@@ -346,11 +323,9 @@ export function DashboardView({
       {/* Groepen met hun potjes */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="min-w-0 space-y-3 lg:col-span-2">
-          <h2 className="text-lg font-bold tracking-tight text-slate-900 dark:text-navy-50">
-            Groepen &amp; potjes
-          </h2>
+          <h2 className="sectiekop">Groepen &amp; potjes</h2>
           {pots.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-white/60 py-12 text-center text-sm text-slate-500 dark:border-navy-700 dark:bg-navy-900/30 dark:text-navy-300">
+            <div className="rounded-md border border-dashed border-ink-300 bg-white/60 py-12 text-center text-sm text-basis dark:border-ink-800 dark:bg-ink-950/30">
               Nog geen potjes. Maak er een aan op de Potjes-pagina.
             </div>
           ) : (
@@ -358,21 +333,21 @@ export function DashboardView({
               {sections.map((sec) => (
                 <div
                   key={sec.id ?? "__none__"}
-                  className="flex flex-col rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_6px_20px_-12px_rgba(15,23,42,0.1)] dark:border-navy-700/60 dark:bg-navy-900 dark:shadow-none"
+                  className="panel flex flex-col p-4"
                 >
                   <button
                     onClick={() => onOpenGroup(sec.id)}
                     className="group mb-3 flex items-baseline justify-between gap-2 text-left"
                   >
                     <span className="flex min-w-0 items-baseline gap-2">
-                      <span className="truncate font-num text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 transition group-hover:text-indigo-600 dark:text-navy-300 dark:group-hover:text-indigo-300">
+                      <span className="truncate text-[0.8125rem] font-semibold text-basis transition-colors group-hover:text-sterk">
                         {sec.name}
                       </span>
-                      <span className="rounded-full bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-500 dark:bg-navy-800 dark:text-navy-300">
+                      <span className="rounded-full bg-ink-100 px-1.5 text-[11px] font-semibold text-basis dark:bg-ink-900">
                         {sec.pots.length}
                       </span>
                     </span>
-                    <span className="flex-shrink-0 font-num text-sm font-bold tabular-nums text-slate-900 dark:text-navy-50">
+                    <span className="flex-shrink-0 font-num text-sm font-bold tabular-nums text-sterk">
                       {loading ? "\u2014" : formatEuro(sumBalance(sec.pots))}
                     </span>
                   </button>
@@ -381,17 +356,17 @@ export function DashboardView({
                       <li key={p.id}>
                         <button
                           onClick={() => onSelect(p.id)}
-                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition hover:bg-slate-50 dark:hover:bg-navy-800"
+                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition hover:bg-ink-50 dark:hover:bg-ink-900"
                         >
                           <span
                             aria-hidden
                             className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                            style={{ backgroundColor: p.color ?? "#4f46e5" }}
+                            style={{ backgroundColor: p.color ?? POT_KLEUR_STANDAARD }}
                           />
-                          <span className="min-w-0 flex-1 truncate text-slate-700 dark:text-navy-200">
+                          <span className="min-w-0 flex-1 truncate text-ink-800 dark:text-ink-300">
                             {p.name}
                           </span>
-                          <span className="flex-shrink-0 font-num tabular-nums text-slate-500 dark:text-navy-400">
+                          <span className="flex-shrink-0 font-num tabular-nums text-basis">
                             {loading
                               ? "\u2014"
                               : formatEuro(calcBalance(allTransactions, p.id))}
@@ -403,7 +378,7 @@ export function DashboardView({
                   {sec.pots.length > 5 && (
                     <button
                       onClick={() => onOpenGroup(sec.id)}
-                      className="mt-2 text-left text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-300"
+                      className="mt-2 text-left text-xs font-semibold text-basis hover:underline"
                     >
                       + {sec.pots.length - 5} meer
                     </button>
@@ -456,31 +431,6 @@ function flowWindowStart(p: FlowPeriod): string {
   return `${b.getFullYear()}-${pad(b.getMonth() + 1)}-${pad(b.getDate())}`;
 }
 
-function PeriodTabs({
-  value,
-  onChange,
-}: {
-  value: FlowPeriod;
-  onChange: (p: FlowPeriod) => void;
-}) {
-  return (
-    <div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-navy-800">
-      {FLOW_TABS.map((t) => (
-        <button
-          key={t.id}
-          onClick={() => onChange(t.id)}
-          className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
-            value === t.id
-              ? "bg-white text-indigo-700 shadow-sm dark:bg-navy-700 dark:text-white"
-              : "text-slate-500 hover:text-slate-700 dark:text-navy-300"
-          }`}
-        >
-          {t.label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function Icon({
   children,
@@ -518,12 +468,12 @@ function FlowStat({
 }) {
   const positive = tone === "in";
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_6px_20px_-12px_rgba(15,23,42,0.1)] dark:border-navy-700/60 dark:bg-navy-900 dark:shadow-none">
+    <div className="panel p-4">
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-navy-300">
+        <p className="text-xs font-semibold text-zacht">
           {label}
           {sub && (
-            <span className="ml-1.5 normal-case tracking-normal text-slate-400 dark:text-navy-400">
+            <span className="ml-1.5 normal-case tracking-normal text-zacht">
               · {sub}
             </span>
           )}
@@ -531,8 +481,8 @@ function FlowStat({
         <span
           className={`flex h-7 w-7 items-center justify-center rounded-lg ${
             positive
-              ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
-              : "bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400"
+              ? "bg-in-100 text-in-600 dark:bg-in-700/30 dark:text-in-400"
+              : "bg-uit-100 text-uit-600 dark:bg-uit-700/30 dark:text-uit-400"
           }`}
         >
           <Icon className="h-4 w-4">
@@ -545,51 +495,15 @@ function FlowStat({
         </span>
       </div>
       <p
-        className={`font-num text-2xl font-extrabold tabular-nums ${
+        className={`font-num text-[1.5rem] font-semibold tabular-nums [letter-spacing:-0.02em] ${
           positive
-            ? "text-emerald-600 dark:text-emerald-400"
-            : "text-rose-600 dark:text-rose-400"
+            ? "text-in-600 dark:text-in-400"
+            : "text-uit-600 dark:text-uit-400"
         }`}
       >
         {value}
       </p>
     </div>
-  );
-}
-
-function CountStat({
-  label,
-  value,
-  onClick,
-}: {
-  label: string;
-  value: number;
-  onClick?: () => void;
-}) {
-  const inner = (
-    <>
-      <span className="font-num text-2xl font-extrabold tabular-nums text-slate-900 dark:text-navy-50">
-        {value}
-      </span>
-      <span className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-navy-300">
-        {label}
-      </span>
-    </>
-  );
-  const base =
-    "flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-3 text-center sm:p-4 dark:border-navy-700/60 dark:bg-navy-900";
-  if (!onClick) return <div className={base}>{inner}</div>;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`${base} group cursor-pointer transition hover:border-teal-300 hover:shadow-[0_6px_20px_-12px_rgba(15,23,42,0.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 dark:hover:border-teal-500/60`}
-    >
-      {inner}
-      <span className="mt-1 text-[11px] font-medium text-teal-600 opacity-0 transition group-hover:opacity-100 dark:text-teal-400">
-        Bekijken →
-      </span>
-    </button>
   );
 }
 
@@ -601,12 +515,12 @@ function ActivityFeed({
   potById: Map<string, Pot>;
 }) {
   return (
-    <aside className="flex h-fit min-w-0 flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_6px_20px_-12px_rgba(15,23,42,0.1)] dark:border-navy-700/60 dark:bg-navy-900 dark:shadow-none">
-      <h2 className="mb-4 font-num text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400 dark:text-navy-300">
+    <aside className="panel flex h-fit min-w-0 flex-col p-5">
+      <h2 className="sectiekop mb-4">
         Recente activiteit
       </h2>
       {recent.length === 0 ? (
-        <p className="text-sm text-slate-400 dark:text-navy-400">Nog geen transacties.</p>
+        <p className="text-sm text-zacht">Nog geen transacties.</p>
       ) : (
         <ul className="space-y-3">
           {recent.map((tx) => {
@@ -618,8 +532,8 @@ function ActivityFeed({
                 <div
                   className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
                     positive
-                      ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
-                      : "bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400"
+                      ? "bg-in-100 text-in-600 dark:bg-in-700/30 dark:text-in-400"
+                      : "bg-uit-100 text-uit-600 dark:bg-uit-700/30 dark:text-uit-400"
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5">
@@ -632,21 +546,21 @@ function ActivityFeed({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="truncate text-sm font-medium text-slate-900 dark:text-navy-50">
+                    <span className="truncate text-sm font-medium text-sterk">
                       {tx.counterparty}
                     </span>
                     <span
                       className={`whitespace-nowrap font-num text-sm font-semibold tabular-nums ${
                         positive
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-rose-600 dark:text-rose-400"
+                          ? "text-in-600 dark:text-in-400"
+                          : "text-uit-600 dark:text-uit-400"
                       }`}
                     >
                       {positive ? "+" : "−"}
                       {formatEuro(tx.amount)}
                     </span>
                   </div>
-                  <div className="flex items-baseline justify-between gap-2 text-xs text-slate-400 dark:text-navy-400">
+                  <div className="flex items-baseline justify-between gap-2 text-xs text-zacht">
                     <span className="truncate">{potLabel}</span>
                     <span className="whitespace-nowrap font-num">{formatDate(tx.occurredOn)}</span>
                   </div>

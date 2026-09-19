@@ -4,15 +4,28 @@ import {
   calcSpent,
   formatDate,
   formatEuro,
+  loadWeergave,
   potsInGroup,
   rootGroups,
+  saveWeergave,
   ungroupedPots,
 } from "../storage";
+import type { Weergave } from "../storage";
 import { potProgress } from "../potProgress";
+import { POT_KLEUR_STANDAARD } from "../types";
 import type { Member, Pot, PotGroup, Transaction } from "../types";
 import { UpgradeHint } from "../components/UpgradeHint";
+import { Bedrag } from "../components/Bedrag";
+import { Segment } from "../components/Segment";
+
+const WEERGAVES = [
+  { id: "lijst", label: "Lijst" },
+  { id: "blokken", label: "Blokken" },
+] as const satisfies readonly { id: Weergave; label: string }[];
 
 type PotsViewProps = {
+  /** Nodig om de gekozen weergave per organisatie te bewaren. */
+  orgId: string;
   pots: Pot[];
   allTransactions: Transaction[];
   members: Member[];
@@ -43,6 +56,7 @@ export const NONE_KEY = "__none__";
 
 /** De Potjes-pagina: alle potjes als kaarten, gegroepeerd + inklapbaar. */
 export function PotsView({
+  orgId,
   pots,
   allTransactions,
   members,
@@ -79,6 +93,20 @@ export function PotsView({
   const sumBalance = (groupPots: Pot[]) =>
     groupPots.reduce((sum, p) => sum + calcBalance(allTransactions, p.id), 0);
 
+  // Lijst of blokken. Lijst is de standaard: honderdtwintig posten lees je als
+  // een kasboek, niet als honderdtwintig dozen. Blokken is er voor een korte
+  // lijst die je in één oogopslag wil zien; zie de notitie bij PotBlok.
+  const [weergave, setWeergave] = useState<Weergave>(() =>
+    loadWeergave(`potjes:${orgId}`, "lijst"),
+  );
+  useEffect(() => {
+    setWeergave(loadWeergave(`potjes:${orgId}`, "lijst"));
+  }, [orgId]);
+  function kiesWeergave(keuze: Weergave) {
+    saveWeergave(`potjes:${orgId}`, keuze);
+    setWeergave(keuze);
+  }
+
   // Inklapbare groep-secties: ingeklapte ids in een Set.
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const toggle = (key: string) =>
@@ -106,36 +134,60 @@ export function PotsView({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-navy-900 dark:text-white">
-          {seesAll ? "Alle potjes" : "Mijn potjes"}
-        </h1>
-        {/* Vier knoppen passen niet naast elkaar op een telefoon; op mobiel
-            krijgen ze een eigen regel en mogen ze onderling wrappen. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <h1 className="titel">
+            {seesAll ? "Alle potjes" : "Mijn potjes"}
+          </h1>
+          {pots.length > 0 && (
+            <Segment
+              opties={WEERGAVES}
+              waarde={weergave}
+              onChange={kiesWeergave}
+              label="Weergave van de potjes"
+            />
+          )}
+        </div>
+        {/* Vier gelijkwaardige knoppen kostten op een telefoon twee volle
+            regels, samen bijna 190px voordat je een potje zag. Nu staat de
+            primaire actie apart en delen de drie hulpacties er één, kleiner.
+            De hiërarchie is meteen ook eerlijker: aanmaken is wat je hier komt
+            doen, importeren doe je één keer. */}
         {isAdmin && (
-          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-            {onImport && (
-              <button onClick={onImport} className="btn-secondary text-sm">
-                Importeer CSV
-              </button>
-            )}
-            {onAddTransaction && (
-              <button onClick={onAddTransaction} className="btn-secondary text-sm">
-                + Transactie
-              </button>
-            )}
-            {onTransfer && (
-              <button onClick={onTransfer} className="btn-secondary text-sm">
-                Verplaats
-              </button>
-            )}
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <div className="flex min-w-0 flex-1 gap-1.5 sm:flex-none">
+              {onImport && (
+                <button
+                  onClick={onImport}
+                  className="btn-ghost min-w-0 truncate px-2.5 text-[0.8125rem] sm:px-3.5 sm:text-sm"
+                >
+                  Importeer CSV
+                </button>
+              )}
+              {onAddTransaction && (
+                <button
+                  onClick={onAddTransaction}
+                  className="btn-ghost min-w-0 truncate px-2.5 text-[0.8125rem] sm:px-3.5 sm:text-sm"
+                >
+                  + Transactie
+                </button>
+              )}
+              {onTransfer && (
+                <button
+                  onClick={onTransfer}
+                  className="btn-ghost min-w-0 truncate px-2.5 text-[0.8125rem] sm:px-3.5 sm:text-sm"
+                >
+                  Verplaats
+                </button>
+              )}
+            </div>
             {canAddPot ? (
-              <button onClick={onAddPot} className="btn-accent text-sm">
+              <button onClick={onAddPot} className="btn-primary flex-shrink-0 text-sm">
                 + Nieuw potje
               </button>
             ) : (
-              <button onClick={onUpgrade} className="btn-accent text-sm">
-                Upgrade voor meer potjes
+              <button onClick={onUpgrade} className="btn-primary flex-shrink-0 text-sm">
+                Upgrade
               </button>
             )}
           </div>
@@ -153,10 +205,10 @@ export function PotsView({
 
       {pots.length === 0 ? (
         <div className="card border-dashed py-14 text-center">
-          <p className="mb-1 text-base font-semibold text-navy-900 dark:text-navy-50">
+          <p className="mb-1 text-base font-semibold text-sterk">
             {isAdmin ? "Nog geen potjes" : "Je hebt nog geen potjes"}
           </p>
-          <p className="mb-5 text-sm text-navy-500 dark:text-navy-300">
+          <p className="mb-5 text-sm text-basis">
             {isAdmin
               ? "Maak je eerste potje aan om geldstromen te organiseren."
               : "Vraag de admin om je een potje toe te wijzen."}
@@ -178,17 +230,13 @@ export function PotsView({
           )}
         </div>
       ) : !hasGroups ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {pots.map((pot) => (
-            <PotCard
-              key={pot.id}
-              pot={pot}
-              owner={memberById.get(pot.ownerId)}
-              transactions={allTransactions}
-              onSelect={() => onSelect(pot.id)}
-            />
-          ))}
-        </div>
+        <PotCollectie
+          potjes={pots}
+          weergave={weergave}
+          memberById={memberById}
+          allTransactions={allTransactions}
+          onSelect={onSelect}
+        />
       ) : (
         <div className="space-y-3">
           {[
@@ -207,12 +255,19 @@ export function PotsView({
               <section
                 key={key}
                 id={`grp-${key}`}
-                className="scroll-mt-24 rounded-2xl border border-navy-100 bg-white/40 p-2 dark:border-navy-700/60 dark:bg-navy-900/30"
+                /* In blokken staan er .panel-blokken in deze sectie, en een
+                   omkaderde sectie eromheen zou een kaart in een kaart zijn.
+                   Dan draagt de kop met de haarlijn de groepering. */
+                className={
+                  weergave === "blokken"
+                    ? "scroll-mt-24 border-b border-rand pb-3"
+                    : "scroll-mt-24 rounded-md border border-ink-200 bg-white/40 p-2 dark:border-ink-800/60 dark:bg-ink-950/30"
+                }
               >
                 <button
                   type="button"
                   onClick={() => toggle(key)}
-                  className="flex w-full items-center justify-between gap-2 rounded-xl px-2 py-1.5 text-left transition hover:bg-navy-50 dark:hover:bg-navy-800/50"
+                  className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left transition hover:bg-ink-50 dark:hover:bg-ink-900/50"
                   aria-expanded={!isCollapsed}
                 >
                   <span className="flex min-w-0 items-center gap-2">
@@ -225,40 +280,39 @@ export function PotsView({
                       strokeWidth="2.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className={`flex-shrink-0 text-navy-400 transition-transform ${
+                      className={`flex-shrink-0 text-ink-600 transition-transform ${
                         isCollapsed ? "" : "rotate-90"
                       }`}
                     >
                       <polyline points="9 18 15 12 9 6" />
                     </svg>
                     <h3
-                      className={`truncate text-sm font-bold uppercase tracking-wider ${
+                      className={`truncate text-[0.9375rem] font-semibold ${
                         muted
-                          ? "text-navy-400 dark:text-navy-400"
-                          : "text-navy-600 dark:text-navy-200"
+                          ? "text-zacht"
+                          : "text-sterk"
                       }`}
                     >
                       {label}
                     </h3>
-                    <span className="rounded-full bg-navy-100 px-1.5 text-[11px] font-semibold text-navy-500 dark:bg-navy-800 dark:text-navy-300">
+                    <span className="rounded-full bg-ink-100 px-1.5 text-[11px] font-semibold text-basis dark:bg-ink-900">
                       {secPots.length}
                     </span>
                   </span>
-                  <span className="flex-shrink-0 text-sm font-semibold tabular-nums text-navy-700 dark:text-navy-200">
-                    {formatEuro(sumBalance(secPots))}
-                  </span>
+                  <Bedrag
+                    waarde={sumBalance(secPots)}
+                    className="flex-shrink-0 text-[0.9375rem] font-semibold"
+                  />
                 </button>
                 {!isCollapsed && (
-                  <div className="mt-2 grid gap-3 px-0.5 pb-0.5 sm:grid-cols-2 xl:grid-cols-3">
-                    {secPots.map((pot) => (
-                      <PotCard
-                        key={pot.id}
-                        pot={pot}
-                        owner={memberById.get(pot.ownerId)}
-                        transactions={allTransactions}
-                        onSelect={() => onSelect(pot.id)}
-                      />
-                    ))}
+                  <div className="mt-1">
+                    <PotCollectie
+                      potjes={secPots}
+                      weergave={weergave}
+                      memberById={memberById}
+                      allTransactions={allTransactions}
+                      onSelect={onSelect}
+                    />
                   </div>
                 )}
               </section>
@@ -270,6 +324,162 @@ export function PotsView({
   );
 }
 
+/**
+ * Een verzameling potjes in de gekozen weergave. Eén plek, zodat de losse
+ * potjes en de potjes binnen een groepssectie niet uit elkaar kunnen lopen.
+ */
+function PotCollectie({
+  potjes,
+  weergave,
+  memberById,
+  allTransactions,
+  onSelect,
+}: {
+  potjes: Pot[];
+  weergave: Weergave;
+  memberById: Map<string, Member>;
+  allTransactions: Transaction[];
+  onSelect: (id: string) => void;
+}) {
+  if (weergave === "blokken") {
+    return (
+      /* auto-fill en niet auto-fit: auto-fit klapt lege sporen dicht, en dan
+         wordt een groep met één potje één blok over de volle paginabreedte. */
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-3">
+        {potjes.map((pot) => (
+          <PotBlok
+            key={pot.id}
+            pot={pot}
+            owner={memberById.get(pot.ownerId)}
+            transactions={allTransactions}
+            onSelect={() => onSelect(pot.id)}
+          />
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="border-t border-ink-200 dark:border-ink-800">
+      {potjes.map((pot) => (
+        <PotCard
+          key={pot.id}
+          pot={pot}
+          owner={memberById.get(pot.ownerId)}
+          transactions={allTransactions}
+          onSelect={() => onSelect(pot.id)}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Hetzelfde potje als blok, voor de blokkenweergave.
+ *
+ * Dit is de uitzondering op "lijnen, geen dozen", opt-in en niet de standaard:
+ * met honderdtwintig posten wint de lijst, met er twaalf wil je ze naast elkaar
+ * kunnen leggen. Zie de notitie in DESIGN.md onder Layout.
+ *
+ * Wat de uitzondering niet meeneemt uit de oude kaart: geen gekleurde zijstreep
+ * (de potkleur staat al als bolletje naast de naam, en twee keer dezelfde
+ * informatie is twee keer te veel), geen <button> om het hele blok, geen
+ * kleurverloop op de balk, en geen "Geen verantwoordelijke" waar niets is.
+ */
+function PotBlok({
+  pot,
+  owner,
+  transactions,
+  onSelect,
+}: {
+  pot: Pot;
+  owner: Member | undefined;
+  transactions: Transaction[];
+  onSelect: () => void;
+}) {
+  const balance = calcBalance(transactions, pot.id);
+  const progress = potProgress(
+    pot.targetAmount,
+    pot.targetKind,
+    { balance, totalOut: calcSpent(transactions, pot.id) },
+    pot.forecastAmount,
+  );
+  const kleur = pot.color ?? POT_KLEUR_STANDAARD;
+
+  return (
+    <div className="panel flex flex-col gap-2 p-4">
+      <div className="flex min-w-0 items-baseline gap-2">
+        <span
+          aria-hidden
+          className="h-2 w-2 flex-shrink-0 translate-y-[-1px] rounded-full"
+          style={{ backgroundColor: kleur }}
+        />
+        <h3 className="min-w-0 flex-1 truncate text-[0.9375rem] font-semibold text-sterk">
+          <button
+            onClick={onSelect}
+            className="max-w-full truncate text-left underline-offset-4 hover:underline"
+          >
+            {pot.name}
+          </button>
+        </h3>
+      </div>
+
+      <Bedrag waarde={balance} className="text-[1.25rem] font-bold" />
+
+      {/* Alleen tonen wat er echt is, anders staat er in elk blok een lege
+          regel op dezelfde plek. */}
+      {owner && <p className="meta truncate">{owner.name}</p>}
+
+      {progress && (
+        <div className="flex items-center gap-2">
+          <span
+            className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-ink-200 dark:bg-ink-800"
+            aria-hidden
+          >
+            {/* Kleur betekent geld, precies als in PotCard: een spaardoel vult
+                zich met geld dat binnenkomt, een budget met geld dat buitengaat,
+                en rood is de overschrijding. */}
+            <span
+              className={`block h-full rounded-full ${
+                progress.over
+                  ? "bg-fout-600"
+                  : progress.kind === "budget"
+                    ? "bg-uit-600"
+                    : "bg-in-600"
+              }`}
+              style={{ width: `${progress.barPct}%` }}
+            />
+          </span>
+          <span
+            className={`font-num flex-shrink-0 text-[0.75rem] font-semibold ${
+              progress.over ? "text-fout-600 dark:text-fout-400" : "text-zacht"
+            }`}
+          >
+            {progress.pct.toFixed(0)}%
+          </span>
+        </div>
+      )}
+      {progress && <p className="micro truncate">{progress.label}</p>}
+    </div>
+  );
+}
+
+/**
+ * Eén potje als regel in een lijst, niet als doos.
+ *
+ * Waarom een regel en geen kaart: deze klant heeft 120 posten. Honderdtwintig
+ * witte dozen op een bijna-witte achtergrond geven geen hiërarchie, alleen
+ * scrollwerk. Een geruled lijstje leest zoals het rekenblad waar deze mensen
+ * vandaan komen: naam links, bedrag rechts, uitgelijnd.
+ *
+ * Drie dingen die bewust weg zijn ten opzichte van de vorige kaart:
+ *   - de gekleurde zijstreep. De potjeskleur stond er twee keer op (bolletje
+ *     en streep); één keer is genoeg en een streep van 6px is geen informatie.
+ *   - "Geen verantwoordelijke" en "Nog geen inkomsten". Wat leeg is neemt geen
+ *     ruimte in, anders staat er 67 keer dezelfde lege regel.
+ *   - de <button> om de hele kaart. De toegankelijke naam was de volledige
+ *     inhoud, dus een schermlezer las per potje een alinea voor. Nu is de naam
+ *     de knop en is de rest gewone tekst.
+ */
 export function PotCard({
   pot,
   owner,
@@ -282,95 +492,83 @@ export function PotCard({
   onSelect: () => void;
 }) {
   const balance = calcBalance(transactions, pot.id);
-  const potTx = transactions.filter((t) => t.potId === pot.id);
-  const lastIncoming = [...potTx]
-    .filter((t) => t.direction === "in")
-    .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn))[0];
   const progress = potProgress(
     pot.targetAmount,
     pot.targetKind,
     { balance, totalOut: calcSpent(transactions, pot.id) },
     pot.forecastAmount,
   );
-
-  const dotColor = pot.color ?? "#1D9E75";
+  // Eén fallback voor de hele app; currentColor gaf een zwarte stip in
+  // lichte modus en een witte in donkere, terwijl de zijbalk hetzelfde potje
+  // in het groen zette.
+  const kleur = pot.color ?? POT_KLEUR_STANDAARD;
 
   return (
-    <button
-      onClick={onSelect}
-      className="card group relative flex flex-col overflow-hidden p-5 text-left transition duration-200 hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-lg dark:hover:border-teal-800"
-    >
+    <div className="group grid grid-cols-[auto_1fr_auto] items-baseline gap-x-3 border-b border-ink-200 py-2.5 transition-colors hover:bg-ink-50 sm:gap-x-4 dark:border-ink-800 dark:hover:bg-ink-900">
       <span
         aria-hidden
-        className="absolute left-0 top-0 h-full w-1.5"
-        style={{ backgroundColor: dotColor }}
+        className="h-2 w-2 translate-y-[-1px] rounded-full"
+        style={{ backgroundColor: kleur }}
       />
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <span
-            aria-hidden
-            className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-            style={{ backgroundColor: dotColor }}
-          />
-          <h3 className="truncate text-base font-semibold text-navy-900 transition group-hover:text-teal-700 dark:text-navy-50 dark:group-hover:text-teal-300">
-            {pot.name}
-          </h3>
-        </div>
-        <span className="text-navy-300 transition group-hover:translate-x-0.5 group-hover:text-teal-600 dark:text-navy-500 dark:group-hover:text-teal-400">
-          →
-        </span>
-      </div>
-      <div className="mb-4 flex items-center gap-2 text-sm text-navy-500 dark:text-navy-300">
-        <Avatar name={owner?.name ?? "—"} size="sm" />
-        <span className="truncate">{owner?.name ?? "Geen verantwoordelijke"}</span>
-      </div>
 
-      <div className="mb-3 text-2xl font-bold tabular-nums text-navy-900 dark:text-navy-50">
-        {formatEuro(balance)}
-      </div>
-
-      {progress !== null && (
-        <div className="mb-3">
-          <div className="mb-1 flex justify-between text-xs text-navy-400 dark:text-navy-300">
-            <span>{progress.label}</span>
-            <span
-              className={`font-semibold ${
-                progress.over
-                  ? "text-rose-600 dark:text-rose-400"
-                  : "text-teal-600 dark:text-teal-400"
-              }`}
-            >
-              {progress.pct.toFixed(0)}%
-            </span>
+      <div className="min-w-0">
+        <button
+          onClick={onSelect}
+          className="max-w-full truncate text-left text-[0.9375rem] font-medium text-sterk underline-offset-4 hover:underline"
+        >
+          {pot.name}
+        </button>
+        {/* Alleen tonen wat er echt is. */}
+        {(owner || progress) && (
+          <div className="mt-0.5 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[0.75rem] text-zacht">
+            {owner && <span className="truncate">{owner.name}</span>}
+            {progress && (
+              <span className="flex items-baseline gap-1.5">
+                <span>{progress.label}</span>
+                <span
+                  className={`font-num font-semibold ${
+                    progress.over ? "text-fout-600 dark:text-fout-400" : ""
+                  }`}
+                >
+                  {progress.pct.toFixed(0)}%
+                </span>
+              </span>
+            )}
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-navy-100 dark:bg-navy-700">
-            <div
-              className={`h-full rounded-full transition-all ${
+        )}
+      </div>
+
+      {/* Vaste kolombreedte, anders schuift de balk mee met de lengte van het
+          bedrag en lijnt er niets meer uit. */}
+      <div className="flex items-baseline justify-end gap-3 justify-self-end">
+        {progress && (
+          /* Massieve kleur, geen verloop: een verloop over 3px is onzichtbaar.
+             Kleur betekent geld, ook hier: een spaardoel vult zich met geld dat
+             binnenkomt (groen), een budget met geld dat buitengaat (amber). De
+             balk stond in beide gevallen op groen, waardoor een budget dat
+             volloopt eruitzag als goed nieuws. Rood blijft voor de overschrijding. */
+          <span
+            className="hidden h-1 w-20 overflow-hidden rounded-full bg-ink-200 sm:block dark:bg-ink-800"
+            aria-hidden
+          >
+            <span
+              className={`block h-full rounded-full ${
                 progress.over
-                  ? "bg-gradient-to-r from-rose-400 to-rose-600"
-                  : "bg-gradient-to-r from-teal-400 to-teal-600"
+                  ? "bg-fout-600"
+                  : progress.kind === "budget"
+                    ? "bg-uit-600"
+                    : "bg-in-600"
               }`}
               style={{ width: `${progress.barPct}%` }}
             />
-          </div>
-        </div>
-      )}
-
-      <div className="mt-auto flex items-center justify-between border-t border-navy-100 pt-3 text-xs dark:border-navy-700/60">
-        {lastIncoming ? (
-          <>
-            <span className="text-navy-500 dark:text-navy-300">
-              Laatste in: {formatDate(lastIncoming.occurredOn)}
-            </span>
-            <span className="font-semibold tabular-nums text-teal-700 dark:text-teal-300">
-              +{formatEuro(lastIncoming.amount)}
-            </span>
-          </>
-        ) : (
-          <span className="text-navy-400 dark:text-navy-400">Nog geen inkomsten</span>
+          </span>
         )}
+        <Bedrag
+          waarde={balance}
+          className="min-w-[7rem] text-right text-[0.9375rem] font-semibold sm:min-w-[8.5rem]"
+        />
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -383,11 +581,11 @@ export function RecentActivity({
 }) {
   return (
     <aside className="card flex h-fit flex-col p-5">
-      <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+      <h2 className="mb-4 text-sm font-semibold text-zacht">
         Recente activiteit
       </h2>
       {recent.length === 0 ? (
-        <p className="text-sm text-navy-400 dark:text-navy-400">Nog geen transacties.</p>
+        <p className="text-sm text-zacht">Nog geen transacties.</p>
       ) : (
         <ul className="space-y-3">
           {recent.map((tx) => {
@@ -399,8 +597,8 @@ export function RecentActivity({
                 <div
                   className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
                     positive
-                      ? "bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400"
-                      : "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                      ? "bg-in-100 text-in-600 dark:bg-in-700/30 dark:text-in-400"
+                      : "bg-uit-100 text-uit-700 dark:bg-uit-700/30 dark:text-uit-400"
                   }`}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -413,21 +611,21 @@ export function RecentActivity({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="truncate text-sm font-medium text-navy-900 dark:text-navy-50">
+                    <span className="truncate text-sm font-medium text-sterk">
                       {tx.counterparty}
                     </span>
                     <span
                       className={`whitespace-nowrap text-sm font-semibold tabular-nums ${
                         positive
-                          ? "text-teal-700 dark:text-teal-300"
-                          : "text-amber-700 dark:text-amber-400"
+                          ? "text-in-700 dark:text-in-400"
+                          : "text-uit-700 dark:text-uit-400"
                       }`}
                     >
                       {positive ? "+" : "−"}
                       {formatEuro(tx.amount)}
                     </span>
                   </div>
-                  <div className="flex items-baseline justify-between gap-2 text-xs text-navy-400 dark:text-navy-400">
+                  <div className="flex items-baseline justify-between gap-2 text-xs text-zacht">
                     <span className="truncate">{potLabel}</span>
                     <span className="whitespace-nowrap">{formatDate(tx.occurredOn)}</span>
                   </div>
@@ -456,33 +654,33 @@ export function Stat({
 }) {
   const ring = {
     "teal-bold":
-      "before:bg-gradient-to-b before:from-teal-500 before:to-teal-700",
-    teal: "before:bg-teal-400",
-    amber: "before:bg-amber-500",
-    rose: "before:bg-rose-500",
+      "before:bg-gradient-to-b before:from-in-500 before:to-in-600",
+    teal: "before:bg-in-300",
+    amber: "before:bg-uit-600",
+    rose: "before:bg-fout-600",
   }[accent];
   const isHero = accent === "teal-bold";
   return (
     <div
       className={`card relative overflow-hidden p-5 before:absolute before:left-0 before:top-0 before:h-full before:w-1 ${ring} ${
         isHero
-          ? "ring-1 ring-teal-100/60 dark:ring-teal-900/40"
+          ? "ring-1 ring-in-600/60 dark:ring-in-600/40"
           : ""
       }`}
     >
-      <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300">
+      <p className="mb-1 text-xs font-semibold text-zacht">
         {label}
       </p>
       <p
         className={`font-extrabold ${
           isHero
-            ? "text-teal-700 dark:text-teal-300"
-            : "text-navy-900 dark:text-navy-50"
+            ? "text-in-700 dark:text-in-400"
+            : "text-sterk"
         } ${big ? "text-3xl" : "text-2xl"}`}
       >
         {value}
       </p>
-      {delta && <p className="mt-0.5 text-xs text-navy-500 dark:text-navy-400">{delta}</p>}
+      {delta && <p className="mt-0.5 text-xs text-basis">{delta}</p>}
     </div>
   );
 }
@@ -492,7 +690,7 @@ export function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md"
   const cls = size === "sm" ? "h-6 w-6 text-[10px]" : "h-9 w-9 text-sm";
   return (
     <span
-      className={`flex flex-shrink-0 items-center justify-center rounded-full bg-navy-100 font-semibold text-navy-700 dark:bg-navy-800 dark:text-navy-100 ${cls}`}
+      className={`flex flex-shrink-0 items-center justify-center rounded-full bg-ink-100 font-semibold text-ink-800 dark:bg-ink-900 dark:text-ink-200 ${cls}`}
     >
       {initials}
     </span>

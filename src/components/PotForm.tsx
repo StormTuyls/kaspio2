@@ -1,8 +1,10 @@
 import { useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 import type { PotGroup, PotTargetKind } from "../types";
 import { rootGroups, subGroups } from "../storage";
 
+import { Veld as Field } from "./Veld";
+import { Foutmelding } from "./Foutmelding";
 // Kaspio kleurpalet — eerste optie is de primary teal.
 const POT_COLORS = [
   { hex: "#1D9E75", label: "Teal" },
@@ -257,10 +259,10 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
               type="button"
               onClick={() => setTargetKind("saving")}
               aria-pressed={targetKind === "saving"}
-              className={`rounded-xl border-2 px-3 py-2 text-sm font-semibold transition ${
+              className={`rounded-lg border-2 px-3 py-2 text-sm font-semibold transition ${
                 targetKind === "saving"
-                  ? "border-teal-500 bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300"
-                  : "border-navy-100 text-navy-500 hover:border-navy-200 dark:border-navy-700 dark:text-navy-300 dark:hover:border-navy-600"
+                  ? "border-in-600 bg-in-100 text-in-700 dark:bg-in-700/30 dark:text-in-400"
+                  : "border-ink-200 text-basis hover:border-ink-300 dark:border-ink-800 dark:hover:border-ink-600"
               }`}
             >
               Spaardoel
@@ -269,17 +271,17 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
               type="button"
               onClick={() => setTargetKind("budget")}
               aria-pressed={targetKind === "budget"}
-              className={`rounded-xl border-2 px-3 py-2 text-sm font-semibold transition ${
+              className={`rounded-lg border-2 px-3 py-2 text-sm font-semibold transition ${
                 targetKind === "budget"
-                  ? "border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                  : "border-navy-100 text-navy-500 hover:border-navy-200 dark:border-navy-700 dark:text-navy-300 dark:hover:border-navy-600"
+                  ? "border-uit-600 bg-uit-100 text-uit-700 dark:bg-uit-700/30 dark:text-uit-400"
+                  : "border-ink-200 text-basis hover:border-ink-300 dark:border-ink-800 dark:hover:border-ink-600"
               }`}
             >
               Budget
             </button>
           </div>
           <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-navy-400">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zacht">
               €
             </span>
             <input
@@ -303,7 +305,7 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
         }
       >
         <div className="relative">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-navy-400">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zacht">
             €
           </span>
           <input
@@ -329,9 +331,9 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
       </Field>
 
       {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <Foutmelding>
           {error}
-        </div>
+        </Foutmelding>
       )}
 
       <div className="flex justify-end gap-2 pt-2">
@@ -351,29 +353,3 @@ export function PotForm({ initial, onSubmit, onCancel, groups, onCreateGroup }: 
   );
 }
 
-function Field({
-  label,
-  required,
-  hint,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  hint?: string;
-  children: ReactNode;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
-        {label}
-        {required && <span className="text-rose-500"> *</span>}
-      </span>
-      {children}
-      {hint && (
-        <span className="mt-1 block text-xs text-navy-400 dark:text-navy-300">
-          {hint}
-        </span>
-      )}
-    </label>
-  );
-}

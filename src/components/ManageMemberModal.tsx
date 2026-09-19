@@ -3,6 +3,7 @@ import type { GroupedMember } from "../data";
 import type { MemberRole, Pot, PotGroup } from "../supabase";
 import { useConfirm } from "./ConfirmDialog";
 
+import { Foutmelding } from "./Foutmelding";
 type Props = {
   orgId: string;
   member: GroupedMember;
@@ -92,16 +93,16 @@ export function ManageMemberModal({
   return (
     <div className="space-y-5">
       <div>
-        <div className="text-base font-bold text-navy-900 dark:text-white">
+        <div className="text-base font-bold text-ink-900 dark:text-white">
           {member.full_name}
         </div>
-        <div className="text-sm text-navy-500 dark:text-navy-300">
+        <div className="text-sm text-basis">
           {member.email}
         </div>
       </div>
 
       <div>
-        <p className="mb-2 text-sm font-medium text-navy-700 dark:text-navy-200">
+        <p className="mb-2 text-sm font-medium text-ink-800 dark:text-ink-300">
           Rol
         </p>
         <div className="space-y-2">
@@ -138,19 +139,19 @@ export function ManageMemberModal({
 
       {role === "pot_owner" && (
         <div>
-          <p className="mb-2 text-sm font-medium text-navy-700 dark:text-navy-200">
+          <p className="mb-2 text-sm font-medium text-ink-800 dark:text-ink-300">
             Toegang tot potjes
           </p>
           {pots.length === 0 ? (
-            <p className="text-sm text-navy-400">
+            <p className="text-sm text-zacht">
               Geen potjes beschikbaar. Maak eerst een potje aan.
             </p>
           ) : (
-            <div className="space-y-1.5 rounded-lg border border-navy-100 p-2 dark:border-navy-700">
+            <div className="space-y-1.5 rounded-lg border border-ink-200 p-2 dark:border-ink-800">
               {pots.map((p) => (
                 <label
                   key={p.id}
-                  className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-canvas dark:hover:bg-navy-800"
+                  className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-ink-50 dark:hover:bg-ink-900"
                 >
                   <input
                     type="checkbox"
@@ -163,7 +164,7 @@ export function ManageMemberModal({
                     className="h-2.5 w-2.5 rounded-full"
                     style={{ backgroundColor: p.color }}
                   />
-                  <span className="text-sm text-navy-900 dark:text-white">
+                  <span className="text-sm text-ink-900 dark:text-white">
                     {p.name}
                   </span>
                 </label>
@@ -171,7 +172,7 @@ export function ManageMemberModal({
             </div>
           )}
           {potIds.length > 0 && (
-            <p className="mt-2 text-xs text-navy-400">
+            <p className="mt-2 text-xs text-zacht">
               {potIds.length} potje{potIds.length === 1 ? "" : "s"} geselecteerd
             </p>
           )}
@@ -180,15 +181,15 @@ export function ManageMemberModal({
 
       {role === "group_owner" && (
         <div>
-          <p className="mb-2 text-sm font-medium text-navy-700 dark:text-navy-200">
+          <p className="mb-2 text-sm font-medium text-ink-800 dark:text-ink-300">
             Beheert deze groepen
           </p>
           {groups.length === 0 ? (
-            <p className="text-sm text-navy-400">
+            <p className="text-sm text-zacht">
               Er zijn nog geen groepen. Maak er eerst één aan bij Groepen.
             </p>
           ) : (
-            <div className="space-y-1.5 rounded-lg border border-navy-100 p-2 dark:border-navy-700">
+            <div className="space-y-1.5 rounded-lg border border-ink-200 p-2 dark:border-ink-800">
               {groups
                 .filter((g) => !g.parent_id)
                 .map((g) => {
@@ -212,7 +213,7 @@ export function ManageMemberModal({
                         onToggle={() => toggleGroup(g.id)}
                       />
                       {children.map((c) => (
-                        <div key={c.id} className="ml-5 border-l border-navy-100 pl-2 dark:border-navy-700">
+                        <div key={c.id} className="ml-5 border-l border-ink-200 pl-2 dark:border-ink-800">
                           <GroupCheck
                             group={c}
                             count={pots.filter((p) => p.group_id === c.id).length}
@@ -232,16 +233,16 @@ export function ManageMemberModal({
                 })}
             </div>
           )}
-          <p className="mt-2 text-xs text-navy-400">
+          <p className="mt-2 text-xs text-zacht">
             Nieuwe potjes in deze groepen komen er vanzelf bij.
           </p>
         </div>
       )}
 
       {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <Foutmelding>
           {error}
-        </div>
+        </Foutmelding>
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
@@ -293,8 +294,8 @@ function RoleOption({
     <label
       className={`flex cursor-pointer items-start gap-3 rounded-lg border-2 p-3 transition ${
         checked
-          ? "border-teal-500 bg-teal-50 dark:bg-teal-900/20"
-          : "border-navy-100 dark:border-navy-700"
+          ? "border-in-600 bg-in-100 dark:bg-in-700/20"
+          : "border-ink-200 dark:border-ink-800"
       } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
     >
       <input
@@ -305,10 +306,10 @@ function RoleOption({
         className="mt-0.5"
       />
       <div className="flex-1">
-        <div className="text-sm font-semibold text-navy-900 dark:text-white">
+        <div className="text-sm font-semibold text-ink-900 dark:text-white">
           {label}
         </div>
-        <div className="text-xs text-navy-500 dark:text-navy-300">
+        <div className="text-xs text-basis">
           {description}
         </div>
       </div>
@@ -335,7 +336,7 @@ function GroupCheck({
       className={`flex items-center gap-2.5 rounded-md px-2 py-1.5 ${
         disabled
           ? "cursor-default opacity-60"
-          : "cursor-pointer hover:bg-canvas dark:hover:bg-navy-800"
+          : "cursor-pointer hover:bg-ink-50 dark:hover:bg-ink-900"
       }`}
     >
       <input
@@ -345,8 +346,8 @@ function GroupCheck({
         onChange={onToggle}
         className="h-4 w-4"
       />
-      <span className="text-sm text-navy-900 dark:text-white">{group.name}</span>
-      <span className="ml-auto text-xs text-navy-400">
+      <span className="text-sm text-ink-900 dark:text-white">{group.name}</span>
+      <span className="ml-auto text-xs text-zacht">
         {count} potje{count === 1 ? "" : "s"}
       </span>
     </label>

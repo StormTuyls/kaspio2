@@ -26,7 +26,7 @@ function applyTheme(theme: Theme) {
   document.documentElement.classList.toggle("dark", dark);
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", dark ? "#04342C" : "#1D9E75");
+    ?.setAttribute("content", dark ? "#0a0f14" : "#fcfdfe");
 }
 
 function loadTheme(): Theme {
@@ -50,13 +50,13 @@ export function useForceLight() {
     el.classList.remove("dark");
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute("content", "#1D9E75");
+      ?.setAttribute("content", "#fcfdfe");
     return () => {
       if (wasDark) {
         el.classList.add("dark");
         document
           .querySelector('meta[name="theme-color"]')
-          ?.setAttribute("content", "#04342C");
+          ?.setAttribute("content", "#0a0f14");
       }
     };
   }, []);

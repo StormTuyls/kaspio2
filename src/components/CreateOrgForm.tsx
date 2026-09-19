@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 
+import { Foutmelding } from "./Foutmelding";
 type Props = {
   /** Wordt aangeroepen met de naam, parent regelt de daadwerkelijke insert. */
   onCreate: (name: string) => Promise<{ error: string | null }>;
@@ -50,14 +51,14 @@ export function CreateOrgForm({
   return (
     <form onSubmit={submit} className="space-y-4">
       <div>
-        <h2 className="mb-1 text-lg font-bold text-navy-900 dark:text-white">
+        <h2 className="mb-1 text-lg font-bold text-ink-900 dark:text-white">
           {title}
         </h2>
-        <p className="text-sm text-navy-500 dark:text-navy-300">{description}</p>
+        <p className="text-sm text-basis">{description}</p>
       </div>
 
       <label className="block">
-        <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+        <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
           Naam
         </span>
         <input
@@ -73,9 +74,9 @@ export function CreateOrgForm({
       </label>
 
       {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <Foutmelding>
           {error}
-        </div>
+        </Foutmelding>
       )}
 
       <div className="flex gap-2">

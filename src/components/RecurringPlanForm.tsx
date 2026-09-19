@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Pot } from "../types";
 import type { RecurringPlan, RecurringPlanInput, RecurringPlanKind } from "../data";
 
+import { Foutmelding } from "./Foutmelding";
 type Props = {
   pots: Pot[];
   /** Aanwezig bij bewerken. */
@@ -81,7 +82,7 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
   return (
     <div className="space-y-4">
       {/* Soort */}
-      <div className="grid grid-cols-2 gap-1 rounded-xl bg-canvas p-1 dark:bg-navy-800">
+      <div className="grid grid-cols-2 gap-1 rounded-lg bg-ink-50 p-1 dark:bg-ink-900">
         {(
           [
             ["storting", "Storting in potje"],
@@ -94,8 +95,8 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
             onClick={() => setKind(k)}
             className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
               kind === k
-                ? "bg-white text-navy-900 shadow-sm dark:bg-navy-700 dark:text-white"
-                : "text-navy-500 dark:text-navy-300"
+                ? "bg-white text-ink-900 shadow-sm dark:bg-ink-800 dark:text-white"
+                : "text-basis"
             }`}
           >
             {label}
@@ -103,14 +104,14 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
         ))}
       </div>
 
-      <p className="text-sm text-ink-muted dark:text-navy-300">
+      <p className="text-sm text-ink-muted dark:text-ink-400">
         {isDom
           ? "Een vaste afhouding (bv. verzekering) die de bank echt doet. Kaspio boekt ze niet zelf, maar reserveert het bedrag in dit potje en herkent de transactie bij import."
           : "Reserveer elke maand geld uit de hoofdpot in dit potje. Je bevestigt de storting met één klik op het dashboard."}
       </p>
 
       <label className="block">
-        <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+        <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
           Potje
         </span>
         <select
@@ -129,7 +130,7 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
 
       <div className="grid grid-cols-2 gap-3">
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+          <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
             Bedrag
           </span>
           <div className="relative">
@@ -148,7 +149,7 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
           </div>
         </label>
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+          <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
             Dag van de maand
           </span>
           <input
@@ -164,7 +165,7 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
       </div>
 
       <label className="block">
-        <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+        <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
           Tegenpartij{" "}
           <span className="font-normal text-ink-light">
             {isDom ? "(nodig om te herkennen)" : "(optioneel label)"}
@@ -180,7 +181,7 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
 
       {/* Zelf-financierende domiciliëring: hoofdpot -> potje, vóór de afhouding. */}
       {isDom && (
-        <div className="rounded-xl border border-navy-100 p-3.5 dark:border-navy-700">
+        <div className="rounded-lg border border-ink-200 p-3.5 dark:border-ink-800">
           <label className="flex cursor-pointer items-start gap-2.5">
             <input
               type="checkbox"
@@ -189,10 +190,10 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
               className="mt-0.5 h-4 w-4 flex-shrink-0 accent-teal-600"
             />
             <span className="text-sm">
-              <span className="font-medium text-navy-800 dark:text-navy-100">
+              <span className="font-medium text-ink-800 dark:text-ink-200">
                 Zet het geld vooraf klaar in dit potje
               </span>
-              <span className="mt-0.5 block text-xs text-ink-muted dark:text-navy-300">
+              <span className="mt-0.5 block text-xs text-ink-muted dark:text-ink-400">
                 Kaspio verschuift het bedrag uit de hoofdpot naar dit potje. De
                 afhouding haalt het er daarna weer uit, dus het potje eindigt op
                 nul. Zonder dit hoef je zelf een aparte storting te maken.
@@ -202,7 +203,7 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
 
           {reserve && (
             <label className="mt-3 flex items-center justify-between gap-3">
-              <span className="text-sm text-navy-700 dark:text-navy-200">
+              <span className="text-sm text-ink-800 dark:text-ink-300">
                 Klaarzetten op dag
               </span>
               <input
@@ -229,10 +230,10 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
             className="mt-0.5 h-4 w-4 flex-shrink-0 accent-teal-600"
           />
           <span className="text-sm">
-            <span className="font-medium text-navy-800 dark:text-navy-100">
+            <span className="font-medium text-ink-800 dark:text-ink-200">
               Automatisch boeken
             </span>
-            <span className="mt-0.5 block text-xs text-ink-muted dark:text-navy-300">
+            <span className="mt-0.5 block text-xs text-ink-muted dark:text-ink-400">
               Kaspio boekt dit 's nachts zelf op de ingestelde dag, ook als er
               niemand ingelogd is. Uit? Dan verschijnt het onder "Te bevestigen"
               en klik jij op Boek.
@@ -242,9 +243,9 @@ export function RecurringPlanForm({ pots, initial, onSubmit, onCancel }: Props) 
       )}
 
       {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <Foutmelding>
           {error}
-        </div>
+        </Foutmelding>
       )}
 
       <div className="flex justify-end gap-2 pt-1">

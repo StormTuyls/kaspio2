@@ -7,6 +7,13 @@ export type Member = {
   createdAt: string;
 };
 
+/**
+ * Kleur van een potje zonder eigen kleur. Het bolletje naast de naam is puur
+ * een herkenningsteken, dus de fallback hoort overal dezelfde te zijn: stond
+ * hij per scherm anders, dan leest hetzelfde potje als twee verschillende.
+ */
+export const POT_KLEUR_STANDAARD = "#1D9E75";
+
 /** Hoe target_amount gelezen moet worden: saldodoel of uitgavenbudget. */
 export type PotTargetKind = "saving" | "budget";
 

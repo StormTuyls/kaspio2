@@ -3,6 +3,7 @@ import type { ChangeEvent } from "react";
 import type { AccentKey, Branding } from "../branding";
 import { ACCENT_LABELS, ACCENT_PALETTES } from "../branding";
 
+import { Foutmelding } from "./Foutmelding";
 const MAX_LOGO_BYTES = 200 * 1024;
 
 type Props = {
@@ -51,10 +52,10 @@ export function BrandingSection({ branding, defaultBrandName, onChange, onReset 
     <div className="card p-6">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-navy-900 dark:text-navy-50">
+          <h2 className="text-base font-semibold text-sterk">
             Whitelabel
           </h2>
-          <p className="text-sm text-navy-500 dark:text-navy-300">
+          <p className="text-sm text-basis">
             Maak deze workspace de jouwe met een eigen merknaam, kleur en logo.
           </p>
         </div>
@@ -65,7 +66,7 @@ export function BrandingSection({ branding, defaultBrandName, onChange, onReset 
 
       <div className="space-y-5">
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
+          <span className="mb-1.5 block text-sm font-medium text-ink-800 dark:text-ink-300">
             Merknaam
           </span>
           <input
@@ -76,13 +77,13 @@ export function BrandingSection({ branding, defaultBrandName, onChange, onReset 
             placeholder={defaultBrandName}
             className="input"
           />
-          <span className="mt-1 block text-xs text-navy-400 dark:text-navy-300">
+          <span className="mt-1 block text-xs text-zacht">
             Vervangt "Kaspio" in de zijbalk en topbar. Leeg = standaard.
           </span>
         </label>
 
         <div>
-          <span className="mb-2 block text-sm font-medium text-navy-700 dark:text-navy-200">
+          <span className="mb-2 block text-sm font-medium text-ink-800 dark:text-ink-300">
             Accentkleur
           </span>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
@@ -94,10 +95,10 @@ export function BrandingSection({ branding, defaultBrandName, onChange, onReset 
                   key={k}
                   type="button"
                   onClick={() => onChange({ accent: k })}
-                  className={`group relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-2 transition ${
+                  className={`group relative flex flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition ${
                     active
-                      ? "border-navy-900 dark:border-white"
-                      : "border-navy-100 hover:border-navy-200 dark:border-navy-700 dark:hover:border-navy-600"
+                      ? "border-ink-900 dark:border-white"
+                      : "border-ink-200 hover:border-ink-300 dark:border-ink-800 dark:hover:border-ink-600"
                   }`}
                   aria-label={ACCENT_LABELS[k]}
                 >
@@ -105,11 +106,11 @@ export function BrandingSection({ branding, defaultBrandName, onChange, onReset 
                     className="h-8 w-8 rounded-full shadow-sm ring-1 ring-black/5"
                     style={{ backgroundColor: palette[500] }}
                   />
-                  <span className="text-[11px] font-semibold text-navy-700 dark:text-navy-200">
+                  <span className="text-[11px] font-semibold text-ink-800 dark:text-ink-300">
                     {ACCENT_LABELS[k]}
                   </span>
                   {active && (
-                    <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-navy-900 text-white dark:bg-white dark:text-navy-900">
+                    <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-ink-950 text-white dark:bg-white dark:text-ink-900">
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M5 13l4 4L19 7" />
                       </svg>
@@ -122,17 +123,17 @@ export function BrandingSection({ branding, defaultBrandName, onChange, onReset 
         </div>
 
         <div>
-          <span className="mb-2 block text-sm font-medium text-navy-700 dark:text-navy-200">
+          <span className="mb-2 block text-sm font-medium text-ink-800 dark:text-ink-300">
             Logo
           </span>
           <div className="flex items-center gap-4">
             <div
-              className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-navy-100 bg-canvas dark:border-navy-700 dark:bg-navy-800"
+              className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-ink-200 bg-ink-50 dark:border-ink-800 dark:bg-ink-900"
             >
               {branding.logoDataUrl ? (
                 <img src={branding.logoDataUrl} alt="Logo" className="h-full w-full object-contain" />
               ) : (
-                <span className="text-xs text-navy-400 dark:text-navy-500">Geen logo</span>
+                <span className="text-xs text-zacht">Geen logo</span>
               )}
             </div>
             <div className="flex flex-col gap-2">
@@ -161,15 +162,15 @@ export function BrandingSection({ branding, defaultBrandName, onChange, onReset 
                   </button>
                 )}
               </div>
-              <span className="text-xs text-navy-400 dark:text-navy-300">
+              <span className="text-xs text-zacht">
                 PNG of SVG, max {Math.round(MAX_LOGO_BYTES / 1024)} KB.
               </span>
             </div>
           </div>
           {error && (
-            <div className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-300">
+            <Foutmelding className="mt-2">
               {error}
-            </div>
+            </Foutmelding>
           )}
         </div>
       </div>

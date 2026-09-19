@@ -1,7 +1,9 @@
 import { useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 import type { Pot, TransactionDirection } from "../types";
 
+import { Veld as Field } from "./Veld";
+import { Foutmelding } from "./Foutmelding";
 /** Sentinel voor de "nog niet toewijzen"-optie in de potkiezer. */
 const UNALLOCATED = "__unallocated__";
 
@@ -90,10 +92,10 @@ export function TransactionForm({
         <button
           type="button"
           onClick={() => setDirection("in")}
-          className={`flex items-center justify-center gap-2 rounded-xl border-2 px-3 py-2.5 text-sm font-semibold transition ${
+          className={`flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-semibold transition ${
             direction === "in"
-              ? "border-teal-500 bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300"
-              : "border-navy-100 text-navy-500 hover:border-navy-200 dark:border-navy-700 dark:text-navy-300 dark:hover:border-navy-600"
+              ? "border-in-600 bg-in-100 text-in-700 dark:bg-in-700/30 dark:text-in-400"
+              : "border-ink-200 text-basis hover:border-ink-300 dark:border-ink-800 dark:hover:border-ink-600"
           }`}
         >
           <span className="text-base">↓</span> Inkomend
@@ -101,10 +103,10 @@ export function TransactionForm({
         <button
           type="button"
           onClick={() => setDirection("out")}
-          className={`flex items-center justify-center gap-2 rounded-xl border-2 px-3 py-2.5 text-sm font-semibold transition ${
+          className={`flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-semibold transition ${
             direction === "out"
-              ? "border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-              : "border-navy-100 text-navy-500 hover:border-navy-200 dark:border-navy-700 dark:text-navy-300 dark:hover:border-navy-600"
+              ? "border-uit-600 bg-uit-100 text-uit-700 dark:bg-uit-700/30 dark:text-uit-400"
+              : "border-ink-200 text-basis hover:border-ink-300 dark:border-ink-800 dark:hover:border-ink-600"
           }`}
         >
           <span className="text-base">↑</span> Uitgaand
@@ -137,22 +139,16 @@ export function TransactionForm({
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Bedrag" required>
-          <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-navy-400">
-              €
-            </span>
-            <input
-              autoFocus
-              type="text"
-              inputMode="decimal"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0,00"
-              className="input pl-7"
-              required
-            />
-          </div>
+        <Field label="Bedrag" required prefix="€">
+          <input
+            autoFocus
+            type="text"
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0,00"
+            className="input pl-7"
+          />
         </Field>
         <Field label="Datum" required>
           <input
@@ -195,11 +191,7 @@ export function TransactionForm({
         />
       </Field>
 
-      {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-          {error}
-        </div>
-      )}
+      {error && <Foutmelding>{error}</Foutmelding>}
 
       <div className="flex justify-end gap-2 pt-2">
         <button
@@ -218,29 +210,3 @@ export function TransactionForm({
   );
 }
 
-function Field({
-  label,
-  required,
-  hint,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  hint?: string;
-  children: ReactNode;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-navy-700 dark:text-navy-200">
-        {label}
-        {required && <span className="text-rose-500"> *</span>}
-      </span>
-      {children}
-      {hint && (
-        <span className="mt-1 block text-xs text-navy-400 dark:text-navy-300">
-          {hint}
-        </span>
-      )}
-    </label>
-  );
-}
